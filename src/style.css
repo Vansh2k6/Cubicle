@@ -703,6 +703,10 @@ h1 > span {
   color: #8272c5;
   font-size: 13px;
 }
+.npc-star {
+  color: #a797c9;
+  font-size: 8px;
+}
 .move-hint {
   position: absolute;
   bottom: 31px;

@@ -405,7 +405,7 @@ export function createOffice(container, hooks) {
   for (let [id, p] of Object.entries(entries)) {
     let el = document.createElement("div");
     el.className = `npc-label ${id === "player" ? "player" : ""}`;
-    el.innerHTML = `${id === "maya" ? '<span class="npc-marker">···</span>' : ""}<strong>${p.name}${id === "maya" ? ' <span style="color:#a797c9;font-size:8px">◆</span>' : ""}</strong>${p.role ? `<small>${p.role}</small>` : ""}`;
+    el.innerHTML = `${id === "maya" ? '<span class="npc-marker">···</span>' : ""}<strong>${p.name}${id === "maya" ? ' <span class="npc-star">◆</span>' : ""}</strong>${p.role ? `<small>${p.role}</small>` : ""}`;
     labels.appendChild(el);
     p.label = el;
   }
