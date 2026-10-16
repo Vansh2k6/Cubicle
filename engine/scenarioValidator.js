@@ -1,5 +1,6 @@
 // Scenario validator for S1-01 missed_deadline (pure engine code, stdlib only).
-// No imports: zero dependencies by design.
+// Static schema import only: no network, provider or filesystem dependency.
+import schema from "../scenarios/missed_deadline.schema.json" with { type: "json" };
 
 const TAXONOMY = new Set([
   "asked_deadline_flexibility",
@@ -55,6 +56,40 @@ function err(errors, code, path, message) {
   errors.push({ code, path, message });
 }
 
+// Only the keywords declared in this scenario schema are supported.
+function validateShape(value, rule, path, errors) {
+  const type = rule.type;
+  const matches = type === undefined || (type === "object"
+    ? value !== null && typeof value === "object" && !Array.isArray(value)
+    : type === "array" ? Array.isArray(value)
+    : type === "integer" ? Number.isSafeInteger(value)
+    : type === "number" ? typeof value === "number" && Number.isFinite(value)
+    : typeof value === type);
+  if (!matches) {
+    err(errors, "SCHEMA_TYPE", path, `expected ${type}`);
+    return;
+  }
+  if (Object.hasOwn(rule, "const") && value !== rule.const) err(errors, "SCHEMA_CONST", path, "unexpected constant");
+  if (typeof value === "number") {
+    if (rule.minimum !== undefined && value < rule.minimum || rule.maximum !== undefined && value > rule.maximum || rule.exclusiveMinimum !== undefined && value <= rule.exclusiveMinimum) {
+      err(errors, "SCHEMA_RANGE", path, "number outside allowed range");
+    }
+  }
+  if (typeof value === "string" && rule.minLength !== undefined && [...value].length < rule.minLength) err(errors, "SCHEMA_LENGTH", path, "string too short");
+  if (Array.isArray(value)) {
+    if (rule.minItems !== undefined && value.length < rule.minItems) err(errors, "SCHEMA_ITEMS", path, "array too short");
+    if (rule.items) value.forEach((item, i) => validateShape(item, rule.items, `${path}[${i}]`, errors));
+  } else if (value !== null && typeof value === "object") {
+    for (const key of rule.required || []) {
+      if (!Object.hasOwn(value, key)) err(errors, "SCHEMA_REQUIRED", `${path}.${key}`, "required field missing");
+    }
+    for (const key of Object.keys(value)) {
+      if (Object.hasOwn(rule.properties || {}, key)) validateShape(value[key], rule.properties[key], `${path}.${key}`, errors);
+      else if (rule.additionalProperties === false) err(errors, "SCHEMA_PROPERTY", `${path}.${key}`, "unknown property");
+    }
+  }
+}
+
 // Extract taxonomy event names from done_when entries.
 // Only strings of the form "event:<type>" are event refs; anything else
 // is an engine predicate (e.g. date_mutually_agreed) and is skipped.
@@ -71,7 +106,7 @@ function extractEvents(doneWhen) {
 
 function hasCycle(goals) {
   const adj = new Map();
-  for (const g of goals) adj.set(g.id, (g.requires || []).filter((r) => adj.has(r) || true));
+  for (const g of goals) adj.set(g.id, Array.isArray(g.requires) ? g.requires : []);
   const color = new Map(); // 0=unvisited 1=in-stack 2=done
   const ids = new Set(goals.map((g) => g.id));
   function visit(id) {
@@ -157,6 +192,10 @@ export function validateScenario(spec) {
     }
   }
 
+  validateShape(spec, schema, "$", errors);
+  // Semantic checks assume declared types; malformed input must return errors, not throw.
+  if (errors.some((e) => e.code === "SCHEMA_TYPE")) return { ok: false, errors };
+
   const npcs = Array.isArray(spec.npcs) ? spec.npcs : [];
   const goals = Array.isArray(spec.goals) ? spec.goals : [];
   const facts = Array.isArray(spec.facts) ? spec.facts : [];
@@ -230,9 +269,11 @@ export function validateScenario(spec) {
         if (node !== null && typeof node === "object" && p in node) node = node[p];
         else { ok = false; break; }
       }
-      if (!ok) err(errors, "BAD_LATEST_DAY_FROM", "commitment_model.latest_day_from", `unresolvable ref: ${cm.latest_day_from}`);
+      if (!ok || !Number.isSafeInteger(node) || node < 0) err(errors, "BAD_LATEST_DAY_FROM", "commitment_model.latest_day_from", "cutoff must resolve to a non-negative whole day");
     }
   }
+
+  if (cm && cm.assisted_min_day > cm.unassisted_min_day) err(errors, "BAD_DAY_BOUNDS", "commitment_model", "assisted minimum cannot exceed unassisted minimum");
 
   // Facts.
   const factTriggerSet = new Set();
@@ -330,6 +371,12 @@ export function validateScenario(spec) {
   const factSum = facts.reduce((s, f) => s + (f && typeof f.weight === "number" ? f.weight : 0), 0);
   if (goalSum !== 30) err(errors, "WEIGHT_SUM", "goals.weight", `goal weights sum to ${goalSum}, expected 30`);
   if (factSum !== 20) err(errors, "WEIGHT_SUM", "facts.weight", `fact weights sum to ${factSum}, expected 20`);
+
+  const weights = spec.scoring?.weights;
+  const expectedWeights = { goals: 30, hidden_facts: 20, integrity: 15, relationship: 10, rubric: 25 };
+  if (weights && Object.entries(expectedWeights).some(([key, value]) => weights[key] !== value)) {
+    err(errors, "BAD_SCORING_WEIGHTS", "scoring.weights", "weights must match the approved version-1 allocation");
+  }
 
   // Pressure beats.
   if (!beats.some((b) => b && PRESSURE_ACTS.has(b.act))) {

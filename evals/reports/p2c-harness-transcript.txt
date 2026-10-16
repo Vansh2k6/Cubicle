@@ -1,0 +1,20 @@
+P2c offline harness transcript (text-only client vs offline stub server, no live LLM).
+Command: node services/api/client.mjs --script "Hello.;Is there any flexibility on the deadline?;I underestimated the final review and should have flagged it sooner.;What happens if this slips?"
+Note: second probe delivers the staged F1 reveal through the normal guarded
+pipeline (engine gate: 2 probes at default forthcomingness 50). Timestamps omitted.
+
+session missed_deadline#s46034
+briefing: Your project was due yesterday. Your manager Maya is waiting for your update. Talk to the team, find out what is really going on, and agree what happens next.
+goals:
+  [ ] Own the delay and report status honestly to Maya
+  [ ] Clarify the remaining requirements with Jordan
+  [ ] Agree a date with Maya and recap it
+(talking to maya; /goals /hint /npc <id> /quit)
+you> Hello.
+maya [Tense]: Maya here. Give me the straight story on where the project stands.
+you> Is there any flexibility on the deadline?
+maya [Tense]: I can't get into that right now. Focus on what you can tell me about the delay.
+you> I underestimated the final review and should have flagged it sooner.
+maya [Tense]: I hear you. Walk me through the current status in your own words.
+you> What happens if this slips?
+maya [Tense]: Here is the full picture: the client has a hard cutoff on Friday, three days from now. I've been holding them off, but I can't push it further.

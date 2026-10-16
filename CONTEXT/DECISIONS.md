@@ -115,7 +115,7 @@ Confirmed in S1-01 P0.3.
 
 ## D-22 · Accepted · 2026-10-16 — Demo scenario is *Missed a project deadline*, with hidden facts authored by us
 Confirmed in S1-01 P0.3.
-**Decision.** Make *Missed a project deadline* the fully-featured demo scenario using all three NPCs. Hidden facts, goals and beats for it are specified in `PRD.md` §Scenario SC-01 and are **proposed content**, not yet in the build. The other two existing scenarios stay as baseline until SC-01 is complete.
+**Decision.** Make *Missed a project deadline* the fully-featured demo scenario using all three NPCs. Hidden facts, goals and beats for it are specified in `PRD.md` §Scenario SC-01 and confirmed by D-27 in the server-side scenario fixture; they are not yet integrated into the scripted frontend. The other two existing scenarios stay as baseline until SC-01 is complete.
 **The PDF's *Two-Day Promise* (client Rohan)** is kept as a stage 2 external-client scenario.
 
 ---
@@ -155,7 +155,7 @@ Confirmed in S1-01 P0.3.
 | O-03 | Rewind: adaptive NPC after the rewind point (preferred) vs fixed script? | Adaptive |
 | O-04 | Hinglish: support code-mixing in voice and text? | Text only, stage 2 |
 | O-05 | 3D space: walk-only, or interact with objects (screens, emails)? | Walk-only |
-| O-06 | LLM/STT/TTS providers and budget | Provider-agnostic interfaces |
+| O-06 | LLM settled by D-28: Groq free plan and selected models; STT/TTS still open | Provider-agnostic interfaces; voice remains optional |
 | O-07 | Community scenario moderation model (human review vs automated + report) | Human review before public |
 | O-08 | Data retention and consent for employer dashboards | Opt-in, aggregated only |
 | O-09 | Team split: coding / AI direction / art & demo | Unassigned |
@@ -166,3 +166,24 @@ Confirmed in S1-01 P0.3.
 **Context.** D-25 proposed a calendar fixture (Tuesday 2026-10-13, Asia/Kolkata) for SC-01. P0.3 confirms SC-01 uses day offsets only, with no calendar date/timezone coupling in the engine.
 **Decision.** Scenario clock is `{day: 0}` with no calendar date or timezone. Friday is a day-3 label only. All offsets are whole days. Unassisted minimum is day 3; assisted minimum is day 2 only after F2 is delivered and help is explicitly accepted with Jordan. Hard cutoff day 3 is owned by Maya. P0 scope recorded alongside: P0.2 O-06 deferred (provider-agnostic interfaces, live evals NOT RUN); D-22 Accepted (SC-01 *Missed a project deadline* is the demo scenario); D-12 Accepted (typed input primary, Beginner assist optional and flagged); P0.4 Node + node:test with no new dependency; P0.5 schema additions accepted (topics, clarify sidecar, full canon/keywords).
 **Consequences.** Date classification uses day offsets against canon bounds only; calendar ambiguity/timezone handling is out of scope. Validators and scoring record day-based commitments; D-25 calendar fixture is superseded in this scope only.
+
+## D-28 · Accepted · 2026-10-16 — Groq free plan and bounded Stage 1 execution
+**Authority.** The user selected Groq on the free plan, delegated model/technology choices, requested sequential implementation of the files in `/PROMPT` in this same task, and limited live LLM testing to one smoke test total. This supersedes the fresh-session advice in S1-00 and the earlier O-06 deferral. It does not authorise Stage 2 work or changes to scoring weights, schema beyond accepted additions, or safety contracts.
+
+**Models.** Use `openai/gpt-oss-20b` for classifier, NPC generation and coach; `openai/gpt-oss-120b` for judge. Preserve the provider interface and role-specific temperatures/schema validation. Groq's [models](https://console.groq.com/docs/models) and [rate limits](https://console.groq.com/docs/rate-limits) documentation lists both models on the free plan with 30 RPM, 1,000 RPD, 8,000 TPM and 200,000 TPD as of this decision. Actual account limits can differ; these figures are planning limits, not measured throughput or a latency guarantee. Keep credentials server-side and out of documentation, source control and logs. Model selection is a decision; the current placeholder configuration still needs implementation in S1-03.
+
+**Runtime.** Retain plain JavaScript ES modules and Node's built-in `node:test`; use Node's built-in HTTP server for the API when its prompt is reached. This follows delegated technology discretion and adds no dependency. The API does not exist at this baseline.
+
+**Verification and progression.** Allow one total live smoke test, record its actual result and consumed request count, and save all remaining live eval requests/cases and run instructions for the user to execute together at the end. No automatic repeated live testing. Offline tests and coder → reviewer → tester → orchestrator acceptance remain mandatory for every prompt. Implementation may progress sequentially after offline acceptance while live eval gates remain explicitly **NOT RUN / deferred by user**; never check off an unrun live gate or describe a partially verified phase as demo-ready. R-61 and R-63 carry this narrow Stage 1 process exception. R-62 and all ten Stage 1 demo exit criteria still require evidence before any demo-ready claim. A smoke response is not evidence of guard accuracy, classifier quality, judge consistency or end-to-end latency.
+
+**Reporting and UI.** After each accepted prompt report `Stage completed -`, `phase completed -`, and `what was implemented -`, with deferred gates stated explicitly. For UI work create `DESIGN.md` and apply the user's Impeccable skill. Graphify's existing index may guide discovery; verify the affected source because an index can be stale. Ask only for consequential choices not already authorised.
+
+
+## D-29 · Accepted · 2026-10-16 — Scoring population and shared slider defaults
+**Authority.** The user explicitly approved these defaults during the sequential Stage 1 task. Record them now; implement only when the corresponding prompt is reached.
+
+**Relationship population (S1-08).** Average relationship scoring across all three scenario NPCs, including unvisited NPCs. Retain R-22 credit exclusions and the existing weights; an unvisited NPC contributes zero improvement.
+
+**Sliders (S1-12).** One shared set of four sliders applies to all three NPCs, fixed and recorded at session start. Display difficulty from `mean(assertiveness, 100-patience, 100-warmth, 100-forthcomingness)`: Easy below 34, Medium below 67, Hard otherwise. This label does not multiply or alter scores. Engine parameter effects still follow the existing contract.
+
+**Optional work (S1-13).** Implement the prescribed presets; keep voice disabled. No STT/TTS provider selection or live voice testing is authorised by this decision.

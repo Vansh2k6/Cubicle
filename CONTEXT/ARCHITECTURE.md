@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — System architecture
 
-Version 0.1 · 2026-10-16 · Whole project. Items marked **[S1]** target the demo; **[S2]** target total implementation. The current build is frontend-only vanilla JavaScript, Vite and Three.js; API, engine and AI services below are planned, not implemented.
+Version 0.1 · 2026-10-16 · Whole project. Items marked **[S1]** target the demo; **[S2]** target total implementation. The frontend remains scripted vanilla JavaScript, Vite and Three.js. Engine/schema modules and partial provider-agnostic LLM/fallback modules exist with offline suites; API, guards, scoring and typed UI integration remain unimplemented. Architecture below is the target contract, not evidence that every module satisfies it.
 
 ## 1. Principles
 
@@ -111,7 +111,7 @@ flowchart LR
   "duration_min": [3, 5],
   "briefing": { "en": "The project was due yesterday. Your manager is waiting for an update." },
   "player": { "name": "Alex", "role": "employee" },
-  "clock": { "date": "2026-10-13", "timezone": "Asia/Kolkata", "day": 0, "advance_on_turn": false },
+  "clock": { "day": 0 },
   "canon": {
     "public": { "project_status": "unfinished", "original_due_day": -1 },
     "private": { "client_cutoff": { "day": 3, "owner": "maya", "fact_id": "F1" } }
@@ -154,7 +154,7 @@ flowchart LR
 }
 ```
 
-Rules: loaded and validated at startup; stored server-side; client receives only briefing, visible goals, NPC names/roles (R-08). This is a partial illustrative spec, not a complete playable fixture: F2/F3 and their canon are in `PRD.md` SC-01. Clock/model constants remain proposed pending P0.3. See §6.5 for commitment semantics. Never pass complete private canon or model bounds to the NPC prompt.
+Rules: loaded and validated at startup; stored server-side; client receives only briefing, visible goals, NPC names/roles (R-08). This is a partial illustrative spec, not a complete playable fixture: F2/F3 and their canon are in `PRD.md` SC-01. D-27 confirms relative-day clock/model constants; the complete validated fixture is `/scenarios/missed_deadline.json`. See §6.5 for commitment semantics. Never pass complete private canon or model bounds to the NPC prompt.
 
 ## 5. Turn pipeline
 
@@ -205,7 +205,7 @@ Communication: `relayed_fact{fact_id, accurate}`, `greeted`, `small_talk`, `off_
 
 Classifier input: latest message + last 2 turns with this NPC + facts the user already knows + fixed scenario clock. Convert relative dates to whole-day offsets from day 0 (tomorrow → 1, Friday → 3 in SC-01); ambiguous/intraday dates produce a clarification need, not a rounded deadline. `confirmed_next_steps` may carry `help_accepted:true` when the user explicitly accepts the offered help with Jordan; code validates F2 delivery and NPC before activating assistance. The classifier interprets utterances, not realism or acceptance. `overpromised`, if retained for traces, is derived by the engine from the commitment model and is not accepted as classifier output. Relay accuracy is a proposed interpretation; validate the referenced known fact and supporting text before applying credit/penalty. Unsupported or uncertain relay judgments earn no credit or penalty.
 
-Output: `{"events":[{"type":"…","params":{}}]}`; invalid → retry once → `{"events":[]}`. Event/parameter changes require schema validation, examples and scoring-version changes (R-27); no new schema has been implemented yet.
+Output: `{"events":[{"type":"…","params":{}}]}`; invalid → retry once → `{"events":[]}`. Event/parameter changes require schema validation, examples and scoring-version changes (R-27); the existing classifier validator and accepted `clarify` sidecar require audit in S1-03; module presence is not acceptance.
 
 ### 6.3 Mood and parameters (defaults; sliders scale them)
 
@@ -258,7 +258,7 @@ reply: { id, scenario_id, npc_id, act, guard (state predicates), tone_tags[], lo
 
 ## 8. LLM gateway
 
-- Model routing: small/fast model for classifier fallback; stronger model for NPC lines, judge, coach, generator. **Providers/keys unconfirmed (O-06).**
+- Model routing: small/fast model for classifier fallback; stronger model for NPC lines, judge, coach, generator. **D-28 selects Groq: gpt-oss-20b for classifier/NPC/coach and gpt-oss-120b for judge; server-side wiring remains pending.**
 - Structured output with JSON schema; retry once; fallbacks per R-12.
 - Per-call trace: `{model, prompt_version, schema_version, tokens, latency, cost}`.
 - Timeouts and circuit breaker: on provider outage, serve baseline replies and show a "retry" affordance.
@@ -392,7 +392,7 @@ WS   /sessions/{id}/stream                -> NPC text/audio streaming           
 | Leak guard | ≤ 50 ms (keyword); semantic ≤ 200 ms |
 | **Total p50 / p95** | **S1: < 3.5 s / < 5 s** (D-23); **S2: < 2 s / < 3 s**, fixed-line p50 < 0.5 s |
 
-Totals are targets, not measured guarantees; individual rows are typical-stage budgets, not additive percentile promises. Measure from submit through complete guarded reply delivery, including retries/fallbacks; report sample count, provider/model, warm/cold conditions and fallback rate. S1 levers: short outputs, prompt trimming and model routing; stored normal replies, trained tiers and streaming are S2. Provider/model selection remains open.
+Totals are targets, not measured guarantees; individual rows are typical-stage budgets, not additive percentile promises. Measure from submit through complete guarded reply delivery, including retries/fallbacks; report sample count, provider/model, warm/cold conditions and fallback rate. S1 levers: short outputs, prompt trimming and model routing; stored normal replies, trained tiers and streaming are S2. Provider/models are selected in D-28; live measurements remain deferred.
 
 ## 20. Observability and evaluation
 
@@ -413,4 +413,4 @@ Containerised API + worker (post-session jobs), managed PostgreSQL/Redis, object
 
 ## 23. Known unknowns (as of 2026-10-16)
 
-LLM/STT/TTS providers and budget; API/engine implementation stack and hosting target; final SC-01 content/commitment fixtures; content for SC-03; Hinglish scope; exact stack for the trained classifier. Frontend stack is verified above.
+Groq account-specific limits and hosting target; STT/TTS providers (voice disabled for this Stage 1 pass); content for SC-03; Hinglish scope; exact stack for the trained classifier. D-27 confirms SC-01 relative-day fixtures; D-28 selects Groq/models and Node built-in HTTP for the API. Real-model quality, guard coverage and latency remain unmeasured.

@@ -61,7 +61,7 @@ Primary audience is an open decision (O-01); default is students.
 | SC-04 | **The Two-Day Promise** — client Rohan Mehta (product owner) pushes a 2-day deadline; real leeway is 4 days; needs PDF *and* CSV; earlier vendor burned him | Rohan (external client) | Designed in the original PDF; needs a "client call" mode (S2) |
 | SC-05+ | Production incident, code review, unclear client requirement, difficult teammate conversation, JD-generated scenarios | varies | S2 |
 
-### SC-01 specification (**proposed content — authored by us, not yet in the build**)
+### SC-01 specification (**confirmed server-side fixture; not yet integrated into the UI**)
 
 **Goals (visible, checklist)**
 
@@ -81,9 +81,9 @@ Goals are *conversation outcomes*; facts are *information*. They must not share 
 | F2 | Jordan | Jordan already built a reusable module covering about half of the remaining work and can pair for an afternoon. | `asked_for_help` | 7 |
 | F3 | Sam | Team norm: a same-day heads-up on a delay is expected and isn't counted against anyone's review. | `asked_advice`, `acknowledged_concern` (user expresses worry) | 5 |
 
-**Clock and commitment model (proposed fixture; confirm in P0.3)**
+**Clock and commitment model (confirmed relative-day fixture, D-27)**
 
-- Fixed scenario date: Tuesday 2026-10-13, Asia/Kolkata, day 0. Friday is day 3; conversation turns do not advance the calendar.
+- Fixed scenario clock: `{day: 0}`. Friday is a day-3 label only; no calendar date or timezone coupling. Conversation turns do not advance the clock.
 - Public canon: the project was due yesterday, it is unfinished, Alex is responsible for the update, and Maya manages the project. Private canon: F1's day-3 cutoff belongs to Maya; F2's module/help belongs to Jordan; F3's team norm belongs to Sam. Prompts receive only the relevant public/known subset.
 - Minimum delivery is day 3 unassisted, or day 2 after F2 has been delivered to the user **and** the user explicitly accepts Jordan's help with Jordan. A date before the applicable minimum or after the day-3 cutoff is unrealistic. Scope changes do not reduce these bounds without authored support.
 - Classify whole-day dates relative to this fixed clock; ask for clarification on ambiguous/intraday dates. The engine evaluates realism using server-only bounds, not the model's assessment or whether F2 was merely discovered.

@@ -34,7 +34,7 @@ The original hackathon PDF and older PPT are **context, not law**. An AI-generat
 
 ## 4. Repo layout
 
-**Verified baseline, 2026-10-16:** plain JavaScript ES modules, Vite 8, Three.js, Lucide, and CSS. No React, backend, standalone engine, scenario schema, test harness, or LLM integration exists yet.
+**Verified baseline, 2026-10-16:** plain JavaScript ES modules, Vite 8, Three.js, Lucide, and CSS. The scripted frontend remains separate from the existing engine, scenario schema/validator and provider-agnostic LLM modules. No API, integrated typed conversation UI, leak/canon guards or scoring/debrief implementation exists yet. Module presence is not phase acceptance or live-model verification.
 
 ```text
 /index.html          # page shell and existing sidebar/game controls
@@ -44,27 +44,29 @@ The original hackathon PDF and older PPT are **context, not law**. An AI-generat
 /public/favicon.svg # Cubicle branding
 /package.json        # existing install/build/dev commands
 /CONTEXT             # the six project documents
+/PROMPT              # ordered Stage 1 implementation prompts S1-00 through S1-14
 /AGENTS.md           # discoverable pointer to this lead document
 ```
 
 `src/main.js` contains the three baseline scripts in `scenarios` and the Jordan/Sam lines in `renderDialogue()`. `createOffice()` updates `onNear`; E or the talk button calls `openConversation()`, which checks proximity and renders choices. `choose()` advances the expected choice; `completeScenario()` saves completion to `cubicle-progress` in localStorage, with a read fallback for `workplay-progress`. This is not the planned weighted scorer or session store. The missed-call script is present, including apology, a 2 PM reconnection plan, and a manager response.
 
-**P0.4 update, 2026-10-16:** `/engine`, `/engine/tests`, `/scenarios` now hold real contents: `/engine/scenarioValidator.js` (P0.5), `/engine/tests` node:test suites (P0.4), `/scenarios/missed_deadline.json` + schema (P0.3/P0.5); `/evals` remains empty. Test runner is Node + node:test; no new dependencies.
+**Existing modules, 2026-10-16:** these files must be audited and reused in their respective prompts. Test runner is Node + node:test; no new dependencies.
 
 ```text
-/engine              # P0.4 placeholder; scenarioValidator.js owned separately (P0.5)
-/engine/tests        # node:test unit tests (P0.4)
-/scenarios           # P0.4 placeholder; missed_deadline.json + schema owned separately (P0.3/P0.5)
-/evals               # P0.4 placeholder; no real-model harness yet
+/engine              # engine.js, config.js, store.js and scenarioValidator.js
+/engine/tests        # engine and scenario validation node:test suites
+/scenarios           # missed_deadline.json and versioned JSON schema
+/llm                 # gateway, classifier, NPC generation, prompt builder, manifests,
+                     # placeholder model config, fake provider, versioned prompts/tests
+/replies             # SC-01 authored fallback lines and fallbackStore.js
+/evals               # labelled events.jsonl and generic-endpoint classifier runner
 ```
 
-**Planned additions, remaining not-existing folders:** retain the current frontend unless a phase requires moving it. Provider remains deferred to O-06 (P0.2, provider-agnostic); engine runtime is Node + node:test (P0.4). Do not scaffold unused directories merely to match this map.
+**Remaining additions:** retain the current frontend unless a phase requires moving it. D-28 selects Groq/models and a Node built-in HTTP API; provider wiring and guards still need implementation. Do not scaffold unused directories merely to match this map.
 
 ```
 /src + /index.html   # retain the current frontend
-/services/api        # server API; implementation stack not yet selected
-/llm                 # gateway, prompts, schemas, retry/fallback, leak guard
-/replies             # baseline reply store (authored lines, tags, locale)
+/services/api        # planned Node built-in HTTP server API
 /scoring             # deterministic metrics, judge client, quote validator
 /CONTEXT             # these markdown files
 ```
@@ -80,9 +82,10 @@ build (web):  npm run build
 preview:      npm run preview
 dev (api):    unavailable; no backend yet
 test engine:  npm run test:engine (node --test "engine/tests/*.test.js"; currently engine-only, must run without network or API keys)
-test all:     npm test (engine + llm offline suites; live evals stay NOT RUN until a provider is configured)
+test all:     npm test (engine + llm offline suites; live evals deferred under D-28)
 lint/format:  unavailable; no configured script yet
-evals:        unavailable; no real-model eval harness yet
+evals:        node evals/runClassifier.mjs (generic LLM_PROVIDER endpoint required;
+              not yet wired to Groq; live execution deferred under D-28)
 ```
 
 ## 6. Working agreements
@@ -121,7 +124,7 @@ Do not merge, deploy, claim completion, or check off a phase solely on the coder
 ## 8. Definition of done
 
 - Engine tests pass with no network.
-- For conversation changes: the five acceptance playthroughs in `PHASES.md` §Demo exit criteria still pass.
+- For demo readiness: all ten acceptance criteria in `PHASES.md` §Stage 1 exit criteria pass. D-28 permits implementation progression with live gates explicitly deferred; this is not demo readiness.
 - Reviewer approval, tester verification, and final orchestrator acceptance apply to the same candidate.
 - No rule in `RULES.md` is violated; any explicitly authorised exception must be dated in `DECISIONS.md` and reflected in the rule before implementation.
 - Latency on a typical turn is within budget (`ARCHITECTURE.md` §Latency budget) or the regression is called out.
@@ -129,7 +132,7 @@ Do not merge, deploy, claim completion, or check off a phase solely on the coder
 
 ## 9. Ask the human when
 
-Ask only for choices not already authorised by the user or settled by an accepted decision. The requested D-23–D-26 contract updates are authorised; an unspecified provider or newly proposed numeric scenario constant is not thereby chosen.
+Ask only for choices not already authorised by the user or settled by an accepted decision. D-27 confirms SC-01 constants; D-28 records Groq/model selection, runtime discretion, sequential prompt execution and the live-test budget. New numeric scenario constants still need confirmation.
 
 - A change would alter scoring weights, rubric anchors, or what counts as "revealed".
 - You need to pick a model/provider, change the data schema, or add a stage-2 feature during stage 1.
@@ -138,8 +141,8 @@ Ask only for choices not already authorised by the user or settled by an accepte
 
 ## 10. Known unknowns (as of 2026-10-16)
 
-- LLM provider, approved models per role, budget, and server-side credential setup (O-06). Never request keys in chat.
-- Engine runtime Node+node:test decided (P0.4); executable schema validator implemented (P0.5); /services/api stack still open.
+- Groq free-plan account limits and server-side credential setup remain to be verified; models are selected in D-28. Never request keys in chat.
+- Node+node:test and built-in HTTP API selected (D-28); engine/schema/LLM modules exist, but the API and guards do not yet exist.
 - SC-01 relative-day constants confirmed (P0.3, D-27); D-12/D-22 accepted.
 - Real-model guard accuracy, scoring calibration, and end-to-end latency. All are unmeasured in this baseline.
 - Human team ownership for coding, AI direction, and art/demo (O-09); this chat's agent roles are assigned by §6.

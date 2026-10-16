@@ -2,7 +2,7 @@
 
 Read [AGENT.md](AGENT.md) first; it is the lead project document and defines precedence and the orchestrator workflow. These rules are mandatory within that workflow.
 
-Keywords: **MUST** / **MUST NOT** are absolute within the explicitly stated scope. **SHOULD** is the default; deviating needs a dated entry in `DECISIONS.md`. The Stage 1 exceptions to R-14, R-61, and R-64 are bounded by D-23; they do not waive other rules.
+Keywords: **MUST** / **MUST NOT** are absolute within the explicitly stated scope. **SHOULD** is the default; deviating needs a dated entry in `DECISIONS.md`. The Stage 1 exceptions to R-14, R-61, and R-64 are bounded by D-23; D-28 additionally bounds live-eval deferral and R-63 implementation progression. They do not waive safety or demo acceptance gates.
 Rule IDs are stable; reference them in PRs (`R-03`).
 
 ## A. Hidden facts and information security
@@ -83,9 +83,9 @@ A scenario is not mergeable until:
 ## H. Code and process
 
 - **R-60** Engine changes MUST ship with unit tests driven by hand-written event lists. Tests run with no network or keys.
-- **R-61** Any change to a prompt, schema, or taxonomy MUST re-run the relevant eval set and record results in the change summary. **Stage 1 only (D-23):** a documented, affected subset may be used per change, identifying the changed versions and cases; use the existing full relevant set if a safe subset cannot be identified. All applicable acceptance gates, including R-62, MUST pass before a demo-ready claim. Missing provider/keys or a missing harness means **not run**, never passed; a documentation review does not substitute for live-model evaluation. Stage 2 requires the full relevant eval set per change.
+- **R-61** Any change to a prompt, schema, or taxonomy MUST re-run the relevant eval set and record results in the change summary. **Stage 1 only (D-23):** a documented, affected subset may be used per change, identifying the changed versions and cases; use the existing full relevant set if a safe subset cannot be identified. All applicable acceptance gates, including R-62, MUST pass before a demo-ready claim. Missing provider/keys or a missing harness means **not run**, never passed; a documentation review does not substitute for live-model evaluation. D-28 permits deferring live execution during this Stage 1 implementation: save the relevant requests/cases for the user, record NOT RUN, and retain mandatory offline checks. Only one total live smoke test is authorised; it does not satisfy acceptance evals. Stage 2 requires the full relevant eval set per change.
 - **R-62** Hidden-fact acceptance tests MUST pass before any demo: untriggered facts never appear across ≥5 runs; triggered facts reveal on the right question; the injection path reveals nothing.
-- **R-63** No scope creep: work outside the current phase in `PHASES.md` waits until its exit criteria pass.
+- **R-63** No scope creep: work outside the current phase in `PHASES.md` waits until its exit criteria pass. Under the explicit Stage 1 authorisation in D-28, the orchestrator may advance sequential implementation after offline acceptance while live gates remain visibly deferred and unchecked; this never permits a demo-ready claim or skipping safety implementation.
 - **R-64** One concern per PR. **Stage 1 only (D-23):** one bounded, coherent slice within the current phase may include related code, tests, and documentation. No unrelated refactor or future-stage work. Every candidate MUST pass coder → reviewer → tester → orchestrator in AGENT.md §6; fixes repeat the relevant review/test gates. Include a transcript or screenshot for behaviour changes. Documentation-only changes need a consistency/verification report, not fabricated runtime evidence.
 - **R-65** Dependencies need a one-line justification. Prefer the standard library and existing packages.
 - **R-66** Logs MUST NOT contain sealed facts in user-visible channels, API keys, or raw audio.

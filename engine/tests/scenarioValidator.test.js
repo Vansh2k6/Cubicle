@@ -138,10 +138,46 @@ test("publicScenario leaks nothing private", () => {
 
 test("validator imports nothing network-related", () => {
   const src = readFileSync(join(root, "..", "scenarioValidator.js"), "utf8");
-  assert.ok(!/^\s*import\s/m.test(src), "validator must have zero imports");
+  assert.deepEqual(src.match(/^import .*$/gm), ['import schema from "../scenarios/missed_deadline.schema.json" with { type: "json" };'], "only static scenario data may be imported");
   assert.ok(!/\brequire\s*\(/.test(src), "validator must not use require");
   const low = src.toLowerCase();
   for (const banned of ["openai", "node:net", "node:http", "from \"net\"", "from \"http\""]) {
     assert.ok(!low.includes(banned), `validator references banned module: ${banned}`);
   }
 });
+
+
+const malformedCases = [
+  ["zero max turns", s => { s.end.max_turns = 0; }, "SCHEMA_RANGE"],
+  ["fractional max turns", s => { s.end.max_turns = 1.5; }, "SCHEMA_TYPE"],
+  ["string minimum", s => { s.commitment_model.unassisted_min_day = "3"; }, "SCHEMA_TYPE"],
+  ["fractional minimum", s => { s.commitment_model.assisted_min_day = 1.5; }, "SCHEMA_TYPE"],
+  ["negative minimum", s => { s.commitment_model.assisted_min_day = -1; }, "SCHEMA_RANGE"],
+  ["inverted assistance", s => { s.commitment_model.assisted_min_day = 4; }, "BAD_DAY_BOUNDS"],
+  ["string cutoff", s => { s.canon.private.client_cutoff.day = "3"; }, "BAD_LATEST_DAY_FROM"],
+  ["missing persona", s => { delete s.npcs[0].persona; }, "SCHEMA_REQUIRED"],
+  ["missing sliders", s => { delete s.npcs[0].default_sliders; }, "SCHEMA_REQUIRED"],
+  ["out of range slider", s => { s.npcs[0].default_sliders.warmth = 101; }, "SCHEMA_RANGE"],
+  ["invalid topics", s => { s.npcs[0].topics = {}; }, "SCHEMA_TYPE"],
+  ["null goal", s => { s.goals = [null]; }, "SCHEMA_TYPE"],
+  ["invalid requires", s => { s.goals[0].requires = {}; }, "SCHEMA_TYPE"],
+  ["object keywords", s => { s.facts[0].leak_keywords.en = {}; }, "SCHEMA_TYPE"],
+  ["nonstring keyword", s => { s.facts[0].leak_keywords.en = [42]; }, "SCHEMA_TYPE"],
+  ["missing scoring", s => { delete s.scoring; }, "SCHEMA_REQUIRED"],
+  ["wrong scoring type", s => { s.scoring.weights.goals = "30"; }, "SCHEMA_TYPE"],
+  ["changed allocation", s => { s.scoring.weights.integrity = 25; }, "BAD_SCORING_WEIGHTS"],
+  ["nonfinite weight", s => { s.scoring.weights.goals = Infinity; }, "SCHEMA_TYPE"],
+  ["unknown field", s => { s.extra = true; }, "SCHEMA_PROPERTY"],
+  ["wrong version", s => { s.version = 2; }, "SCHEMA_CONST"],
+  ["empty briefing", s => { s.briefing.en = ""; }, "SCHEMA_LENGTH"],
+];
+for (const [name, mutate, code] of malformedCases) {
+  test(`structured rejection: ${name}`, () => {
+    const spec = load();
+    mutate(spec);
+    const result = validateScenario(spec);
+    assert.equal(result.ok, false);
+    assert.ok(hasCode(result, code), JSON.stringify(result.errors));
+    assert.ok(result.errors.every(e => typeof e.code === "string" && typeof e.path === "string" && typeof e.message === "string"));
+  });
+}

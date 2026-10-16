@@ -60,6 +60,7 @@ const icons = {
   Circle,
 };
 import { createOffice } from "./office.js";
+import { createSession, sendTurn, newKey } from "./api.js";
 const scenarios = {
   deadline: {
     title: "Missed a project deadline",
@@ -183,6 +184,16 @@ let state = {
   complete: saved,
   muted: true,
   paused: false,
+  textMode: false,
+  text: null,
+  // P3a threads: one API session shared by all three NPCs; each NPC keeps
+  // its own transcript/mood while goals + next-step hint are session-global
+  // public state. Threads survive panel close; in-flight turns resolve into
+  // their thread and appear on reopen (no duplicate send: same key retry).
+  sessionId: null,
+  threads: null,
+  sharedGoals: [],
+  sharedHint: "",
 };
 const icon = (name, cls = "") => `<i data-lucide="${name}" class="${cls}"></i>`;
 const $ = (s) => document.querySelector(s);
@@ -213,10 +224,16 @@ function toast(message) {
 let office = createOffice($("#game-viewport"), {
   onNear(id) {
     state.near = id;
+    // P3.1 walk-away close: proximity stays live while the text panel is
+    // open, so leaving range (or reaching another NPC) closes the panel.
+    // Threads and in-flight turns persist; reopening resumes the thread.
+    if (state.textMode && state.dialogue && id !== state.dialogue) {
+      closeConversation();
+    }
     const b = $("#talk-prompt");
-    b.classList.toggle("hidden", !id || !!state.dialogue);
-    if (id)
-      b.querySelector("strong").textContent = people[id].name.split(" ")[0];
+    b.classList.toggle("hidden", !state.near || !!state.dialogue);
+    if (state.near)
+      b.querySelector("strong").textContent = people[state.near].name.split(" ")[0];
   },
   onMove() {
     $("#move-hint").classList.add("dismissed");
@@ -224,7 +241,9 @@ let office = createOffice($("#game-viewport"), {
   onTalk() {
     openConversation();
   },
-  isPaused: () => state.paused || !!state.dialogue,
+  // Text panels do not freeze the scene (P3.1 walk-away close needs live
+  // proximity). Typing is safe: the scene ignores key events from inputs.
+  isPaused: () => state.paused || (state.dialogue && !state.textMode),
   onReady() {
     $("#loading").remove();
   },
@@ -248,7 +267,20 @@ function chime() {
   } catch {}
 }
 function openConversation() {
-  if (!state.near || state.dialogue || state.paused) return;
+  if (!state.near || state.paused) return;
+  // E near another NPC while a text thread is open switches threads on the
+  // same session (P3.1 interact{npc_id}); the previous thread keeps its
+  // history and any in-flight turn.
+  if (state.dialogue) {
+    if (!state.textMode || state.near === state.dialogue) return;
+    closeConversation();
+  }
+  // SC-01 ("deadline") uses free-text turns via the turn API. SC-02/SC-03
+  // keep the scripted button baseline untouched (P2c contract).
+  if (state.scenario === "deadline") {
+    openTextConversation();
+    return;
+  }
   state.dialogue = state.near;
   state.round = 0;
   state.score = 0;
@@ -262,6 +294,8 @@ function openConversation() {
 }
 function closeConversation() {
   state.dialogue = null;
+  state.textMode = false;
+  state.text = null;
   $("#dialogue-layer").innerHTML = "";
   $("#game-viewport").focus({ preventScroll: true });
   $("#talk-prompt").classList.toggle("hidden", !state.near);
@@ -307,6 +341,265 @@ function choose(index) {
         : "Try offering a specific action and a realistic time. You can choose a different response.",
     );
 }
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// --- P3a threads (one session, per-NPC history). No quick-reply chips
+// (D-12 unconfirmed). The panel shows public state only (R-03/R-08).
+function freshThread() {
+  return {
+    transcript: [],
+    busy: false,
+    failed: null,
+    over: false,
+    loadError: null,
+    mood: null,
+    traces: [],
+  };
+}
+
+function threadsFor() {
+  if (!state.threads) {
+    state.threads = { maya: freshThread(), jordan: freshThread(), sam: freshThread() };
+  }
+  return state.threads;
+}
+
+function openTextConversation() {
+  if (!state.near || state.dialogue || state.paused) return;
+  state.dialogue = state.near;
+  state.textMode = true;
+  state.text = threadsFor()[state.dialogue];
+  $("#talk-prompt").classList.add("hidden");
+  chime();
+  if (state.sessionId) {
+    renderTextDialogue();
+    return;
+  }
+  startTextSession();
+}
+
+function startTextSession() {
+  if (state.sessionId || !state.textMode || !state.text) return;
+  state.text.loadError = null;
+  renderTextDialogue();
+  createSession("deadline").then(
+    (data) => {
+      if (!state.textMode || !state.text) return;
+      state.sessionId = data.session_id;
+      state.sharedGoals = (data.public_state && data.public_state.goals) || [];
+      state.sharedHint = (data.public_state && data.public_state.next_hint) || "";
+      renderTextDialogue();
+    },
+    (err) => {
+      if (!state.textMode || !state.text) {
+        // Session creation failed while closed: keep the error on the open
+        // thread so reopening shows Retry instead of a dead panel.
+        const threads = threadsFor();
+        for (const th of Object.values(threads)) {
+          if (!state.sessionId) th.loadError = (err && err.message) || "Could not reach the conversation server.";
+        }
+        return;
+      }
+      state.text.loadError =
+        (err && err.message) || "Could not reach the conversation server.";
+      renderTextDialogue();
+    },
+  );
+}
+
+function renderTextDialogue() {
+  const t = state.text;
+  if (!t || !state.dialogue) return;
+  const p = people[state.dialogue];
+  const first = p.name.split(" ")[0];
+  const lines = t.transcript
+    .map((l) =>
+      l.who === "user"
+        ? `<div class="t-line user"><span>${escapeHtml(l.text)}</span></div>`
+        : `<div class="t-line npc"><strong>${escapeHtml(l.name)}</strong><span>${escapeHtml(l.text)}</span></div>`,
+    )
+    .join("");
+  const goals = (state.sharedGoals || [])
+    .map((g) => {
+      const done = g.status === "done";
+      const locked = !done && !!g.locked;
+      const cls = done ? "done" : locked ? "locked" : "";
+      const word = done ? "Done" : locked ? "Locked" : "Todo";
+      return `<li class="${cls}"><span class="g-state">${word}</span>${escapeHtml(g.label)}</li>`;
+    })
+    .join("");
+  $("#dialogue-layer").innerHTML =
+    `<section class="dialogue text-mode" role="dialog" aria-modal="true" aria-labelledby="dialogue-name">` +
+    `<div class="dialogue-heading"><span class="dialogue-avatar ${p.color}">${p.initials}</span>` +
+    `<div><strong id="dialogue-name">${p.name}</strong><small>${p.role}</small></div>` +
+    `<span class="conversation-label">TEXT SESSION${t.mood ? ` · ${escapeHtml(t.mood).toUpperCase()}` : ""}</span>` +
+    `<button id="close-dialogue" class="icon-button" aria-label="Close conversation">${icon("x")}</button></div>` +
+    `<div class="transcript" role="log" aria-live="polite" aria-label="Conversation transcript">${lines || `<div class="t-empty">Say hello to ${escapeHtml(first)} — type your reply below.</div>`}</div>` +
+    (t.busy
+      ? `<div class="typing" role="status"><span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>${escapeHtml(first)} is typing…</div>`
+      : "") +
+    (t.loadError
+      ? `<div class="turn-error" role="alert"><p>${escapeHtml(t.loadError)}</p><button class="secondary-button" id="text-retry-load">Retry</button></div>`
+      : "") +
+    (t.failed
+      ? `<div class="turn-error" role="alert"><p>${escapeHtml(t.failed.message)} Your message was kept — retry sends the same turn once.</p><button class="secondary-button" id="text-retry-turn">Retry</button></div>`
+      : "") +
+    (state.sessionId && !t.over
+      ? `<form class="text-form" id="text-form"><label for="text-input">Reply to ${escapeHtml(first)}</label>` +
+        `<div class="text-row"><input id="text-input" name="text" type="text" maxlength="500" autocomplete="off" placeholder="Type your reply…" ${t.busy ? "disabled" : ""} aria-describedby="text-hint" />` +
+        `<button class="primary-button" type="submit" ${t.busy ? "disabled" : ""}>Send ${icon("arrow-right")}</button></div>` +
+        `<small id="text-hint">${state.sharedHint ? escapeHtml(state.sharedHint) : "Enter sends · Esc closes"}</small></form>`
+      : "") +
+    (goals ? `<ul class="goal-list" aria-label="Visible goals">${goals}</ul>` : "") +
+    `<div id="text-debug"></div>` +
+    (state.sessionId
+      ? `<button class="primary-button text-finish" id="finish-text">${t.over ? "Wrap up & reflect" : "End & reflect"} ${icon("arrow-right")}</button>`
+      : "") +
+    `</section>`;
+  $("#close-dialogue").onclick = closeConversation;
+  const form = $("#text-form");
+  if (form) {
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const input = $("#text-input");
+      const value = input ? input.value.trim() : "";
+      if (!value || state.text.busy) return;
+      sendTextTurn(value, newKey(), false);
+    };
+  }
+  const retryLoad = $("#text-retry-load");
+  if (retryLoad) retryLoad.onclick = startTextSession;
+  const retryTurn = $("#text-retry-turn");
+  if (retryTurn)
+    retryTurn.onclick = () => {
+      const f = state.text && state.text.failed;
+      if (f) sendTextTurn(f.text, f.key, true);
+    };
+  const finish = $("#finish-text");
+  if (finish) finish.onclick = completeTextSession;
+  refreshIcons();
+  const transcript = document.querySelector(".transcript");
+  if (transcript) transcript.scrollTop = transcript.scrollHeight;
+  const input = $("#text-input");
+  if (input && !t.busy) input.focus({ preventScroll: true });
+  else $("#close-dialogue").focus({ preventScroll: true });
+  paintTextDebug();
+}
+
+async function sendTextTurn(text, key, isRetry) {
+  // The turn is bound to its thread at send time: closing the panel never
+  // loses it. The resolved NPC line lands in the thread and renders on
+  // reopen; retries reuse the same key so the server applies it once.
+  const thread = state.text;
+  const npcId = state.dialogue;
+  if (!thread || !npcId || thread.busy || state.sessionId == null || thread.over) return;
+  // The user line is appended exactly once: retries resend the same key and
+  // must not duplicate the transcript or double-apply engine state.
+  if (!isRetry) thread.transcript.push({ who: "user", name: "You", text });
+  thread.busy = true;
+  thread.failed = null;
+  if (state.text === thread) renderTextDialogue();
+  try {
+    const data = await sendTurn(state.sessionId, npcId, text, key);
+    thread.busy = false;
+    thread.transcript.push({
+      who: "npc",
+      name: people[npcId].name.split(" ")[0],
+      text: data.npc_reply,
+    });
+    if (data.public_state) {
+      state.sharedGoals = data.public_state.goals || state.sharedGoals;
+      thread.mood = data.public_state.mood_label || thread.mood;
+      state.sharedHint = data.public_state.next_hint || state.sharedHint;
+      if (data.public_state.ended) thread.over = true;
+    }
+    if (data.ended) thread.over = true;
+    if (window.__CUBICLE_DEBUG) stashTextTrace(data, thread);
+    if (state.text === thread) renderTextDialogue();
+  } catch (err) {
+    thread.busy = false;
+    thread.failed = {
+      text,
+      key,
+      message: (err && err.message) || "Something went wrong.",
+    };
+    if (state.text === thread) renderTextDialogue();
+  }
+}
+
+// Dev-only trace stash + paint. Every reference to the server's debug field
+// lives inside the lazily imported debug module, so the main entry chunk
+// contains no debug field literal at all (bundle hygiene, R-03).
+function stashTextTrace(data, thread) {
+  import("./debug.js")
+    .then((m) => {
+      const t = m.capture(data);
+      if (t) {
+        thread.traces.push(t);
+        if (state.text === thread) paintTextDebug();
+      }
+    })
+    .catch(() => {});
+}
+
+function paintTextDebug() {
+  if (!window.__CUBICLE_DEBUG || !state.textMode || !state.text) return;
+  const traces = state.text.traces;
+  if (!traces || traces.length === 0) return;
+  import("./debug.js")
+    .then((m) => {
+      const box = document.querySelector("#text-debug");
+      if (!box || !state.textMode || !state.text) return;
+      box.innerHTML = "";
+      for (const d of state.text.traces) m.renderDebug(box, d);
+    })
+    .catch(() => {});
+}
+
+function completeTextSession() {
+  const npcName = state.dialogue ? people[state.dialogue].name.split(" ")[0] : "the team";
+  state.complete[state.scenario] = {
+    date: new Date().toISOString(),
+    mode: "text",
+  };
+  try {
+    localStorage.setItem("cubicle-progress", JSON.stringify(state.complete));
+  } catch {
+    toast(
+      "Progress is available for this visit; browser storage is unavailable.",
+    );
+  }
+  closeConversation();
+  updateProgress();
+  $("#next-heading").textContent = "One conversation. A little more confident.";
+  $("#next-description").textContent =
+    "Try another scenario, or chat with your teammates.";
+  $(".step-number").innerHTML = "03 <span>/ 03</span>";
+  showModal(
+    "A small step worth celebrating.",
+    `<div class="completion-symbol">${icon("check")}</div><p>You practiced <strong>${scenarios[state.scenario].short.toLowerCase()}</strong> in a live text session with ${escapeHtml(npcName)}.</p><div class="reflection"><strong>Take this into your next conversation</strong><p>Own what happened. Recognize the impact. Offer a specific next step.</p></div><button id="try-next" class="primary-button">Try another scenario ${icon("arrow-right")}</button>`,
+  );
+  $("#try-next").onclick = () => {
+    const keys = Object.keys(scenarios);
+    state.scenario = keys[(keys.indexOf(state.scenario) + 1) % keys.length];
+    $("#scenario").value = state.scenario;
+    state.sessionId = null;
+    state.threads = null;
+    state.sharedGoals = [];
+    state.sharedHint = "";
+    closeModal();
+    office.reset();
+    updateScenario();
+  };
+  refreshIcons();
+}
+
 function completeScenario() {
   state.complete[state.scenario] = {
     date: new Date().toISOString(),
@@ -367,12 +660,21 @@ function showGuide() {
 $("#scenario").onchange = (e) => {
   state.scenario = e.target.value;
   closeConversation();
+  // A new scenario run starts a new server session with fresh threads.
+  state.sessionId = null;
+  state.threads = null;
+  state.sharedGoals = [];
+  state.sharedHint = "";
   office.reset();
   updateScenario();
   toast("New scenario, fresh start. Find Maya to begin.");
 };
 $("#restart").onclick = () => {
   closeConversation();
+  state.sessionId = null;
+  state.threads = null;
+  state.sharedGoals = [];
+  state.sharedHint = "";
   office.reset();
   updateScenario();
   toast("A fresh start. Take it at your own pace.");
@@ -449,6 +751,7 @@ window.addEventListener("keydown", (e) => {
   }
   if (
     state.dialogue &&
+    !state.textMode &&
     ["1", "2", "3"].includes(e.key) &&
     state.dialogue === "maya" &&
     state.round < 2
@@ -457,7 +760,11 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Tab") {
     let dialog = document.querySelector('[role="dialog"]');
     if (dialog) {
-      let f = [...dialog.querySelectorAll('button,select,[tabindex="0"]')];
+      let f = [
+        ...dialog.querySelectorAll(
+          'button,input,textarea,select,[tabindex="0"]',
+        ),
+      ].filter((el) => !el.disabled);
       if (e.shiftKey && document.activeElement === f[0]) {
         e.preventDefault();
         f.at(-1).focus();

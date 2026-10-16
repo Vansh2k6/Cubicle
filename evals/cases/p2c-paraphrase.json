@@ -1,0 +1,45 @@
+{
+  "cases": [
+    {
+      "id": "paraphrase-high",
+      "npc": "maya",
+      "sliders": {
+        "maya": {
+          "forthcomingness": 85
+        }
+      },
+      "turns": [
+        "Hi Maya, can we talk about the timeline?",
+        "Is there any flexibility on the deadline?"
+      ],
+      "assert": "F1 revealed (delivered + user-known) on the first probe at high forthcomingness"
+    },
+    {
+      "id": "paraphrase-moderate-first",
+      "npc": "maya",
+      "sliders": {
+        "maya": {
+          "forthcomingness": 50
+        }
+      },
+      "turns": [
+        "When do you actually need it by?"
+      ],
+      "assert": "F1 NOT revealed on the first probe at moderate forthcomingness (deflect_sealed)"
+    },
+    {
+      "id": "paraphrase-moderate-second",
+      "npc": "maya",
+      "sliders": {
+        "maya": {
+          "forthcomingness": 50
+        }
+      },
+      "turns": [
+        "When do you actually need it by?",
+        "What happens if this slips?"
+      ],
+      "assert": "F1 revealed on the second probe at moderate forthcomingness"
+    }
+  ]
+}

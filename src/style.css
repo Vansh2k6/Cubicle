@@ -1755,3 +1755,199 @@ h2 {
     animation: none !important;
   }
 }
+
+/* P2c free-text conversation panel. Same ivory system and control vocabulary
+   as the scripted dialogue; new states only: transcript, typing, error+retry,
+   text form, goal checklist, dev trace. */
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 230px;
+  overflow: auto;
+  margin: 16px 0 4px;
+  padding-right: 2px;
+}
+.t-empty {
+  font-size: 12px;
+  color: #7d8990;
+  line-height: 1.7;
+}
+.t-line {
+  max-width: 88%;
+  font-size: 12px;
+  line-height: 1.65;
+  padding: 8px 12px;
+  border-radius: 9px;
+  overflow-wrap: break-word;
+}
+.t-line.user {
+  align-self: flex-end;
+  background: #efedf9;
+  border: 1px solid #e4e1ee;
+  border-bottom-right-radius: 3px;
+  color: #4c4756;
+}
+.t-line.npc {
+  align-self: flex-start;
+  background: #f6f5f1;
+  border: 1px solid #eceadf;
+  border-bottom-left-radius: 3px;
+  color: #525a5c;
+}
+.t-line.npc strong {
+  display: block;
+  font-size: 10px;
+  color: #8277b3;
+  margin-bottom: 3px;
+}
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #7d8990;
+  margin: 8px 0 0;
+}
+.typing .dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.typing .dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #9b91b3;
+  animation: typing-blink 1.1s ease-in-out infinite;
+}
+.typing .dots span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.typing .dots span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+@keyframes typing-blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.turn-error {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #8a5a3b;
+  background: #faf3ea;
+  border: 1px solid #efe0cf;
+  padding: 10px 12px;
+  border-radius: 7px;
+  margin-top: 10px;
+}
+.turn-error p {
+  margin: 0 0 8px;
+}
+.text-form {
+  margin-top: 12px;
+}
+.text-form label {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 1.3px;
+  color: #8c7fa2;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.text-row {
+  display: flex;
+  gap: 8px;
+}
+.text-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid #e2e4e9;
+  border-radius: 7px;
+  background: #fff;
+  padding: 0 12px;
+  font-size: 13px;
+  color: inherit;
+}
+.text-row input:disabled {
+  opacity: 0.6;
+}
+.text-row .primary-button {
+  gap: 8px;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+.text-row .primary-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.text-form small {
+  display: block;
+  font-size: 10px;
+  color: #8b949e;
+  margin-top: 6px;
+  line-height: 1.6;
+}
+.goal-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid #f0ede4;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #696580;
+}
+.goal-list .g-state {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  border: 1px solid #e2e4e9;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 8px;
+  color: #8b949e;
+}
+.goal-list li.done {
+  color: #7a8e78;
+}
+.goal-list li.done .g-state {
+  color: #7a8e78;
+  border-color: #cfdcc9;
+}
+.goal-list li.locked {
+  opacity: 0.75;
+}
+.goal-list li.locked .g-state {
+  border-style: dashed;
+}
+.text-finish {
+  margin-top: 14px;
+  width: 100%;
+}
+.turn-debug {
+  margin-top: 10px;
+  border: 1px dashed #d8d4e4;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #696580;
+}
+.turn-debug summary {
+  cursor: pointer;
+}
+.turn-debug pre {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 8px 0 4px;
+}

@@ -505,13 +505,14 @@ export function createOffice(container, hooks) {
     );
   }
   function step(dt) {
-    if (hooks.isPaused()) {
+    const paused = hooks.isPaused();
+    if (paused) {
       keys.clear();
       target = null;
-      return;
     }
-    let dx = 0,
-      dz = 0;
+    if (!paused) {
+      let dx = 0,
+        dz = 0;
     let horizontal =
         (keys.has("d") || keys.has("arrowright") ? 1 : 0) -
         (keys.has("a") || keys.has("arrowleft") ? 1 : 0),
@@ -557,19 +558,26 @@ export function createOffice(container, hooks) {
     player.body.position.y = reducedMotion
       ? 0
       : Math.abs(Math.sin(walkTime)) * 0.035;
-    let next = null,
-      min = 2.05;
-    for (let [id, n] of Object.entries(npcs)) {
-      let d = Math.hypot(p.x - n.root.position.x, p.z - n.root.position.z);
-      if (d < min) {
-        next = id;
-        min = d;
-      }
     }
+    // Proximity stays live while a panel is open (P3.1): walking out of
+    // range fires onNear so the UI can close the panel. Movement above is
+    // still frozen while paused.
+    {
+      let next = null,
+        min = 2.05;
+      let p = player.root.position;
+      for (let [id, n] of Object.entries(npcs)) {
+        let d = Math.hypot(p.x - n.root.position.x, p.z - n.root.position.z);
+        if (d < min) {
+          next = id;
+          min = d;
+        }
+      }
     if (next !== near) {
       near = next;
       hooks.onNear(near);
     }
+    } // end proximity block (always live, even while paused)
     nearRing.visible = !!near;
     if (near) {
       nearRing.position.x = npcs[near].root.position.x;

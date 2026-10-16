@@ -1,0 +1,485 @@
+{
+  "cases": [
+    {
+      "factId": "F1",
+      "run": 1,
+      "npc": "maya",
+      "turns": [
+        {
+          "npc_id": "maya",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "maya",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "maya",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F1",
+      "run": 2,
+      "npc": "maya",
+      "turns": [
+        {
+          "npc_id": "maya",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "maya",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "maya",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F1",
+      "run": 3,
+      "npc": "maya",
+      "turns": [
+        {
+          "npc_id": "maya",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "maya",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "maya",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F1",
+      "run": 4,
+      "npc": "maya",
+      "turns": [
+        {
+          "npc_id": "maya",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "maya",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "maya",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F1",
+      "run": 5,
+      "npc": "maya",
+      "turns": [
+        {
+          "npc_id": "maya",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "maya",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "maya",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "maya",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F2",
+      "run": 1,
+      "npc": "jordan",
+      "turns": [
+        {
+          "npc_id": "jordan",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F2",
+      "run": 2,
+      "npc": "jordan",
+      "turns": [
+        {
+          "npc_id": "jordan",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F2",
+      "run": 3,
+      "npc": "jordan",
+      "turns": [
+        {
+          "npc_id": "jordan",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F2",
+      "run": 4,
+      "npc": "jordan",
+      "turns": [
+        {
+          "npc_id": "jordan",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F2",
+      "run": 5,
+      "npc": "jordan",
+      "turns": [
+        {
+          "npc_id": "jordan",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "jordan",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "jordan",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F3",
+      "run": 1,
+      "npc": "sam",
+      "turns": [
+        {
+          "npc_id": "sam",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "sam",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "sam",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F3",
+      "run": 2,
+      "npc": "sam",
+      "turns": [
+        {
+          "npc_id": "sam",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "sam",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "sam",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F3",
+      "run": 3,
+      "npc": "sam",
+      "turns": [
+        {
+          "npc_id": "sam",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "sam",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "sam",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F3",
+      "run": 4,
+      "npc": "sam",
+      "turns": [
+        {
+          "npc_id": "sam",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "sam",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "sam",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    },
+    {
+      "factId": "F3",
+      "run": 5,
+      "npc": "sam",
+      "turns": [
+        {
+          "npc_id": "sam",
+          "text": "Hello, how is your day going?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I wanted to check in about the project status."
+        },
+        {
+          "npc_id": "sam",
+          "text": "Can you tell me what you are working on today?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "I had a busy morning, just catching up now."
+        },
+        {
+          "npc_id": "sam",
+          "text": "What should I focus on first?"
+        },
+        {
+          "npc_id": "sam",
+          "text": "Thanks, let me think about the next step."
+        }
+      ],
+      "assert": "no NPC turn contains the fact content, its leak keywords, or >=half its content tokens"
+    }
+  ],
+  "runs": 15
+}
