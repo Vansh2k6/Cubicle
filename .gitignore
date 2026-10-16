@@ -7,4 +7,9 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
-
+bundle-*.txt
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/cache/
+.serena/cache/
+.serena/project.local.yml

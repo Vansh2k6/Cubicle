@@ -1,0 +1,344 @@
+{
+  "engine/config.js": {
+    "mtime": 1792170731.8469613,
+    "seen": 1792172542.1209083,
+    "ast_hash": "2b59bdac24c4a8809e818d6769cb2e4c",
+    "semantic_hash": "2b59bdac24c4a8809e818d6769cb2e4c"
+  },
+  "engine/engine.js": {
+    "mtime": 1792170731.8479612,
+    "seen": 1792172542.1209133,
+    "ast_hash": "810844636c3afa9aa4fee89df36a8180",
+    "semantic_hash": "810844636c3afa9aa4fee89df36a8180"
+  },
+  "engine/scenarioValidator.js": {
+    "mtime": 1792170731.8486035,
+    "seen": 1792172542.1209154,
+    "ast_hash": "68c883a7373c5d7865420a84e1da0a10",
+    "semantic_hash": "68c883a7373c5d7865420a84e1da0a10"
+  },
+  "engine/store.js": {
+    "mtime": 1792170731.8501196,
+    "seen": 1792172542.1209164,
+    "ast_hash": "17b5fbb88bccd757222dab4b10eef4a5",
+    "semantic_hash": "17b5fbb88bccd757222dab4b10eef4a5"
+  },
+  "engine/tests/engine.test.js": {
+    "mtime": 1792170731.8516388,
+    "seen": 1792172542.1209178,
+    "ast_hash": "811ce936844da40ddcbeb48baceea841",
+    "semantic_hash": "811ce936844da40ddcbeb48baceea841"
+  },
+  "engine/tests/scenarioValidator.test.js": {
+    "mtime": 1792170731.8526378,
+    "seen": 1792172542.1209188,
+    "ast_hash": "078425e6f8b963c0f5d65b0e73620ba2",
+    "semantic_hash": "078425e6f8b963c0f5d65b0e73620ba2"
+  },
+  "evals/runClassifier.mjs": {
+    "mtime": 1792170731.8551605,
+    "seen": 1792172542.1209202,
+    "ast_hash": "1f37ffef8bd8aa8191fe927c00d9bac2",
+    "semantic_hash": "1f37ffef8bd8aa8191fe927c00d9bac2"
+  },
+  "llm/classifier.js": {
+    "mtime": 1792170731.8564887,
+    "seen": 1792172542.120921,
+    "ast_hash": "8b63fba0185266d367d40910e4c0657d",
+    "semantic_hash": "8b63fba0185266d367d40910e4c0657d"
+  },
+  "llm/config.js": {
+    "mtime": 1792170731.8564887,
+    "seen": 1792172542.1209216,
+    "ast_hash": "cafeaa205a5b4936cc38ffa3cba41cee",
+    "semantic_hash": "cafeaa205a5b4936cc38ffa3cba41cee"
+  },
+  "llm/fakeProvider.js": {
+    "mtime": 1792170731.857996,
+    "seen": 1792172542.1209226,
+    "ast_hash": "c7eb3fe40aa4c133f1c10f81bed3459c",
+    "semantic_hash": "c7eb3fe40aa4c133f1c10f81bed3459c"
+  },
+  "llm/gateway.js": {
+    "mtime": 1792170731.857996,
+    "seen": 1792172542.1209233,
+    "ast_hash": "95cd3240de73d565e769f6a7114a9327",
+    "semantic_hash": "95cd3240de73d565e769f6a7114a9327"
+  },
+  "llm/manifest.js": {
+    "mtime": 1792170731.8605328,
+    "seen": 1792172542.1209245,
+    "ast_hash": "7be186e09bf0807503eab39b1c195268",
+    "semantic_hash": "7be186e09bf0807503eab39b1c195268"
+  },
+  "llm/npc.js": {
+    "mtime": 1792170731.8605328,
+    "seen": 1792172542.1209254,
+    "ast_hash": "e9bc116ec0f5590f299ec62115bf7872",
+    "semantic_hash": "e9bc116ec0f5590f299ec62115bf7872"
+  },
+  "llm/promptBuilder.js": {
+    "mtime": 1792170731.861533,
+    "seen": 1792172542.1209264,
+    "ast_hash": "3dc0f0050478024f4af615786937d763",
+    "semantic_hash": "3dc0f0050478024f4af615786937d763"
+  },
+  "llm/tests/classifier.test.js": {
+    "mtime": 1792170731.8694715,
+    "seen": 1792172542.1209276,
+    "ast_hash": "fc477597dbe425719029de2cb73a5077",
+    "semantic_hash": "fc477597dbe425719029de2cb73a5077"
+  },
+  "llm/tests/fallback.test.js": {
+    "mtime": 1792170731.8694715,
+    "seen": 1792172542.1209283,
+    "ast_hash": "2b9dd87098876dd6bebeea1bb8c3e455",
+    "semantic_hash": "2b9dd87098876dd6bebeea1bb8c3e455"
+  },
+  "llm/tests/gateway.test.js": {
+    "mtime": 1792170731.8694715,
+    "seen": 1792172542.120929,
+    "ast_hash": "90dd77da7b181e40876dbdcba2af159c",
+    "semantic_hash": "90dd77da7b181e40876dbdcba2af159c"
+  },
+  "llm/tests/npc.test.js": {
+    "mtime": 1792170731.8721762,
+    "seen": 1792172542.12093,
+    "ast_hash": "542c46ed6ec084c04f6f4b7d17d94eb1",
+    "semantic_hash": "542c46ed6ec084c04f6f4b7d17d94eb1"
+  },
+  "llm/tests/prompts.test.js": {
+    "mtime": 1792170731.873176,
+    "seen": 1792172542.120931,
+    "ast_hash": "148908f59d82d46b847dfa47d18aee60",
+    "semantic_hash": "148908f59d82d46b847dfa47d18aee60"
+  },
+  "llm/tests/secrets.test.js": {
+    "mtime": 1792170731.8741763,
+    "seen": 1792172542.1209319,
+    "ast_hash": "bfb9f612a05f67e6d97d67e452154b88",
+    "semantic_hash": "bfb9f612a05f67e6d97d67e452154b88"
+  },
+  "package.json": {
+    "mtime": 1792170731.875177,
+    "seen": 1792172542.1209326,
+    "ast_hash": "e8d54f594bac94a393eabea9237a55c9",
+    "semantic_hash": "e8d54f594bac94a393eabea9237a55c9"
+  },
+  "replies/fallbackStore.js": {
+    "mtime": 1792170731.8796568,
+    "seen": 1792172542.1209335,
+    "ast_hash": "115c1ca20d692874f24c7e39ad4fe566",
+    "semantic_hash": "115c1ca20d692874f24c7e39ad4fe566"
+  },
+  "replies/missed_deadline.en.json": {
+    "mtime": 1792170731.8806577,
+    "seen": 1792172542.120935,
+    "ast_hash": "f042088823805d9cad17e8edea9497b4",
+    "semantic_hash": "f042088823805d9cad17e8edea9497b4"
+  },
+  "scenarios/missed_deadline.json": {
+    "mtime": 1792170731.8830912,
+    "seen": 1792172542.1209357,
+    "ast_hash": "195252bc1bd24b6a9cf59badf236e2c9",
+    "semantic_hash": "195252bc1bd24b6a9cf59badf236e2c9"
+  },
+  "scenarios/missed_deadline.schema.json": {
+    "mtime": 1792170731.8848243,
+    "seen": 1792172542.1209366,
+    "ast_hash": "e7dc08308ccab6d54a6461c4d40af6ce",
+    "semantic_hash": "e7dc08308ccab6d54a6461c4d40af6ce"
+  },
+  "src/main.js": {
+    "mtime": 1792170731.8903298,
+    "seen": 1792172542.1209376,
+    "ast_hash": "2b4cf8a4cbe915a5246948d24d5cbfba",
+    "semantic_hash": "2b4cf8a4cbe915a5246948d24d5cbfba"
+  },
+  "src/office.js": {
+    "mtime": 1792170731.8903298,
+    "seen": 1792172542.1209385,
+    "ast_hash": "011e805e000c8e505992639867a69733",
+    "semantic_hash": "011e805e000c8e505992639867a69733"
+  },
+  "AGENTS.md": {
+    "mtime": 1792170731.8264399,
+    "seen": 1792172542.1209393,
+    "ast_hash": "51b52b3d9e3cb6978c32da257756eb46",
+    "semantic_hash": "51b52b3d9e3cb6978c32da257756eb46"
+  },
+  "CONTEXT/AGENT.md": {
+    "mtime": 1792170731.827647,
+    "seen": 1792172542.1209402,
+    "ast_hash": "e1244c8bbb8f8ae91647f91816a0c50a",
+    "semantic_hash": "e1244c8bbb8f8ae91647f91816a0c50a"
+  },
+  "CONTEXT/ARCHITECTURE.md": {
+    "mtime": 1792170731.8387265,
+    "seen": 1792172542.1209414,
+    "ast_hash": "d2a2788017dc89c150c57c6e54f21c42",
+    "semantic_hash": "d2a2788017dc89c150c57c6e54f21c42"
+  },
+  "CONTEXT/DECISIONS.md": {
+    "mtime": 1792170731.8392458,
+    "seen": 1792172542.120942,
+    "ast_hash": "2f2572eb89ae36b3871467d95af9d243",
+    "semantic_hash": "2f2572eb89ae36b3871467d95af9d243"
+  },
+  "CONTEXT/PHASES.md": {
+    "mtime": 1792170731.8407671,
+    "seen": 1792172542.1209428,
+    "ast_hash": "04f89ed00000e8199206fbf868d59ab0",
+    "semantic_hash": "04f89ed00000e8199206fbf868d59ab0"
+  },
+  "CONTEXT/PRD.md": {
+    "mtime": 1792170731.842356,
+    "seen": 1792172542.1209438,
+    "ast_hash": "f65e411c0250ad53ed78021c5dc64a2b",
+    "semantic_hash": "f65e411c0250ad53ed78021c5dc64a2b"
+  },
+  "CONTEXT/RULES.md": {
+    "mtime": 1792170731.8433547,
+    "seen": 1792172542.1209447,
+    "ast_hash": "2e7225b533490f335d9d3735cda1a023",
+    "semantic_hash": "2e7225b533490f335d9d3735cda1a023"
+  },
+  "PROMPT/S1-00-start-here.md": {
+    "mtime": 1792170594.7591753,
+    "seen": 1792172542.1209455,
+    "ast_hash": "faa6ca984e5713e361df16eaa04df4f2",
+    "semantic_hash": "faa6ca984e5713e361df16eaa04df4f2"
+  },
+  "PROMPT/S1-01-P0-baseline-freeze.md": {
+    "mtime": 1792170589.0082617,
+    "seen": 1792172542.1209464,
+    "ast_hash": "202e19891b1d9049e6f0c9ad7dab051a",
+    "semantic_hash": "202e19891b1d9049e6f0c9ad7dab051a"
+  },
+  "PROMPT/S1-02-P1-engine-core.md": {
+    "mtime": 1792170586.7472072,
+    "seen": 1792172542.1209471,
+    "ast_hash": "ff58db49ab5f3651360c0fed80cdf11b",
+    "semantic_hash": "ff58db49ab5f3651360c0fed80cdf11b"
+  },
+  "PROMPT/S1-03-P2a-gateway-classifier-generation.md": {
+    "mtime": 1792170585.861526,
+    "seen": 1792172542.1209483,
+    "ast_hash": "2619811c7dd05312b4b511eadffdb699",
+    "semantic_hash": "2619811c7dd05312b4b511eadffdb699"
+  },
+  "PROMPT/S1-04-P2b-guards.md": {
+    "mtime": 1792170585.0051167,
+    "seen": 1792172542.1209493,
+    "ast_hash": "6c6722a680a353ede753bde8f4fdd03a",
+    "semantic_hash": "6c6722a680a353ede753bde8f4fdd03a"
+  },
+  "PROMPT/S1-05-P2c-text-ui-and-exit.md": {
+    "mtime": 1792170582.5075183,
+    "seen": 1792172542.12095,
+    "ast_hash": "9c5bb48ce617fad6b1fe97a6cb4f972c",
+    "semantic_hash": "9c5bb48ce617fad6b1fe97a6cb4f972c"
+  },
+  "PROMPT/S1-06-P3a-scene-threads-goals.md": {
+    "mtime": 1792170581.4695196,
+    "seen": 1792172542.120951,
+    "ast_hash": "69aeb59be5b5b939c31da4ecffb56296",
+    "semantic_hash": "69aeb59be5b5b939c31da4ecffb56296"
+  },
+  "PROMPT/S1-07-P3b-relay-beats-ending.md": {
+    "mtime": 1792170578.9277797,
+    "seen": 1792172542.120952,
+    "ast_hash": "a1011fa804daa6beb70c82318aa4bb42",
+    "semantic_hash": "a1011fa804daa6beb70c82318aa4bb42"
+  },
+  "PROMPT/S1-08-P4a-deterministic-scoring.md": {
+    "mtime": 1792170549.1571262,
+    "seen": 1792172542.1209528,
+    "ast_hash": "2ca50272408d6690e9c4fb4ed8e81b1a",
+    "semantic_hash": "2ca50272408d6690e9c4fb4ed8e81b1a"
+  },
+  "PROMPT/S1-09-P4b-judge-quotes-coach.md": {
+    "mtime": 1792170548.4531772,
+    "seen": 1792172542.120954,
+    "ast_hash": "d22fbd4f38b4f7bc6bbd25b076f20d46",
+    "semantic_hash": "d22fbd4f38b4f7bc6bbd25b076f20d46"
+  },
+  "PROMPT/S1-10-P4c-debrief.md": {
+    "mtime": 1792170561.4885166,
+    "seen": 1792172542.1209552,
+    "ast_hash": "ea11dfa79a9928dbf174d80d7dad4e31",
+    "semantic_hash": "ea11dfa79a9928dbf174d80d7dad4e31"
+  },
+  "PROMPT/S1-11-P5-retry-progress.md": {
+    "mtime": 1792170546.9809976,
+    "seen": 1792172542.120956,
+    "ast_hash": "882a232fe98bcde2bb8a125deb77965b",
+    "semantic_hash": "882a232fe98bcde2bb8a125deb77965b"
+  },
+  "PROMPT/S1-12-P6-sliders.md": {
+    "mtime": 1792170592.6415007,
+    "seen": 1792172542.120957,
+    "ast_hash": "e5d48ca7a6125294dc44ccb4b51bb5c8",
+    "semantic_hash": "e5d48ca7a6125294dc44ccb4b51bb5c8"
+  },
+  "PROMPT/S1-13-P6x-presets-voice-optional.md": {
+    "mtime": 1792170591.8552172,
+    "seen": 1792172542.1209576,
+    "ast_hash": "33bf92de119ede175e0cfc017dbf61a4",
+    "semantic_hash": "33bf92de119ede175e0cfc017dbf61a4"
+  },
+  "PROMPT/S1-14-P7-hardening.md": {
+    "mtime": 1792170591.0346293,
+    "seen": 1792172542.1209588,
+    "ast_hash": "793dc1a473e1d81b8a47c884c178e916",
+    "semantic_hash": "793dc1a473e1d81b8a47c884c178e916"
+  },
+  "README.md": {
+    "mtime": 1792170731.8439522,
+    "seen": 1792172542.1209598,
+    "ast_hash": "ea8348a86b14ee0a445f084fb19b4945",
+    "semantic_hash": "ea8348a86b14ee0a445f084fb19b4945"
+  },
+  "index.html": {
+    "mtime": 1792170731.8554869,
+    "seen": 1792172542.1209605,
+    "ast_hash": "5e12b3f94b3d78b6684f204a6aa37bd4",
+    "semantic_hash": "5e12b3f94b3d78b6684f204a6aa37bd4"
+  },
+  "llm/prompts/classifier/v1.md": {
+    "mtime": 1792170731.8633204,
+    "seen": 1792172542.1209612,
+    "ast_hash": "28856210eb4cbaa3472f127efd88058d",
+    "semantic_hash": "28856210eb4cbaa3472f127efd88058d"
+  },
+  "llm/prompts/coach/v1.md": {
+    "mtime": 1792170731.8653312,
+    "seen": 1792172542.1209624,
+    "ast_hash": "a68ce796beb755b471450451d5f3eadb",
+    "semantic_hash": "a68ce796beb755b471450451d5f3eadb"
+  },
+  "llm/prompts/judge/v1.md": {
+    "mtime": 1792170731.8663325,
+    "seen": 1792172542.120963,
+    "ast_hash": "bf009fc4fa755e1a1b5bcf9dc23b90e7",
+    "semantic_hash": "bf009fc4fa755e1a1b5bcf9dc23b90e7"
+  },
+  "llm/prompts/npc/v1.md": {
+    "mtime": 1792170731.8678422,
+    "seen": 1792172542.120964,
+    "ast_hash": "edfd07084dd7b09128440cd3ece5da60",
+    "semantic_hash": "edfd07084dd7b09128440cd3ece5da60"
+  },
+  "requirements.txt": {
+    "mtime": 1792170731.8814912,
+    "seen": 1792172542.120965,
+    "ast_hash": "071e9eeb4923af0429ebf6b64a35f22b",
+    "semantic_hash": "071e9eeb4923af0429ebf6b64a35f22b"
+  },
+  "public/favicon.svg": {
+    "mtime": 1792170731.8786585,
+    "seen": 1792172542.120966,
+    "ast_hash": "04cf5cea3f0cf3694720dd62d9363c90",
+    "semantic_hash": "04cf5cea3f0cf3694720dd62d9363c90"
+  }
+}
