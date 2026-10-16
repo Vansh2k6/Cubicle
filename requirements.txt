@@ -1,0 +1,3 @@
+# Cubicle — AI Job Simulator
+# Primary dependencies are managed via Node.js / npm (see package.json).
+# Run `npm install` to install project dependencies.
