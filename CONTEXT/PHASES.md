@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P6.1 optional presets. S1-12 shared sliders are accepted offline (216 tests, 29 API tests, corrected bundle scan and root browser setup/debrief/retry checks). D-32 authorizes the three preset vectors; voice remains disabled. Live exits remain open under D-28; this is not demo readiness.
+**Current phase:** S1-P7 demo hardening. S1-13 approved presets are accepted offline (217 tests, prior 29 API tests with unchanged API inputs, preset-enabled scan and default-off build, root browser checks). Presets are opt-in; voice is not shipped. Live exits remain open under D-28; this is not demo readiness.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
@@ -83,7 +83,7 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 **Exit:** a user can play, see feedback, retry, and compare two scores.
 
 ## S1-P6 — Core sliders; optional presets and voice (after P0–P5 exits pass)
-- [ ] P6.1 Presets: Supportive, Direct, Impatient → slider vectors (D-15).
+- [x] P6.1 S1-13 accepted offline: Supportive, Direct, Impatient use D-32 vectors, populate editable sliders and derive the difficulty label. Opt-in VITE_PRESETS=1; default off.
 - [x] P6.2 **Round 2 core / P0:** S1-12 implemented and accepted offline: four shared sliders feed unchanged engine parameters and versioned NPC tone, fixed at start and shown with display-only difficulty in the debrief. Live low/high tone/guard comparison remains NOT RUN under D-28.
 - [ ] P6.3 Push-to-talk → STT → editable transcript → normal turn (D-19).
 - [ ] P6.4 Optional spoken NPC replies with mute; captions.

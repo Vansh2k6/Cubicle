@@ -63,6 +63,7 @@ import { createOffice } from "./office.js";
 import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, newKey } from "./api.js";
 import { DEFAULT_SLIDERS } from "../shared/settings.js";
 import { settingsPreview } from "./settingsPreview.js";
+import { PRESETS, presetName, presetSettings, presetsEnabled } from "../shared/presets.js";
 import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
 import { createEndCoordinator, captureRun } from "./endCoordinator.js";
 import { compareAttempts, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
@@ -721,6 +722,7 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS) {
 }
 function openSettings(initial = DEFAULT_SLIDERS) {
   const draft = { ...initial };
+  const showPresets = presetsEnabled(import.meta.env.VITE_PRESETS);
   const preview = () => settingsPreview(draft);
   showModal("Set the conversation", '<div id="setup-content" aria-live="polite">Loading this practice…</div>');
   const box = $("#setup-content");
@@ -729,8 +731,13 @@ function openSettings(initial = DEFAULT_SLIDERS) {
   const render = (scenario) => {
     if (!current()) return;
     const controls = Object.keys(DEFAULT_SLIDERS).map((key) => `<label class="setup-slider">${escapeHtml(key)} <output id="slider-${key}">${draft[key]}</output><input type="range" min="0" max="100" step="1" value="${draft[key]}" data-slider="${key}"></label>`).join("");
-    box.innerHTML = `<p><strong>${escapeHtml(scenario.title)}</strong></p><p>${escapeHtml(scenario.briefing)}</p><ul>${scenario.goals.map((goal) => `<li>${escapeHtml(goal.label)}</li>`).join("")}</ul><div class="setup-controls">${controls}</div><p id="setup-preview">${escapeHtml(preview())}</p><button class="primary-button" id="setup-start">Start practice</button>`;
-    document.querySelectorAll("[data-slider]").forEach((input) => input.oninput = () => { draft[input.dataset.slider] = Number(input.value); $("#slider-" + input.dataset.slider).value = input.value; $("#setup-preview").textContent = preview(); });
+    const presetOptions = Object.keys(PRESETS).map((name) => `<option value="${name}"${presetName(draft) === name ? " selected" : ""}>${name}</option>`).join("");
+    const selector = showPresets ? `<label class="setup-preset">Starting style<select id="setup-preset"><option value="Custom"${presetName(draft) === "Custom" ? " selected" : ""}>Custom</option>${presetOptions}</select></label>` : "";
+    box.innerHTML = `<p><strong>${escapeHtml(scenario.title)}</strong></p><p>${escapeHtml(scenario.briefing)}</p><ul>${scenario.goals.map((goal) => `<li>${escapeHtml(goal.label)}</li>`).join("")}</ul>${selector}<div class="setup-controls">${controls}</div><p id="setup-preview">${escapeHtml(preview())}</p><button class="primary-button" id="setup-start">Start practice</button>`;
+    const refreshDraft = () => { Object.keys(draft).forEach((key) => { const input = document.querySelector(`[data-slider="${key}"]`); if (input) input.value = draft[key]; const output = $("#slider-" + key); if (output) output.value = draft[key]; }); $("#setup-preview").textContent = preview(); };
+    document.querySelectorAll("[data-slider]").forEach((input) => input.oninput = () => { draft[input.dataset.slider] = Number(input.value); const selector = $("#setup-preset"); if (selector) selector.value = presetName(draft); refreshDraft(); });
+    const preset = $("#setup-preset");
+    if (preset) preset.onchange = () => { const values = presetSettings(preset.value); if (values) Object.assign(draft, values); refreshDraft(); };
     $("#setup-start").onclick = () => { closeModal(); state.appliedSettings = { ...draft }; startRetrySession(draft); toast("Settings fixed for this attempt. Find Maya to begin."); };
   };
   getScenario("deadline").then(render, () => {

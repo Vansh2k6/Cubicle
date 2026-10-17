@@ -96,3 +96,9 @@ The existing debrief modal carries Try again and Try again with new settings act
 Before the deadline conversation, the established modal presents the public title, briefing and visible goals with four native sliders for all colleagues: assertiveness, patience, warmth and forthcomingness. Readouts update in place so range focus stays stable. The preview says the shared tone direction and the display-only difficulty; it does not calculate a score. Start fixes the draft settings for one new session. A new-settings retry begins with the attempt's applied values, including from historical feedback, while ordinary retry recreates that attempt's same settings. The ivory/purple modal shell, close behavior, asynchronous loading/retry and focus family are unchanged.
 
 Root verified all four controls, stable range focus, Hard/Easy previews, the recorded three-colleague settings, fresh same-settings retry, historical settings independent of the current attempt, Tab wrap and Escape with zero browser errors. The browser ignored the requested 390px viewport, so the two setup captures are labelled desktop and this part's narrow rendering is unverified. Live tone remains NOT RUN. The detector found only the existing avatar border at style.css:312.
+
+## S1-13 setup presets (accepted offline)
+
+When `VITE_PRESETS=1`, the existing setup modal adds one native Starting style select. Supportive, Direct and Impatient copy their approved shared slider values into the editable controls; any manual adjustment shows Custom. The feature is off by default and does not alter an active session.
+
+Root verified all three vectors and Easy/Medium/Hard previews, manual changes returning to Custom, the Direct vector recorded for all three colleagues in the ended debrief, and the disabled selector with all four sliders still usable. No fresh browser errors; changed-file detector returned no findings. Narrow rendering and live tone remain unverified.
