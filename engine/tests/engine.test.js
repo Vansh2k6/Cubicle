@@ -265,6 +265,19 @@ test("walkout: patience 0 sooner than patience 100", () => {
   assert.equal(turnsToWalkout(100), 15);
 });
 
+test("shared slider anchors and patience trajectories remain the configured engine behavior", () => {
+  assert.deepEqual([0, 50, 100].map(config.startMood), [35, 50, 65]);
+  assert.deepEqual([0, 50, 100].map(config.patienceDrop), [-15, -8, -3]);
+  assert.deepEqual([0, 50, 100].map(config.warmthGain), [4, 7, 10]);
+  assert.deepEqual([0, 50, 100].map(config.b2TurnFor), [4, 4, 3]);
+  const turnsToWalkout = (patience) => {
+    const session = createSession(loadScenario(), { seed: 62, sliders: { patience, warmth: 50 } });
+    for (let turn = 1; turn <= 25; turn++) if (applyTurn(session, "maya", [ev("avoided_question")]).act === "walkout") return turn;
+    return Infinity;
+  };
+  assert.deepEqual([turnsToWalkout(10), turnsToWalkout(90)], [2, 11]);
+});
+
 test("silos: Jordan event to Maya does not probe F2; told_by_user is per-NPC", () => {
   const s = createSession(loadScenario(), { seed: 71 });
   applyTurn(s, "maya", [ev("asked_for_help")]); // F2 trigger, wrong owner

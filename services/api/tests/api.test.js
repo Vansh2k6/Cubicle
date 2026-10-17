@@ -20,7 +20,7 @@ for (const f of scenario.facts || []) {
 // and fact ids are public metadata shapes handled separately below).
 BANNED.push("Friday");
 BANNED.push("commitment_model", "leak_keywords", "triggers", "CURRENT MOVE", "Authorised disclosure");
-BANNED.push("pending_delivery", "forthcomingness", "cutoff");
+BANNED.push("pending_delivery", "cutoff");
 // Fact ids must never appear in non-debug public responses (debug guard codes
 // under the dev flag are the sole exception, covered by a separate assertion).
 const BANNED_PUBLIC = BANNED.concat(["F1", "F2", "F3"]);
@@ -80,6 +80,25 @@ test("POST /sessions returns session_id, briefing, public_state", async () => {
 test("POST /sessions rejects unknown scenario_id", async () => {
   const { status } = await post(base, "/sessions", { scenario_id: "nope" });
   assert.equal(status, 400);
+});
+
+test("session settings are strict, shared, and immutable after creation", async () => {
+  const defaulted = await post(base, "/sessions", { scenario_id: "deadline" });
+  assert.equal(defaulted.status, 200);
+  assert.deepEqual(defaulted.data.settings, { assertiveness: 50, patience: 50, warmth: 50, forthcomingness: 50 });
+  assert.equal(defaulted.data.difficulty, "Medium");
+  const created = await post(base, "/sessions", { scenario_id: "deadline", sliders: { patience: 0, warmth: 100 } });
+  assert.equal(created.status, 200);
+  assert.deepEqual(created.data.settings, { assertiveness: 50, patience: 0, warmth: 100, forthcomingness: 50 });
+  for (const sliders of [null, [], { warmth: -1 }, { warmth: 100.5 }, { warmth: "50" }, { other: 50 }]) {
+    assert.equal((await post(base, "/sessions", { scenario_id: "deadline", sliders })).status, 400);
+  }
+  assert.equal((await post(base, "/sessions", { scenario_id: "deadline", customisation: { maya: { warmth: 0 } } })).status, 400);
+  const denied = await postTurn(base, created.data.session_id, { npc_id: "maya", text: "Hello.", sliders: { patience: 100 }, idempotencyKey: "fixed-1" });
+  assert.equal(denied.status, 400);
+  const accepted = await postTurn(base, created.data.session_id, { npc_id: "maya", text: "Hello.", idempotencyKey: "fixed-2" });
+  assert.equal(accepted.status, 200);
+  assert.equal(accepted.data.turn_id, 1);
 });
 
 test("GET /scenarios/{id} exposes briefing + visible goals only", async () => {

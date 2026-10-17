@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P6.2 implementation. S1-11 retry/progress is accepted offline (204 tests, 28 API tests, browser retry/history/compare/reload and scripted-cycle checks). The user resumed sequential Stage 1 work on 2026-10-18; S1-12 shared sliders is next. Full scene smart/trap and live exit gates remain open under D-28. This is not demo readiness.
+**Current phase:** S1-P6.1 optional presets. S1-12 shared sliders are accepted offline (216 tests, 29 API tests, corrected bundle scan and root browser setup/debrief/retry checks). D-32 authorizes the three preset vectors; voice remains disabled. Live exits remain open under D-28; this is not demo readiness.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
@@ -77,14 +77,14 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 
 ## S1-P5 — Retry and basic progress
 - [x] P5.1 S1-11 accepted offline: a fresh same-scenario session and conversation state; previous ended debrief remains viewable while the API process lives. Only compact summaries persist across server restarts.
-- [x] P5.2 S1-11 accepted: new-settings retry routes to default setup; P6.2 controls plug into this path in S1-12.
+- [x] P5.2 S1-12 accepted offline: new-settings retry opens editable shared controls populated from the originating attempt, including historical feedback.
 - [x] P5.3 S1-11 accepted: persistent allowlisted attempt summaries, version/provisional labels and five-metric comparison; legacy scripted completions remain readable.
 
 **Exit:** a user can play, see feedback, retry, and compare two scores.
 
 ## S1-P6 — Core sliders; optional presets and voice (after P0–P5 exits pass)
 - [ ] P6.1 Presets: Supportive, Direct, Impatient → slider vectors (D-15).
-- [ ] P6.2 **Round 2 core / P0:** four sliders change engine parameters and prompt tone; derived difficulty label; settings fixed at session start, recorded and shown in debrief (D-15, D-23). Cannot slip with optional voice/presets.
+- [x] P6.2 **Round 2 core / P0:** S1-12 implemented and accepted offline: four shared sliders feed unchanged engine parameters and versioned NPC tone, fixed at start and shown with display-only difficulty in the debrief. Live low/high tone/guard comparison remains NOT RUN under D-28.
 - [ ] P6.3 Push-to-talk → STT → editable transcript → normal turn (D-19).
 - [ ] P6.4 Optional spoken NPC replies with mute; captions.
 - [ ] P6.5 Listen button on the improved reply (single voice is acceptable).

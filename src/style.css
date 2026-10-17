@@ -1973,6 +1973,10 @@ h2 {
 #debrief-content summary { cursor: pointer; font-weight: 600; }
 #debrief-content button { margin: 14px 8px 0 0; }
 .debrief-actions { margin-top: 24px; }
+.setup-controls { display: grid; gap: 14px; margin: 20px 0; }
+.setup-slider { display: grid; grid-template-columns: 1fr auto; gap: 6px; text-transform: capitalize; font-size: 12px; color: #625c70; }
+.setup-slider input { grid-column: 1 / -1; accent-color: var(--purple); }
+.setup-slider output { color: var(--purple); font-weight: 700; }
 .attempt-list { margin-top: 18px; }
 .attempt-row { display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 1px solid #ddd8e4; }
 .attempt-row > span { flex: 1; min-width: 0; }

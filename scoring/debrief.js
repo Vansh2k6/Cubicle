@@ -3,6 +3,7 @@ import { judgeSession } from "./judge.js";
 import { coachSession } from "./coach.js";
 import { validateQuote } from "./quotes.js";
 import { CONFIG } from "./config.js";
+import { difficultyFor } from "../shared/settings.js";
 export const bandFor = (total, scenarioId = "missed_deadline") => CONFIG[scenarioId].bands.find((band) => total >= band.minimum)?.label || "Needs work";
 const LABELS = { goals: "Goals", hidden_facts: "Hidden facts", integrity: "Integrity", relationship: "Relationship", rubric: "Communication quality" };
 export async function assembleDebrief({ record, scenario = record.scenario, providers = {}, manifest, previous = null }) {
@@ -53,7 +54,7 @@ export async function assembleDebrief({ record, scenario = record.scenario, prov
     missed_facts: scenario.facts.filter((f) => !snapshot.session.user_known.includes(f.id) || snapshot.session.facts[f.id]?.status !== "revealed")
       .map((f) => ({ id: f.id, owner: f.owner, content: f.content.en, unlock_question: f.unlock_question.en })),
     weights: deterministic.weights, penalties: deterministic.penalties, scoring_version: deterministic.scoring_version,
-    settings: structuredClone(snapshot.session.customisation), end_reason: snapshot.session.endReason,
+    settings: structuredClone(snapshot.session.customisation), difficulty: difficultyFor(snapshot.session.customisation?.maya), end_reason: snapshot.session.endReason,
     manifest_id: judge.manifestId, manifest: manifest || null,
   };
 }

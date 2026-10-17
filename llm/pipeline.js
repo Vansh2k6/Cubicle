@@ -17,6 +17,7 @@ const MOVE_PROMPTS = JSON.parse(readFileSync(new URL("./prompts/npc/v2-moves.jso
 const expressesAcceptance = (text) => /^that plan works for me[.!]?$/i.test(String(text).trim());
 const expressesClosing = (text) => /^we have a plan[.!]?$/i.test(String(text).trim());
 import { buildNpcPrompt } from "./promptBuilder.js";
+import { toneText } from "./tone.js";
 import { generateNpcReply } from "./npc.js";
 import { checkReply, checkPositiveReveal } from "./guards.js";
 import { fetch as fetchFallback } from "../replies/fallbackStore.js";
@@ -207,6 +208,7 @@ export async function runTurn(opts = {}) {
     pendingReveal: authorised ? { factId: authorised.factId, content: pendingContent } : null,
     userTold: userTextsToNpc(convo, npcId),
     recentTurns: convo.turns.filter((t) => t.npcId === npcId).slice(-6),
+    toneText: toneText(session.customisation?.[npcId]),
   });
   if (act === "callback_commitment") {
     const c = activeCommitmentFor(session);

@@ -216,7 +216,9 @@ Output: `{"events":[{"type":"…","params":{}}]}`; invalid → retry once → `{
 | Warmth | Start mood = 35 + warmth × 0.3. Gain on `apologized`/`took_ownership`/`acknowledged_concern`: +4 (low) → +10 (high) |
 | Forthcomingness | Probing asks needed: ≥70 → 1 ask; 30–69 → 2 asks (1 if mood ≥ 60); <30 → 2 asks and mood ≥ 50 |
 
-Prompt tone text is generated from the same values (e.g. "clipped, sighs, short sentences" ↔ "calm, lets you finish"). Presets map to slider vectors (Supportive / Direct / Impatient). Difficulty label (Easy/Medium/Hard) is derived. Values are provisional; tune after playtests.
+S1-12 applies one shared set of integer sliders (0–100, default 50) to all three colleagues. Missing keys default to 50; invalid objects, unknown keys and invalid values are rejected without coercion. They are fixed at session creation and copied into the ended debrief. Difficulty is display-only: the mean of assertiveness, 100−patience, 100−warmth and 100−forthcomingness is Easy below 34, Medium below 67, otherwise Hard (D-29); there is no score multiplier.
+
+Server-side `llm/tone.js` maps the same values through `llm/prompts/npc/v3-tone.json` at bands below 30 / 30–69 / at least 70. NPC prompt version v3 composes the existing v2 move instructions with this v3 tone asset. Both live and offline manifests identify the new NPC composition; judge/coach and scoring versions are unchanged. Tone never authorizes a disclosure or selects an act. The client imports only public settings and preview wording, never the server tone asset, engine or scenario specification. Engine constants remain provisional and unchanged; live tone/guard acceptance is NOT RUN. Approved presets (D-32) are subsequent S1-13 work.
 
 ### 6.4 Dialogue act selection (first match wins) — R-33
 1. `walkout` if mood ≤ walkout threshold
@@ -371,7 +373,7 @@ Redis: live session state, rate limits. Object storage: cached TTS audio, option
 ```
 GET  /scenarios                           -> list (briefing, visible goals, difficulty)
 GET  /scenarios/{id}                      -> briefing + visible goals (never sealed data)
-POST /sessions                            {scenario_id, customisation, locale} -> {session_id, briefing, public_state}
+POST /sessions                            {scenario_id, sliders?} -> {session_id, briefing, settings, difficulty, public_state}  # Stage 1; shared integer sliders only
 POST /sessions/{id}/turn                  {npc_id, text | audio} -> {npc_reply, public_state, ended, end_reason?}
 POST /sessions/{id}/scene-event           {type, npc_id}  -> {public_state}
 POST /sessions/{id}/end                   -> {ok}          # triggers debrief generation

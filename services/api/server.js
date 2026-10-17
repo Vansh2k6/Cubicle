@@ -17,6 +17,7 @@ import * as engine from "../../engine/engine.js";
 import { SessionStore } from "../../engine/store.js";
 import { createConversation, runTurn, publicResponse, projectGoals, nextHintFor } from "../../llm/pipeline.js";
 import { createManifest } from "../../llm/manifest.js";
+import { difficultyFor, validateSliders } from "../../shared/settings.js";
 import { classifyProviderFor, npcFn } from "./offlineProviders.js";
 import { loadConfig, providerName } from "../../llm/config.js";
 import { createGroqProvider } from "../../llm/providers/groq.js";
@@ -37,7 +38,7 @@ const selectedProvider = providerName();
 const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
 const manifest = createManifest(liveProvider ? loadConfig() : {
   classifier: { model: "offline-stub:rules-v1", promptVersion: "v1", schemaVersion: 1 },
-  npc: { model: "offline-stub:store-v1", promptVersion: "v2", schemaVersion: 1 },
+  npc: { model: "offline-stub:store-v1", promptVersion: "v3", schemaVersion: 1 },
   judge: { model: "offline-unavailable:judge", promptVersion: "v2", schemaVersion: 2 },
   coach: { model: "authored-fallback:coach", promptVersion: "v2", schemaVersion: 2 },
 });
@@ -215,11 +216,15 @@ export function createServer({ debug = false, feedbackProviders = { judge: liveP
           send(res, 400, { error: "unknown scenario_id" });
           return;
         }
-        const session = store.create(SPEC, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en" });
+        if (body && Object.prototype.hasOwnProperty.call(body, "customisation")) { send(res, 400, { error: "customisation is not supported", retryable: false }); return; }
+        const sliders = validateSliders(body && body.sliders);
+        if (!sliders.ok) { send(res, 400, { error: "sliders must be integer values from 0 to 100", retryable: false }); return; }
+        const session = store.create(SPEC, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value });
         convos.set(session.id, createConversation());
         send(res, 200, {
           session_id: session.id,
           briefing: SPEC.briefing.en,
+          settings: sliders.value, difficulty: difficultyFor(sliders.value),
           public_state: initialPublic(session),
           manifest: debug ? manifest.id : undefined,
         });
@@ -247,6 +252,7 @@ export function createServer({ debug = false, feedbackProviders = { judge: liveP
           return;
         }
         const body = await readBody(req);
+        if (body && (Object.prototype.hasOwnProperty.call(body, "sliders") || Object.prototype.hasOwnProperty.call(body, "customisation"))) { send(res, 400, { error: "settings are fixed for this session", retryable: false }); return; }
         const npcId = body && body.npc_id;
         const text = body && body.text;
         const key = body && body.idempotencyKey;

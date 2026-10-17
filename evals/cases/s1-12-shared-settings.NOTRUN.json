@@ -1,0 +1,26 @@
+{
+  "status": "NOT RUN",
+  "scope": "Live-provider same-script extremes are deferred; no provider call was made.",
+  "scenario_id": "deadline",
+  "settings": [
+    { "assertiveness": 50, "patience": 10, "warmth": 10, "forthcomingness": 10 },
+    { "assertiveness": 50, "patience": 90, "warmth": 90, "forthcomingness": 90 }
+  ],
+  "script": [
+    { "npc_id": "maya", "text": "The project is unfinished. I take responsibility for the delay." },
+    { "npc_id": "maya", "text": "I am sorry. I understand that this delay affects your planning." },
+    { "npc_id": "maya", "text": "Is there any flexibility on the deadline?" },
+    { "npc_id": "maya", "text": "Could you clarify whether the deadline can move?" },
+    { "npc_id": "jordan", "text": "What remains to be finished? Can you help?" },
+    { "npc_id": "jordan", "text": "Is there any support you can offer?" },
+    { "npc_id": "sam", "text": "What should I have done when I first knew about the delay?" },
+    { "npc_id": "sam", "text": "What is expected when someone realizes they will be late?" }
+  ],
+  "checks": [
+    "Save both transcripts and ended debrief JSON side by side with run manifests.",
+    "Compare tone and mood-label trajectories; report actual classifications rather than assuming them.",
+    "Compare first/second probe disclosure at low/high forthcomingness; apply unchanged owner and mood gates.",
+    "Confirm fixed settings/difficulty in every debrief, unchanged scoring weights, and all guards."
+  ],
+  "additional_case": "Use the same avoided-question script at patience 10/90 to compare walkout timing; deterministic offline coverage is separate from live acceptance."
+}

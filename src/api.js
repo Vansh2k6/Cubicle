@@ -35,8 +35,9 @@ async function req(path, { method = "GET", body = null, timeoutMs = 12000 } = {}
   }
 }
 
-export const createSession = (scenario_id) =>
-  req("/sessions", { method: "POST", body: { scenario_id } });
+export const createSession = (scenario_id, sliders) =>
+  req("/sessions", { method: "POST", body: { scenario_id, ...(sliders ? { sliders } : {}) } });
+export const getScenario = (scenario_id) => req(`/scenarios/${encodeURIComponent(scenario_id)}`);
 
 export const endSession = (sessionId) =>
   req(`/sessions/${encodeURIComponent(sessionId)}/end`, { method: "POST", body: {} });

@@ -60,7 +60,9 @@ const icons = {
   Circle,
 };
 import { createOffice } from "./office.js";
-import { createSession, sendTurn, endSession, getDebrief, retryDebrief, newKey } from "./api.js";
+import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, newKey } from "./api.js";
+import { DEFAULT_SLIDERS } from "../shared/settings.js";
+import { settingsPreview } from "./settingsPreview.js";
 import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
 import { createEndCoordinator, captureRun } from "./endCoordinator.js";
 import { compareAttempts, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
@@ -187,6 +189,7 @@ let state = {
   sharedGoals: [],
   sharedHint: "",
   startingSession: false,
+  appliedSettings: null,
 };
 const icon = (name, cls = "") => `<i data-lucide="${name}" class="${cls}"></i>`;
 const $ = (s) => document.querySelector(s);
@@ -378,7 +381,7 @@ function openTextConversation() {
     renderTextDialogue();
     return;
   }
-  startTextSession();
+  openSettings(state.appliedSettings || DEFAULT_SLIDERS);
 }
 
 function startTextSession() {
@@ -386,12 +389,13 @@ function startTextSession() {
   const current = captureRun(state);
   state.text.loadError = null;
   renderTextDialogue();
-  createSession("deadline").then(
+  createSession("deadline", state.appliedSettings || DEFAULT_SLIDERS).then(
     (data) => {
       if (!current() || !state.textMode || !state.text) return;
       state.sessionId = data.session_id;
       state.sharedGoals = (data.public_state && data.public_state.goals) || [];
       state.sharedHint = (data.public_state && data.public_state.next_hint) || "";
+      state.appliedSettings = data.settings || state.appliedSettings;
       renderTextDialogue();
     },
     (err) => {
@@ -634,8 +638,9 @@ function openDebrief(sessionId, historical = false) {
       actions.className = "debrief-actions";
       actions.innerHTML = `<button class="primary-button" id="try-again">Try again</button><button class="secondary-button" id="try-settings">Try again with new settings</button>`;
       box.append(actions);
-      $("#try-again").onclick = () => restartTextRun(false, attemptScenario);
-      $("#try-settings").onclick = () => restartTextRun(true, attemptScenario);
+      const attemptSettings = latest.settings?.maya || state.appliedSettings || DEFAULT_SLIDERS;
+      $("#try-again").onclick = () => restartTextRun(false, attemptScenario, attemptSettings);
+      $("#try-settings").onclick = () => restartTextRun(true, attemptScenario, attemptSettings);
     }
     const check = $("#feedback-refresh");
     if (check) check.onclick = () => { disableFeedbackControl(check); poll(); };
@@ -693,18 +698,20 @@ function resetTextRun(scenarioId = state.scenario) {
   state.endReason = null;
   state.round = 0;
   state.score = 0;
+  state.appliedSettings = null;
   office.reset();
   updateScenario();
 }
-function startRetrySession() {
+function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS) {
   const threads = threadsFor();
   const current = captureRun(state);
   state.startingSession = true;
-  createSession("deadline").then((data) => {
+  createSession("deadline", sliders).then((data) => {
     if (!current() || state.threads !== threads || state.sessionId) return;
     state.sessionId = data.session_id;
     state.sharedGoals = data.public_state?.goals || [];
     state.sharedHint = data.public_state?.next_hint || "";
+    state.appliedSettings = data.settings || sliders;
     state.startingSession = false;
   }, () => {
     if (!current() || state.threads !== threads) return;
@@ -712,7 +719,29 @@ function startRetrySession() {
     toast("Could not start a fresh conversation. Find Maya and retry.");
   });
 }
-function restartTextRun(withSettings, scenarioId = state.scenario) {
+function openSettings(initial = DEFAULT_SLIDERS) {
+  const draft = { ...initial };
+  const preview = () => settingsPreview(draft);
+  showModal("Set the conversation", '<div id="setup-content" aria-live="polite">Loading this practice…</div>');
+  const box = $("#setup-content");
+  const run = captureRun(state);
+  const current = () => run() && $("#setup-content") === box;
+  const render = (scenario) => {
+    if (!current()) return;
+    const controls = Object.keys(DEFAULT_SLIDERS).map((key) => `<label class="setup-slider">${escapeHtml(key)} <output id="slider-${key}">${draft[key]}</output><input type="range" min="0" max="100" step="1" value="${draft[key]}" data-slider="${key}"></label>`).join("");
+    box.innerHTML = `<p><strong>${escapeHtml(scenario.title)}</strong></p><p>${escapeHtml(scenario.briefing)}</p><ul>${scenario.goals.map((goal) => `<li>${escapeHtml(goal.label)}</li>`).join("")}</ul><div class="setup-controls">${controls}</div><p id="setup-preview">${escapeHtml(preview())}</p><button class="primary-button" id="setup-start">Start practice</button>`;
+    document.querySelectorAll("[data-slider]").forEach((input) => input.oninput = () => { draft[input.dataset.slider] = Number(input.value); $("#slider-" + input.dataset.slider).value = input.value; $("#setup-preview").textContent = preview(); });
+    $("#setup-start").onclick = () => { closeModal(); state.appliedSettings = { ...draft }; startRetrySession(draft); toast("Settings fixed for this attempt. Find Maya to begin."); };
+  };
+  getScenario("deadline").then(render, () => {
+    if (!current()) return;
+    box.innerHTML = '<div class="turn-error" role="alert"><p>Could not load this practice.</p><button class="secondary-button" id="setup-retry">Retry</button></div>';
+    const retry = $("#setup-retry");
+    if (retry) retry.onclick = () => openSettings(draft);
+  });
+}
+function restartTextRun(withSettings, scenarioId = state.scenario, settings = state.appliedSettings || DEFAULT_SLIDERS) {
+  const previous = settings;
   closeModal();
   resetTextRun(scenarioId);
   if (scenarioId !== "deadline") {
@@ -720,12 +749,12 @@ function restartTextRun(withSettings, scenarioId = state.scenario) {
     return;
   }
   if (!withSettings) {
-    startRetrySession();
+    state.appliedSettings = { ...previous };
+    startRetrySession(previous);
     toast("Preparing a fresh conversation. Find Maya to begin again.");
     return;
   }
-  showModal("Start another practice", `<p>Your next attempt will use the current default conversation settings. You can change these here when the settings controls arrive.</p><button class="primary-button" id="start-default-settings">Start with default settings</button>`);
-  $("#start-default-settings").onclick = () => { closeModal(); startRetrySession(); toast("Default settings selected. Find Maya to begin."); };
+  openSettings(previous);
 }
 function attemptLabel(attempt) {
   return `${new Date(attempt.date).toLocaleDateString()} · ${attempt.total}/100 · ${attempt.band}${attempt.provisional ? " · Provisional" : ""}`;

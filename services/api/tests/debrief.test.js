@@ -5,7 +5,7 @@ const servers = [];
 const launch = async (options) => { const { server } = createServer(options); servers.push(server); await new Promise((r) => server.listen(0, "127.0.0.1", r)); return `http://127.0.0.1:${server.address().port}`; };
 test.after(async () => { await Promise.all(servers.map((s) => new Promise((r) => s.close(r)))); });
 const request = async (base, path, body) => { const res = await fetch(base + path, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }); return { status: res.status, body: await res.json() }; };
-const create = async (base) => { const r = await request(base, "/sessions", { scenario_id: "deadline" }); return `/sessions/${encodeURIComponent(r.body.session_id)}`; };
+const create = async (base, sliders) => { const r = await request(base, "/sessions", { scenario_id: "deadline", ...(sliders ? { sliders } : {}) }); return `/sessions/${encodeURIComponent(r.body.session_id)}`; };
 const ready = async (base, path) => { for (let n = 0; n < 100; n++) { const r = await request(base, path + "/debrief"); if (r.body.status !== "pending") return r; await new Promise((resolve) => setTimeout(resolve, 2)); } throw new Error("debrief stayed pending"); };
 test("debrief and retry disclose nothing before end; offline after-end is partial with real deterministic points", async () => {
   const base = await launch(); const path = await create(base);
@@ -21,6 +21,7 @@ test("debrief and retry disclose nothing before end; offline after-end is partia
   assert.equal(r.body.debrief.judged.status, "unavailable"); assert.equal(r.body.retry_allowed, true);
   assert.ok(r.body.debrief.missed_facts.some((f) => f.id === "F1"));
   assert.equal(r.body.debrief.manifest.roles.judge.promptVersion, "v2");
+  assert.equal(r.body.debrief.difficulty, "Medium");
   assert.match(r.body.debrief.manifest.roles.judge.model, /offline-unavailable/);
 });
 test("End and polling share one asynchronous job; snapshot mutations cannot change live source", async () => {
