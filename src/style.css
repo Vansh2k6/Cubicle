@@ -1972,4 +1972,14 @@ h2 {
 #debrief-content details { margin: 24px 0; }
 #debrief-content summary { cursor: pointer; font-weight: 600; }
 #debrief-content button { margin: 14px 8px 0 0; }
+.debrief-actions { margin-top: 24px; }
+.attempt-list { margin-top: 18px; }
+.attempt-row { display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 1px solid #ddd8e4; }
+.attempt-row > span { flex: 1; min-width: 0; }
+.attempt-row small { display: block; margin-top: 3px; color: #625c70; }
+.attempt-row .secondary-button { margin: 0; white-space: nowrap; }
+.attempt-compare { margin-top: 24px; }
+.attempt-compare table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.attempt-compare th, .attempt-compare td { padding: 8px 6px; border-bottom: 1px solid #ddd8e4; }
+@media (max-width: 600px) { .attempt-row { align-items: flex-start; flex-wrap: wrap; } .attempt-row > span { flex-basis: 100%; } }
 @media (max-width: 600px) { .debrief-modal { padding: 30px 20px 24px; } }

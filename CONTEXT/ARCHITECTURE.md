@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — System architecture
 
-Version 0.1 · 2026-10-16 · Whole project. Items marked **[S1]** target the demo; **[S2]** target total implementation. The frontend remains scripted vanilla JavaScript, Vite and Three.js. Engine/schema modules and partial provider-agnostic LLM/fallback modules exist with offline suites; API, guards, scoring and typed UI integration remain unimplemented. Architecture below is the target contract, not evidence that every module satisfies it.
+Version 0.1 · 2026-10-16 · Whole project. Items marked **[S1]** target the demo; **[S2]** target total implementation. The frontend remains vanilla JavaScript, Vite and Three.js. Engine/schema modules, provider-agnostic LLM/fallback modules, the Node API, guards, scoring, typed UI, debrief, and basic local progress exist with offline evidence; provider/live acceptance remains deferred. Architecture below is the target contract, not evidence that every module satisfies it.
 
 ## 1. Principles
 
@@ -81,7 +81,7 @@ flowchart LR
 
 | Component | Responsibility | Stage |
 |---|---|---|
-| **Web client** | Existing vanilla JavaScript + Vite; Three.js office in `src/office.js`, authored scenario/button dialogue and localStorage progress in `src/main.js`; Lucide icons. Free text, checklist, scored debrief and mood integration are planned | S1 |
+| **Web client** | Vanilla JavaScript + Vite; Three.js office in `src/office.js`, typed SC-01 and scripted SC-02/03 in `src/main.js`, scored debrief and basic local progress; Lucide icons | S1 |
 | **API layer** | HTTP + WebSocket; auth (S2); rate limits; never returns sealed data | S1 |
 | **Session manager** | Create/restore/end sessions, customisation, locale, branching | S1 |
 | **Orchestrator** | Runs the turn pipeline (§5) | S1 |
@@ -464,3 +464,6 @@ The frontend replaces the end placeholder with the incumbent scrollable modal. S
 S1-10 review hardening: an engine-ended session with an in-flight final turn returns pending without starting or disclosing a debrief; snapshot creation waits until final guarded response delivery settles. Missing goal/fact priorities are absence-at-end guidance with specific labels and no arbitrary user quote. Explicit feedback retry preserves successful prior judge/coach components and only regenerates unavailable components; GET retains prior results while pending. Unknown POST retry outcomes recover via GET polling without another automatic POST. The unchanged band thresholds/labels are stored in SC01 scoring config version2 and copied into the saved record.
 
 S1-10 final UI refinement: table source labels use Code/Judge while the explicit deterministic/judged subtotals and raw data remain unchanged. Async debrief updates preserve the active control where possible and restore Close with preventScroll when a retry/check control is disabled or removed; restoration is bound to the current modal/run. Root verified this keyboard behavior, desktop and narrow rendering, and bounded offline retry. Implementation stops after S1-10 per user direction; live calibration remains NOT RUN.
+
+### S1-11 retry and local progress (accepted offline/browser)
+The client stores only sanitized attempt summaries in `cubicle-progress`: date, opaque session ID, scenario ID, server-reported total/band/scoring version, five server-reported metric values and provisional status. It continues to read legacy `workplay-progress` and completion entries without persisting arbitrary legacy fields. No transcript, quote, missed fact or debrief text enters browser storage. A retry creates a new default-settings SC-01 API session, with stale create responses rejected after restart/scenario change. Ended debriefs stay server-side by ID while the API process lives; after restart historical retrieval degrades to an explicit unavailable state while the summary survives. The progress comparison performs no client score arithmetic and labels cross-version/provisional comparisons. Offline/browser evidence is recorded in `evals/reports/S1-11-gate.md`; real-provider trap/smart isolation and comparison remains NOT RUN in `evals/cases/s1-11-retry-progress.NOTRUN.json`.

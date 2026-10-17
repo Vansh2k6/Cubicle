@@ -63,6 +63,7 @@ import { createOffice } from "./office.js";
 import { createSession, sendTurn, endSession, getDebrief, retryDebrief, newKey } from "./api.js";
 import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
 import { createEndCoordinator, captureRun } from "./endCoordinator.js";
+import { compareAttempts, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
 const ending = createEndCoordinator();
 const scenarios = {
   deadline: {
@@ -164,27 +165,15 @@ const people = {
     initials: "ST",
   },
 };
-let saved;
-try {
-  saved = JSON.parse(
-    localStorage.getItem("cubicle-progress") ||
-      localStorage.getItem("workplay-progress") ||
-      "{}",
-  );
-  if (!saved || typeof saved !== "object" || Array.isArray(saved)) saved = {};
-  saved = Object.fromEntries(
-    Object.entries(saved).filter(([key]) => key in scenarios),
-  );
-} catch {
-  saved = {};
-}
+const saved = readProgress(() => window.localStorage, Object.keys(scenarios));
 let state = {
   scenario: "deadline",
   near: null,
   dialogue: null,
   round: 0,
   score: 0,
-  complete: saved,
+  complete: saved.complete,
+  attempts: saved.attempts,
   muted: true,
   paused: false,
   textMode: false,
@@ -197,6 +186,7 @@ let state = {
   threads: null,
   sharedGoals: [],
   sharedHint: "",
+  startingSession: false,
 };
 const icon = (name, cls = "") => `<i data-lucide="${name}" class="${cls}"></i>`;
 const $ = (s) => document.querySelector(s);
@@ -213,7 +203,10 @@ function updateScenario() {
   refreshIcons();
 }
 function updateProgress() {
-  $("#progress-count").textContent = Object.keys(state.complete).length;
+  $("#progress-count").textContent = new Set([...Object.keys(state.complete), ...state.attempts.map((a) => a.scenario)]).size;
+}
+function persistProgress() {
+  if (!saveProgress(() => window.localStorage, { complete: state.complete, attempts: state.attempts }, Object.keys(scenarios))) toast("Progress is available for this visit; browser storage is unavailable.");
 }
 function toast(message) {
   $("#toast").textContent = message;
@@ -345,7 +338,7 @@ function choose(index) {
     );
 }
 function escapeHtml(s) {
-  return String(s || "")
+  return String(s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -375,6 +368,7 @@ function threadsFor() {
 
 function openTextConversation() {
   if (!state.near || state.dialogue || state.paused) return;
+  if (state.startingSession) { toast("Preparing your fresh conversation…"); return; }
   state.dialogue = state.near;
   state.textMode = true;
   state.text = threadsFor()[state.dialogue];
@@ -388,7 +382,7 @@ function openTextConversation() {
 }
 
 function startTextSession() {
-  if (state.sessionId || !state.textMode || !state.text) return;
+  if (state.sessionId || state.startingSession || !state.textMode || !state.text) return;
   const current = captureRun(state);
   state.text.loadError = null;
   renderTextDialogue();
@@ -593,13 +587,7 @@ async function completeTextSession() {
     date: new Date().toISOString(),
     mode: "text",
   };
-  try {
-    localStorage.setItem("cubicle-progress", JSON.stringify(state.complete));
-  } catch {
-    toast(
-      "Progress is available for this visit; browser storage is unavailable.",
-    );
-  }
+  persistProgress();
   closeConversation();
   updateProgress();
   $("#next-heading").textContent = "One conversation. A little more confident.";
@@ -610,14 +598,21 @@ async function completeTextSession() {
   refreshIcons();
 }
 
-function openDebrief(sessionId) {
+function openDebrief(sessionId, historical = false) {
   const run = captureRun(state);
+  const attemptScenario = state.attempts.find((attempt) => attempt.session_id === sessionId)?.scenario || state.scenario;
   showModal("Your practice debrief", '<div id="debrief-content" aria-live="polite"></div>');
   const box = $("#debrief-content");
   $(".modal").classList.add("debrief-modal");
   $(".modal .eyebrow")?.remove();
-  const current = () => run() && state.sessionId === sessionId && $("#debrief-content") === box;
-  const load = () => getDebrief(sessionId);
+  const current = () => run() && $("#debrief-content") === box && (historical || state.sessionId === sessionId);
+  const load = async () => {
+    try { return await getDebrief(sessionId); }
+    catch (error) {
+      if (historical && error.status === 404) return { status: "unavailable", debrief: null };
+      throw error;
+    }
+  };
   const disableFeedbackControl = (button) => {
     const hadFocus = document.activeElement === button;
     button.disabled = true;
@@ -631,6 +626,17 @@ function openDebrief(sessionId) {
     const focusedId = focused?.id;
     latest = packet.debrief || latest;
     box.innerHTML = renderDebrief({ ...packet, debrief: latest });
+    if (latest) {
+      const attempt = summaryFromDebrief(sessionId, "deadline", latest);
+      state.attempts = upsertAttempt({ attempts: state.attempts }, attempt).attempts;
+      persistProgress();
+      const actions = document.createElement("div");
+      actions.className = "debrief-actions";
+      actions.innerHTML = `<button class="primary-button" id="try-again">Try again</button><button class="secondary-button" id="try-settings">Try again with new settings</button>`;
+      box.append(actions);
+      $("#try-again").onclick = () => restartTextRun(false, attemptScenario);
+      $("#try-settings").onclick = () => restartTextRun(true, attemptScenario);
+    }
     const check = $("#feedback-refresh");
     if (check) check.onclick = () => { disableFeedbackControl(check); poll(); };
     const retry = $("#feedback-retry");
@@ -654,13 +660,7 @@ function completeScenario() {
     date: new Date().toISOString(),
     score: state.score,
   };
-  try {
-    localStorage.setItem("cubicle-progress", JSON.stringify(state.complete));
-  } catch {
-    toast(
-      "Progress is available for this visit; browser storage is unavailable.",
-    );
-  }
+  persistProgress();
   closeConversation();
   updateProgress();
   $("#next-heading").textContent = "One conversation. A little more confident.";
@@ -680,6 +680,72 @@ function completeScenario() {
     updateScenario();
   };
   refreshIcons();
+}
+function resetTextRun(scenarioId = state.scenario) {
+  closeConversation();
+  state.scenario = scenarioId;
+  $("#scenario").value = scenarioId;
+  state.sessionId = null;
+  state.threads = null;
+  state.sharedGoals = [];
+  state.sharedHint = "";
+  state.startingSession = false;
+  state.endReason = null;
+  state.round = 0;
+  state.score = 0;
+  office.reset();
+  updateScenario();
+}
+function startRetrySession() {
+  const threads = threadsFor();
+  const current = captureRun(state);
+  state.startingSession = true;
+  createSession("deadline").then((data) => {
+    if (!current() || state.threads !== threads || state.sessionId) return;
+    state.sessionId = data.session_id;
+    state.sharedGoals = data.public_state?.goals || [];
+    state.sharedHint = data.public_state?.next_hint || "";
+    state.startingSession = false;
+  }, () => {
+    if (!current() || state.threads !== threads) return;
+    state.startingSession = false;
+    toast("Could not start a fresh conversation. Find Maya and retry.");
+  });
+}
+function restartTextRun(withSettings, scenarioId = state.scenario) {
+  closeModal();
+  resetTextRun(scenarioId);
+  if (scenarioId !== "deadline") {
+    toast("Fresh scenario ready. Find Maya to begin again.");
+    return;
+  }
+  if (!withSettings) {
+    startRetrySession();
+    toast("Preparing a fresh conversation. Find Maya to begin again.");
+    return;
+  }
+  showModal("Start another practice", `<p>Your next attempt will use the current default conversation settings. You can change these here when the settings controls arrive.</p><button class="primary-button" id="start-default-settings">Start with default settings</button>`);
+  $("#start-default-settings").onclick = () => { closeModal(); startRetrySession(); toast("Default settings selected. Find Maya to begin."); };
+}
+function attemptLabel(attempt) {
+  return `${new Date(attempt.date).toLocaleDateString()} · ${attempt.total}/100 · ${attempt.band}${attempt.provisional ? " · Provisional" : ""}`;
+}
+function showProgress() {
+  let selected = [];
+  const render = () => {
+    const attempts = state.attempts.filter((attempt) => attempt.scenario === "deadline");
+    const comparison = compareAttempts(...selected.map((id) => attempts.find((attempt) => attempt.session_id === id)));
+    const rows = attempts.length ? attempts.map((attempt) => `<div class="attempt-row"><span><strong>${escapeHtml(scenarios[attempt.scenario].title)}</strong><small>${escapeHtml(attemptLabel(attempt))} · v${escapeHtml(attempt.scoring_version)}</small></span><button class="secondary-button" data-select-attempt="${escapeHtml(attempt.session_id)}">${selected.includes(attempt.session_id) ? "Selected" : "Compare"}</button><button class="secondary-button" data-open-attempt="${escapeHtml(attempt.session_id)}">Open feedback</button></div>`).join("") : "<p>No scored attempts yet. Finish a deadline conversation to see its feedback here.</p>";
+    const compare = comparison ? `<section class="attempt-compare"><h3>Compare attempts${comparison.crossVersion ? " · versions differ" : ""}</h3><p>${escapeHtml(comparison.first.total)} / 100 · ${escapeHtml(comparison.first.band)} &nbsp; | &nbsp; ${escapeHtml(comparison.second.total)} / 100 · ${escapeHtml(comparison.second.band)}${comparison.provisional ? " · Includes provisional feedback" : ""}</p><table><thead><tr><th>Metric</th><th>First</th><th>Second</th></tr></thead><tbody>${comparison.metrics.map((metric) => `<tr><th>${escapeHtml(metric.id.replaceAll("_", " "))}</th><td>${escapeHtml(metric.first)}</td><td>${escapeHtml(metric.second)}</td></tr>`).join("")}</tbody></table></section>` : "<p class=\"debrief-muted\">Select two attempts from the same scenario to compare their server-reported totals and metrics.</p>";
+    showModal("My progress", `<p>${Object.keys(state.complete).length} of 3 workplace scenarios practiced. Every conversation counts.</p><div class="progress-list attempt-list">${rows}</div>${compare}`);
+    document.querySelectorAll("[data-select-attempt]").forEach((button) => button.onclick = () => {
+      const id = button.dataset.selectAttempt;
+      selected = selected.includes(id) ? selected.filter((value) => value !== id) : [...selected.slice(-1), id];
+      render();
+    });
+    document.querySelectorAll("[data-open-attempt]").forEach((button) => button.onclick = () => openDebrief(button.dataset.openAttempt, true));
+  };
+  render();
 }
 function showModal(title, content) {
   if (state.dialogue) closeConversation();
@@ -708,24 +774,11 @@ function showGuide() {
 }
 $("#scenario").onchange = (e) => {
   state.scenario = e.target.value;
-  closeConversation();
-  // A new scenario run starts a new server session with fresh threads.
-  state.sessionId = null;
-  state.threads = null;
-  state.sharedGoals = [];
-  state.sharedHint = "";
-  office.reset();
-  updateScenario();
+  resetTextRun();
   toast("New scenario, fresh start. Find Maya to begin.");
 };
 $("#restart").onclick = () => {
-  closeConversation();
-  state.sessionId = null;
-  state.threads = null;
-  state.sharedGoals = [];
-  state.sharedHint = "";
-  office.reset();
-  updateScenario();
+  resetTextRun();
   toast("A fresh start. Take it at your own pace.");
 };
 $("#talk-prompt").onclick = openConversation;
@@ -735,18 +788,7 @@ $("#nav-office").onclick = () => {
   closeModal();
   $("#game-viewport").focus();
 };
-$("#nav-progress").onclick = () =>
-  showModal(
-    "Look how far you’ve come.",
-    `<p>${Object.keys(state.complete).length} of 3 workplace scenarios practiced. Every conversation counts.</p><div class="progress-list">${Object.entries(
-      scenarios,
-    )
-      .map(
-        ([id, s]) =>
-          `<div>${icon(state.complete[id] ? "circle-check" : "circle")}<span><strong>${s.title}</strong><small>${s.tag}</small></span><span>${state.complete[id] ? "Practiced" : "Up next"}</span></div>`,
-      )
-      .join("")}</div>`,
-  );
+$("#nav-progress").onclick = showProgress;
 $("#profile").onclick = () =>
   showModal(
     "Meet your work self.",

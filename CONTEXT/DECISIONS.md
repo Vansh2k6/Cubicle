@@ -199,3 +199,12 @@ Confirmed in S1-01 P0.3.
 
 ## D-31 · Implementation note · 2026-10-17 — Scoring contract version 2
 Implementing already accepted D-24 and D-29 uses SC-01 scoring version 2, with unchanged weights 30/20/15/10/25, existing penalties 8/4/3, and relationship averaged over all three scenario NPCs. This is the required technical scoring-contract version increment, not tuning or a new population decision. Scenario content/taxonomy stay unchanged. The provisional missed_probe display flag (visited owner at least once, no trigger fired) has no penalty; it is recorded for confirmation during acceptance. Pure offline scoring is the S1-08 scope; rubric/judge/coach/debrief remain subsequent work.
+
+## D-32 · Accepted · 2026-10-18 — Resume Stage 1 and confirm preset vectors
+The user resumed sequential implementation after prompt 10, preserving D-28's offline progression and live-evaluation deferral. They explicitly approved the S1-13 shared preset values below, in assertiveness / patience / warmth / forthcomingness order:
+
+- Supportive: 30 / 80 / 80 / 80 — Easy under D-29.
+- Direct: 80 / 50 / 40 / 50 — Medium under D-29.
+- Impatient: 80 / 20 / 30 / 30 — Hard under D-29.
+
+Presets only fill the four editable setup sliders and are fixed at session start. They do not change score weights or add a multiplier. Voice remains disabled; no speech provider or live calls are authorized. Implement these vectors only when S1-13 is reached and S1-12 is accepted. The user postponed pushing and creating the requested pull request until repository access is ready.

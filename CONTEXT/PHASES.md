@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P4 acceptance. Implementation through S1-10 is accepted offline and stopped here at the user's request; S1-11 is not started. Full scene smart/trap and live exit gates remain open under D-28. This is not demo readiness.
+**Current phase:** S1-P6.2 implementation. S1-11 retry/progress is accepted offline (204 tests, 28 API tests, browser retry/history/compare/reload and scripted-cycle checks). The user resumed sequential Stage 1 work on 2026-10-18; S1-12 shared sliders is next. Full scene smart/trap and live exit gates remain open under D-28. This is not demo readiness.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
@@ -76,9 +76,9 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 **Exit:** every displayed quote is verified; trap path flags *premature commitment* with the right quote; smart path scores ≥85 and ends positively.
 
 ## S1-P5 — Retry and basic progress
-- [ ] P5.1 "Try again" restarts the scenario; previous debrief remains viewable.
-- [ ] P5.2 "Try again with new settings" wiring; use the required P6.2 controls when integrated.
-- [ ] P5.3 Basic **My progress**: list of attempts with total score and band per scenario.
+- [x] P5.1 S1-11 accepted offline: a fresh same-scenario session and conversation state; previous ended debrief remains viewable while the API process lives. Only compact summaries persist across server restarts.
+- [x] P5.2 S1-11 accepted: new-settings retry routes to default setup; P6.2 controls plug into this path in S1-12.
+- [x] P5.3 S1-11 accepted: persistent allowlisted attempt summaries, version/provisional labels and five-metric comparison; legacy scripted completions remain readable.
 
 **Exit:** a user can play, see feedback, retry, and compare two scores.
 

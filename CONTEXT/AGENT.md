@@ -1,7 +1,7 @@
 # AGENT.md — Lead project instructions and orchestrator contract
 
 Project: **Cubicle — AI Job Simulator** (CODE APEX 3.0, iMocha track IM-04, team Fathom).
-Last updated: 2026-10-17. If this file disagrees with the code, fix whichever is wrong and say which in the PR.
+Last updated: 2026-10-18. If this file disagrees with the code, fix whichever is wrong and say which in the PR.
 
 ## 1. What you are building (read this first)
 
@@ -33,6 +33,8 @@ The original hackathon PDF and older PPT are **context, not law**. An AI-generat
 5. If you are about to add an LLM call, justify it against `RULES.md` R-10 in the change summary. Do not claim provider latency or safety checks passed without measurement.
 
 ## 4. Repo layout
+
+**Current continuation, 2026-10-18:** S1-11 retry and basic progress are accepted offline after review, 204 offline tests, 28 API tests, build/bundle checks and root's browser retry/history/compare/reload plus scripted-cycle verification. Attempt summaries persist without transcripts; full earlier feedback remains available only while its API process lives. The user resumed after prompt 10; S1-12 shared sliders is next. Live acceptance remains NOT RUN under D-28.
 
 **Subsequent movement correction, 2026-10-17:** the player-position scope fix passed two added regressions, bringing the fresh offline total to 199; 27 API tests, build and bundle scan also passed. Root verified keyboard/click walking and Help pause/resume with zero fresh browser errors. Historical milestone counts below remain unchanged. The existing bundle-size warning remains; live acceptance is NOT RUN and work stops before S1-11.
 

@@ -3,6 +3,7 @@ const title = (value) => String(value || "").replaceAll("_", " ");
 const quote = (entry) => entry.quote ? `<blockquote><span>Your line · ${esc(entry.user_turn_id ?? entry.turn_id)}</span><p>${esc(entry.quote)}</p></blockquote>` : `<p class="debrief-muted">Original line unavailable.</p>`;
 export function renderDebrief(packet) {
   const d = packet.debrief;
+  if (packet.status === "unavailable") return `<div role="status"><p>This earlier feedback is unavailable because the conversation server restarted. Your saved score summary is still in My progress.</p></div>`;
   if (!d) return `<div role="status"><p>${packet.status === "error" ? "Feedback could not be loaded. Your conversation is saved for this visit." : "Your conversation has ended. Preparing your feedback…"}</p></div>` +
     (["error", "paused"].includes(packet.status) ? `<button class="secondary-button" id="feedback-refresh">Check feedback</button>` : "");
   const notice = packet.status === "error" ? "Feedback could not be refreshed. Previous results remain below." : packet.status === "paused" ? "Feedback is still processing. You can check again when ready." : packet.status === "pending" ? "Refreshing feedback…" : d.total_status === "provisional" ? "Communication assessment is unavailable. This total is provisional; your deterministic results are complete." : d.coach_status === "unavailable" ? "Your score is ready; personalized coaching is unavailable." : "Your feedback is ready.";

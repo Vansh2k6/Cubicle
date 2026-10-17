@@ -97,3 +97,26 @@ test("HTTP feedback retry preserves the previous successful judge and retries on
   assert.equal(judgeCalls, 1); assert.equal(coachCalls, 3);
   assert.equal(result.body.debrief.judged.points, 25); assert.equal(result.body.debrief.total, 85); assert.equal(result.body.status, "ready");
 });
+
+test("a new session starts fresh and leaves the prior ended debrief immutable in either order", async () => {
+  const base = await launch();
+  const first = await create(base);
+  await request(base, first + "/turn", { npc_id: "maya", text: "I own the delay and the status is incomplete.", idempotencyKey: "isolation-a" });
+  await request(base, first + "/end", {});
+  const before = await ready(base, first);
+  const second = await create(base);
+  const fresh = await create(base);
+  const secondInitial = await request(base, second + "/turn", { npc_id: "maya", text: "Hello.", idempotencyKey: "isolation-b" });
+  const freshInitial = await request(base, fresh + "/turn", { npc_id: "maya", text: "Hello.", idempotencyKey: "isolation-c" });
+  assert.deepEqual(secondInitial.body.public_state, freshInitial.body.public_state);
+  await request(base, second + "/end", {});
+  await ready(base, second);
+  const after = await ready(base, first);
+  assert.deepEqual(after.body.debrief, before.body.debrief);
+
+  const reverse = await create(base);
+  const clean = await create(base);
+  const reverseInitial = await request(base, reverse + "/turn", { npc_id: "jordan", text: "Hello.", idempotencyKey: "isolation-d" });
+  const cleanInitial = await request(base, clean + "/turn", { npc_id: "jordan", text: "Hello.", idempotencyKey: "isolation-e" });
+  assert.deepEqual(reverseInitial.body.public_state, cleanInitial.body.public_state);
+});
