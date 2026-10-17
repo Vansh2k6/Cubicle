@@ -473,3 +473,10 @@ The client stores only sanitized attempt summaries in `cubicle-progress`: date, 
 ### S1-13 optional setup presets (accepted offline)
 
 `shared/presets.js` contains the approved public shared vectors. The client exposes them only when Vite supplies `VITE_PRESETS=1`; the default build omits the selector. Presets copy values into the existing setup draft, remain editable and never mutate a running session or server contract.
+
+### S1-14 built-demo serving (implemented; live acceptance deferred)
+`npm run build` creates the frontend; `npm run demo` serves its immutable asset buffers and the existing API together at `http://127.0.0.1:4173` (PORT override supported). It binds loopback only and forces API debug off. Provider selection remains the existing explicit configuration, default offline; it neither reads a credential file nor authorizes live evaluation. The production client uses same-origin API paths, while development retains localhost:8787 and an explicit window override takes precedence.
+
+`services/static.js` preloads only regular built files from a real, non-symlink dist root. It excludes symlinked files/directories, hidden path segments and private repository prefixes. Requests use exact preloaded URL keys, decode once, reject malformed encodings/backslashes/NUL/dot segments, and never join request paths to the filesystem. Unknown paths return 404 rather than the app shell. GET/HEAD preserve asset MIME, length and nosniff; unsupported static methods return 405. Known API routes keep priority and unknown API prefixes remain JSON 404. Missing dist fails startup with build instructions.
+
+`npm run verify:offline` runs the existing offline suite, API suite and build/bundle scan sequentially, removing live-provider/key/debug environment variables from child processes and stopping on failure. Live eval entry points stay opt-in and are not invoked. The existing Restart scenario action clears the active attempt without deleting saved summaries; no new reset surface is introduced. Demo readiness still requires the deferred live matrix in S1-14-gate.md.

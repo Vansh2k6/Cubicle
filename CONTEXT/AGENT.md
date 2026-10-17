@@ -34,7 +34,7 @@ The original hackathon PDF and older PPT are **context, not law**. An AI-generat
 
 ## 4. Repo layout
 
-**Current continuation, 2026-10-18:** S1-13 presets are accepted offline after S1-12 shared sliders. Fresh totals: 217 offline tests, 29 API tests reused with 67 unchanged API-input hashes, preset-enabled repaired bundle scan (5 artifacts/81 needles/zero hits), and a separate default-off build. Root verified all preset vectors/difficulties, editable Custom state, recorded Direct settings and disabled-selector behavior. Presets require VITE_PRESETS=1; voice remains unimplemented/disabled. Next is S1-14 hardening. D-33 corrects historical vacuous content scans; D-34 protects the user's ignored/untracked local credential file. New narrow-screen verification and live acceptance remain NOT RUN. Attempt summaries persist without transcripts; full earlier feedback lasts only while its API process lives.
+**Current continuation, 2026-10-18:** S1-12 shared sliders and S1-13 optional presets are accepted offline. S1-14 built-only demo serving, malformed-path recovery, offline verification command and operator/exit documentation are implemented; final serving verification is recorded in its gate. Fresh full checks: 217 offline tests, 35 API tests, build and corrected bundle scan (5 artifacts/81 needles/zero hits). Root verified the actual built same-origin loop, provisional debrief, Restart preserving progress and fresh empty retry state with no browser errors. Presets require VITE_PRESETS=1; voice remains absent. Current work stops at Stage 1 live acceptance, not Stage 2: every live exit remains NOT RUN under D-28, and no demo-ready claim is made. D-33 corrects historical vacuous content scans; D-34 protects the user's ignored/untracked local credential file. New narrow-screen verification remains unverified. Full historical feedback lasts only while its API process lives. Push/PR is postponed.
 
 **Subsequent movement correction, 2026-10-17:** the player-position scope fix passed two added regressions, bringing the fresh offline total to 199; 27 API tests, build and bundle scan also passed. Root verified keyboard/click walking and Help pause/resume with zero fresh browser errors. Historical milestone counts below remain unchanged. The existing bundle-size warning remains; live acceptance is NOT RUN and work stops before S1-11.
 
@@ -84,9 +84,11 @@ install:      npm ci
 dev (web):    npm run dev
 build (web):  npm run build
 preview:      npm run preview
+demo (built): npm run demo (build first; loopback frontend + API, default offline)
 dev (api):    npm run api (offline default; Groq requires explicit configuration)
 test engine:  npm run test:engine (node --test "engine/tests/*.test.js"; currently engine-only, must run without network or API keys)
 test all:     npm test (engine + llm + scoring offline suites; live evals deferred under D-28)
+offline gate: npm run verify:offline (clears provider/key/debug child env; all tests + API + bundle build/scan)
 lint/format:  unavailable; no configured script yet
 evals:        node evals/runClassifier.mjs (generic LLM_PROVIDER endpoint required;
               legacy endpoint runner; full live acceptance deferred under D-28)

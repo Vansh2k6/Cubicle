@@ -12,6 +12,8 @@
     "test:api": "node --test \"services/api/tests/*.test.js\"",
     "api": "node services/api/server.js",
     "api:debug": "node services/api/server.js --debug",
+    "demo": "node services/demo.mjs",
+    "verify:offline": "node scripts/verify-offline.mjs",
     "harness": "node services/api/client.mjs",
     "bundle:scan": "node scripts/bundle-scan.mjs",
     "llm:smoke": "node llm/smoke.mjs"

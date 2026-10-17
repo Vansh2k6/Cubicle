@@ -102,7 +102,7 @@ function restoreInPlace(obj, snapshotJson) {
   Object.assign(obj, data);
 }
 
-export function createServer({ debug = false, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = liveProvider || npcFn } = {}) {
+export function createServer({ debug = false, staticHandler = null, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = liveProvider || npcFn } = {}) {
   const store = new SessionStore(engine);
   const convos = new Map();
   const idem = new Map(); // `${sessionId}:${key}` -> response body
@@ -165,7 +165,9 @@ export function createServer({ debug = false, feedbackProviders = { judge: liveP
   }
 
   const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url || "/", "http://localhost");
+    let url;
+    try { url = new URL(req.url || "/", "http://localhost"); }
+    catch { send(res, 400, { error: "invalid request path" }); return; }
     const path = url.pathname.replace(/\/+$/, "") || "/";
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
@@ -334,6 +336,8 @@ export function createServer({ debug = false, feedbackProviders = { judge: liveP
         }
         return;
       }
+      if (path === "/sessions" || path.startsWith("/sessions/") || path === "/scenarios" || path.startsWith("/scenarios/")) { send(res, 404, { error: "not found" }); return; }
+      if (staticHandler && staticHandler(req, res)) return;
       send(res, 404, { error: "not found" });
     } catch (e) {
       const code = e && e.code;

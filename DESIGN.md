@@ -102,3 +102,9 @@ Root verified all four controls, stable range focus, Hard/Easy previews, the rec
 When `VITE_PRESETS=1`, the existing setup modal adds one native Starting style select. Supportive, Direct and Impatient copy their approved shared slider values into the editable controls; any manual adjustment shows Custom. The feature is off by default and does not alter an active session.
 
 Root verified all three vectors and Easy/Medium/Hard previews, manual changes returning to Custom, the Direct vector recorded for all three colleagues in the ended debrief, and the disabled selector with all four sliders still usable. No fresh browser errors; changed-file detector returned no findings. Narrow rendering and live tone remain unverified.
+
+## S1-14 local demo (verified offline)
+
+npm run demo serves built assets and the API together on localhost. The production client uses relative API paths; the existing dev base and explicit override remain available. No deployment or live-provider claim is made.
+
+Root verified the actual built app at 127.0.0.1:4173: setup loaded, a typed ownership turn ended with provisional 25/code25/judge0 feedback, Restart retained that summary in My progress and opened a fresh setup and blank conversation. No fresh browser errors. The existing reset control is reused without adding UI. Screenshots are in evals/reports/s1-p7. Live acceptance and new narrow rendering remain deferred.

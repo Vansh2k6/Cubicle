@@ -2,7 +2,8 @@
 // harness (services/api/client.mjs). No sealed data is stored here; the server
 // returns briefing + public state only (R-08). ESM, no dependencies.
 
-const BASE = (window.__CUBICLE_API || "http://localhost:8787").replace(/\/+$/, "");
+import { apiBase } from "./apiBase.js";
+const BASE = apiBase(window.__CUBICLE_API, import.meta.env.DEV);
 
 async function req(path, { method = "GET", body = null, timeoutMs = 12000 } = {}) {
   const ctrl = new AbortController();

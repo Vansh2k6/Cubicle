@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P7 demo hardening. S1-13 approved presets are accepted offline (217 tests, prior 29 API tests with unchanged API inputs, preset-enabled scan and default-off build, root browser checks). Presets are opt-in; voice is not shipped. Live exits remain open under D-28; this is not demo readiness.
+**Current phase:** S1-P7 acceptance pending. Implementation through S1-14 hardening is present: built-only loopback demo, offline gate and operator/exit plan. Fresh checks: 217 offline tests, 35 API tests, build/bundle scan; built-browser reset/debrief/progress checks. Live acceptance and tuning remain deferred under D-28; do not start Stage 2 or claim demo readiness. Presets are opt-in; voice is not shipped.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
@@ -93,10 +93,10 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 
 ## S1-P7 — Demo hardening
 - [ ] P7.1 Run the acceptance playthroughs (below) three times each.
-- [ ] P7.2 Tune weights and slider mappings once from playtests; record in `DECISIONS.md`.
-- [ ] P7.3 Loading and error states polished; demo reset button.
-- [ ] P7.3a Verify shared-demo static serving cannot expose CONTEXT, scenario specs, prompts, reply templates or private canon (R-08); serve frontend assets only, not the repository-root development server.
-- [ ] P7.4 Prepare demo script: trap run → low score and flagged moment; smart run → hidden facts found, high score; same scenario, different behaviour, explainable score.
+- [ ] P7.2 Tune weights and slider mappings once from playtests; record in `DECISIONS.md`. Deferred: no live playtest evidence and no tuning performed.
+- [x] P7.3 Existing loading/retry/error behavior retained; Restart scenario clears the current attempt and preserves saved progress, verified in the built browser. No new reset UI required.
+- [x] P7.3a Built-only loopback demo and pure API passed current-build forbidden-path checks: CONTEXT, scenarios, prompts, replies, .env, evals, src, engine and encoded traversal all rejected. Corrected bundle scan: 5 artifacts/81 needles/zero hits. See S1-14-gate.md; no public deployment implied.
+- [x] P7.4 Operator script and provider-failure/network-Retry plan prepared in evals/reports/s1-p7/demo-script.md. Targets are labelled unmeasured; execution is not claimed.
 
 ### Stage 1 exit criteria (demo-ready)
 1. **Hidden fact is hidden:** F1–F3 never appear in untriggered runs (≥5 each).
