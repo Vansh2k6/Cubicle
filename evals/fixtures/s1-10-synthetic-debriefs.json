@@ -1,0 +1,512 @@
+{
+  "synthetic": true,
+  "description": "Offline unavailable-rubric debrief shapes; no live assessment or calibration",
+  "results": {
+    "smart": {
+      "session_id": "missed_deadline#s7",
+      "status": "partial",
+      "total": 60,
+      "total_cap": 100,
+      "total_status": "provisional",
+      "band": "Developing",
+      "bands": [
+        {
+          "minimum": 85,
+          "label": "Excellent"
+        },
+        {
+          "minimum": 70,
+          "label": "Strong"
+        },
+        {
+          "minimum": 50,
+          "label": "Developing"
+        },
+        {
+          "minimum": 0,
+          "label": "Needs work"
+        }
+      ],
+      "deterministic": {
+        "points": 60,
+        "cap": 75
+      },
+      "judged": {
+        "points": 0,
+        "cap": 25,
+        "status": "unavailable",
+        "dimensions": [
+          {
+            "id": "honest_status",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "ownership",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "recovery_planning",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "communication",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "collaboration_under_pushback",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          }
+        ]
+      },
+      "breakdown": [
+        {
+          "id": "goals",
+          "label": "Goals",
+          "points": 30,
+          "cap": 30,
+          "source": "deterministic"
+        },
+        {
+          "id": "hidden_facts",
+          "label": "Hidden facts",
+          "points": 15,
+          "cap": 20,
+          "source": "deterministic"
+        },
+        {
+          "id": "integrity",
+          "label": "Integrity",
+          "points": 15,
+          "cap": 15,
+          "source": "deterministic"
+        },
+        {
+          "id": "relationship",
+          "label": "Relationship",
+          "points": 0,
+          "cap": 10,
+          "source": "deterministic"
+        },
+        {
+          "id": "rubric",
+          "label": "Communication quality",
+          "points": 0,
+          "cap": 25,
+          "source": "judged"
+        }
+      ],
+      "what_went_well": [
+        "You took responsibility and shared an honest update.",
+        "Your questions uncovered more context."
+      ],
+      "timeline": [
+        {
+          "type": "great_recap",
+          "source_id": "commitment:C1",
+          "turn_id": 10,
+          "user_turn_id": 19,
+          "quote": "To recap, I will deliver Thursday."
+        }
+      ],
+      "priorities": [
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F3",
+          "turn_id": null,
+          "user_turn_id": null,
+          "loss": 5,
+          "kind": "not_observed",
+          "quote": null,
+          "label": "Ask Sam: What should I have done when I first knew?",
+          "description": "This fact was not discovered by session end."
+        }
+      ],
+      "moments": [
+        {
+          "general": false,
+          "turn_id": 19,
+          "quote": "To recap, I will deliver Thursday.",
+          "what_went_well": "You put your perspective into words.",
+          "what_happened": "This moment offers a chance to clarify the situation.",
+          "why_it_matters": "Checking missing information can make the next step clearer.",
+          "better_reply": "What should I understand before proposing a next step?",
+          "manifestId": "manifest-3cb7decb",
+          "source": "fallback"
+        }
+      ],
+      "coach_status": "unavailable",
+      "missed_facts": [
+        {
+          "id": "F3",
+          "owner": "sam",
+          "content": "Team norm: a same-day heads-up on a delay is expected and is not counted against review.",
+          "unlock_question": "What should I have done when I first knew?"
+        }
+      ],
+      "weights": {
+        "goals": 30,
+        "hidden_facts": 20,
+        "integrity": 15,
+        "relationship": 10,
+        "rubric": 25
+      },
+      "penalties": {
+        "unrealistic_commitment": 8,
+        "contradicted_commitment": 4,
+        "inaccurate_relay": 3
+      },
+      "scoring_version": 2,
+      "settings": {
+        "maya": {
+          "assertiveness": 50,
+          "patience": 50,
+          "warmth": 50,
+          "forthcomingness": 50
+        },
+        "jordan": {
+          "assertiveness": 50,
+          "patience": 50,
+          "warmth": 50,
+          "forthcomingness": 50
+        },
+        "sam": {
+          "assertiveness": 50,
+          "patience": 50,
+          "warmth": 50,
+          "forthcomingness": 50
+        }
+      },
+      "end_reason": "goals_complete",
+      "manifest_id": "manifest-3cb7decb",
+      "manifest": {
+        "id": "manifest-3cb7decb",
+        "roles": {
+          "classifier": {
+            "model": "offline-stub:rules-v1",
+            "promptVersion": "v1",
+            "schemaVersion": 1
+          },
+          "coach": {
+            "model": "authored-fallback:coach",
+            "promptVersion": "v2",
+            "schemaVersion": 2
+          },
+          "judge": {
+            "model": "offline-unavailable:judge",
+            "promptVersion": "v2",
+            "schemaVersion": 2
+          },
+          "npc": {
+            "model": "offline-stub:store-v1",
+            "promptVersion": "v2",
+            "schemaVersion": 1
+          }
+        },
+        "createdAt": "2026-10-17T12:17:31.570Z"
+      }
+    },
+    "trap": {
+      "session_id": "missed_deadline#s7",
+      "status": "partial",
+      "total": 7,
+      "total_cap": 100,
+      "total_status": "provisional",
+      "band": "Needs work",
+      "bands": [
+        {
+          "minimum": 85,
+          "label": "Excellent"
+        },
+        {
+          "minimum": 70,
+          "label": "Strong"
+        },
+        {
+          "minimum": 50,
+          "label": "Developing"
+        },
+        {
+          "minimum": 0,
+          "label": "Needs work"
+        }
+      ],
+      "deterministic": {
+        "points": 7,
+        "cap": 75
+      },
+      "judged": {
+        "points": 0,
+        "cap": 25,
+        "status": "unavailable",
+        "dimensions": [
+          {
+            "id": "honest_status",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "ownership",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "recovery_planning",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "communication",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          },
+          {
+            "id": "collaboration_under_pushback",
+            "score": null,
+            "points": 0,
+            "status": "insufficient",
+            "turn_id": null,
+            "quote": "",
+            "explanation": "There is not enough verified evidence for this assessment.",
+            "manifestId": "manifest-3cb7decb"
+          }
+        ]
+      },
+      "breakdown": [
+        {
+          "id": "goals",
+          "label": "Goals",
+          "points": 0,
+          "cap": 30,
+          "source": "deterministic"
+        },
+        {
+          "id": "hidden_facts",
+          "label": "Hidden facts",
+          "points": 0,
+          "cap": 20,
+          "source": "deterministic"
+        },
+        {
+          "id": "integrity",
+          "label": "Integrity",
+          "points": 7,
+          "cap": 15,
+          "source": "deterministic"
+        },
+        {
+          "id": "relationship",
+          "label": "Relationship",
+          "points": 0,
+          "cap": 10,
+          "source": "deterministic"
+        },
+        {
+          "id": "rubric",
+          "label": "Communication quality",
+          "points": 0,
+          "cap": 25,
+          "source": "judged"
+        }
+      ],
+      "what_went_well": [
+        "You made time to practice a difficult conversation."
+      ],
+      "timeline": [
+        {
+          "type": "premature_commitment",
+          "source_id": "commitment:C1",
+          "turn_id": 1,
+          "user_turn_id": 1,
+          "quote": "I will deliver tomorrow."
+        },
+        {
+          "type": "missed_probe",
+          "source_id": "fact:F1",
+          "turn_id": 1,
+          "user_turn_id": 1,
+          "fact_id": "F1",
+          "provisional": true,
+          "quote": "I will deliver tomorrow."
+        },
+        {
+          "type": "missed_probe",
+          "source_id": "fact:F2",
+          "turn_id": 2,
+          "user_turn_id": 3,
+          "fact_id": "F2",
+          "provisional": true,
+          "quote": "Hello."
+        }
+      ],
+      "priorities": [
+        {
+          "metric": "goals",
+          "source_id": "goal:G1",
+          "turn_id": null,
+          "user_turn_id": null,
+          "loss": 10,
+          "kind": "not_observed",
+          "quote": null,
+          "label": "Own the delay and report status honestly to Maya",
+          "description": "This goal was not completed by session end."
+        },
+        {
+          "metric": "goals",
+          "source_id": "goal:G2",
+          "turn_id": null,
+          "user_turn_id": null,
+          "loss": 10,
+          "kind": "not_observed",
+          "quote": null,
+          "label": "Clarify the remaining requirements with Jordan",
+          "description": "This goal was not completed by session end."
+        }
+      ],
+      "moments": [
+        {
+          "general": false,
+          "turn_id": 1,
+          "quote": "I will deliver tomorrow.",
+          "what_went_well": "You put your perspective into words.",
+          "what_happened": "This moment offers a chance to clarify the situation.",
+          "why_it_matters": "Checking missing information can make the next step clearer.",
+          "better_reply": "Is there any flexibility, and what happens if it slips?",
+          "manifestId": "manifest-3cb7decb",
+          "source": "fallback"
+        }
+      ],
+      "coach_status": "unavailable",
+      "missed_facts": [
+        {
+          "id": "F1",
+          "owner": "maya",
+          "content": "Client hard cutoff is in 3 days (Friday). Maya has been holding them off.",
+          "unlock_question": "Is there any flexibility, and what happens if it slips?"
+        },
+        {
+          "id": "F2",
+          "owner": "jordan",
+          "content": "Jordan built a reusable module covering about half the remaining work and can pair for an afternoon.",
+          "unlock_question": "What is left and can you help / pair?"
+        },
+        {
+          "id": "F3",
+          "owner": "sam",
+          "content": "Team norm: a same-day heads-up on a delay is expected and is not counted against review.",
+          "unlock_question": "What should I have done when I first knew?"
+        }
+      ],
+      "weights": {
+        "goals": 30,
+        "hidden_facts": 20,
+        "integrity": 15,
+        "relationship": 10,
+        "rubric": 25
+      },
+      "penalties": {
+        "unrealistic_commitment": 8,
+        "contradicted_commitment": 4,
+        "inaccurate_relay": 3
+      },
+      "scoring_version": 2,
+      "settings": {
+        "maya": {
+          "assertiveness": 50,
+          "patience": 50,
+          "warmth": 50,
+          "forthcomingness": 50
+        },
+        "jordan": {
+          "assertiveness": 50,
+          "patience": 50,
+          "warmth": 50,
+          "forthcomingness": 50
+        },
+        "sam": {
+          "assertiveness": 50,
+          "patience": 50,
+          "warmth": 50,
+          "forthcomingness": 50
+        }
+      },
+      "end_reason": "user_ended",
+      "manifest_id": "manifest-3cb7decb",
+      "manifest": {
+        "id": "manifest-3cb7decb",
+        "roles": {
+          "classifier": {
+            "model": "offline-stub:rules-v1",
+            "promptVersion": "v1",
+            "schemaVersion": 1
+          },
+          "coach": {
+            "model": "authored-fallback:coach",
+            "promptVersion": "v2",
+            "schemaVersion": 2
+          },
+          "judge": {
+            "model": "offline-unavailable:judge",
+            "promptVersion": "v2",
+            "schemaVersion": 2
+          },
+          "npc": {
+            "model": "offline-stub:store-v1",
+            "promptVersion": "v2",
+            "schemaVersion": 1
+          }
+        },
+        "createdAt": "2026-10-17T12:17:31.570Z"
+      }
+    }
+  }
+}

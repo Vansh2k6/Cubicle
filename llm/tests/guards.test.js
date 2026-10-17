@@ -129,3 +129,18 @@ test("contentTokens drops stopwords", () => {
   assert.ok(!contentTokens("the client and its cutoff").includes("the"));
   assert.ok(contentTokens("the client and its cutoff").includes("cutoff"));
 });
+
+test("canon validates every date occurrence rather than letting an authorized first date mask later claims", () => {
+  const options = { scenario, authorisedFactId: "F1", corpus: echoCorpus(), clockDay: 0 };
+  for (const text of [
+    "The cutoff is Friday. The actual deadline is tomorrow.",
+    "The cutoff is Friday. The actual deadline is Thursday.",
+    "The cutoff is Friday. We can deliver Monday.",
+    "The cutoff is Friday but the actual deadline is tomorrow and delivery is Monday.",
+    "The cutoff is in three days; we will deliver in two days.",
+    "The cutoff is Friday and tomorrow and Thursday.",
+  ]) assert.ok(canonCheck(text, options).length > 0, text);
+  assert.deepEqual(canonCheck("The cutoff is Friday, three days away.", options), []);
+  const authorised = ctx({ act: "reveal_fact:F1", authorised: { factId: "F1", owner: "maya", act: "reveal_fact:F1" } });
+  assert.equal(checkReply("The client cutoff is Friday, three days away. I have been holding them off.", authorised).ok, true);
+});

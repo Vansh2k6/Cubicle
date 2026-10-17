@@ -1,0 +1,10 @@
+{
+  "part": "S1-10",
+  "status": "NOT RUN",
+  "reason": "No remaining live-call allowance; separate user authorization required.",
+  "cases": [
+    { "path": "smart", "method": "Play through the full scene/API/classifier/engine/guards/debrief pipeline with the configured real provider. Record total, deterministic and judged subtotals, manifest, every displayed quote and quote-validation results.", "target": "Total >=85; unmeasured, not implied by injected rubric arithmetic." },
+    { "path": "trap", "method": "Commit tomorrow without probing, observe safe callback, end and inspect debrief. Record correctly quoted premature_commitment and missed F1/F2 after end only.", "target": "Total <50; unmeasured, not calibrated." }
+  ],
+  "on_target_miss": "Report actual numbers. Do not tune weights or anchors silently; obtain approval and increment scoring_version for any accepted calibration change."
+}

@@ -1,3 +1,4 @@
+if (process.env.RUN_LIVE !== "1") { console.error("Refused: RUN_LIVE=1 required; live eval NOT RUN."); process.exit(2); }
 // evals/p2c-latency.NOTRUN.mjs — Guarded-turn latency measurement (NOT RUN).
 // Live provider required (D-28 defers live). Saves the run script for the
 // user batch, exits 2. Requirement: >=30 guarded text turns on a scripted

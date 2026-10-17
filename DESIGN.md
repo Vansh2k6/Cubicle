@@ -71,3 +71,19 @@ Quick-reply chips, voice, scoring display in the panel (debrief work owns that),
 ## Non-goals
 
 Mood numbers (label only), per-NPC goal breakdowns (checklist is session-global), unread badges, thread deletion, voice.
+
+## S1-07 ending refinement (Operate)
+Reuses the existing completion modal, ivory palette, typography, focus handling and button styles. End waits for the active reply, calls the server End endpoint, and leaves the conversation available on failure. A server-ended session disables all NPC threads. The final placeholder says “Session ended” and “Debrief coming soon”; it does not imply a score or feedback exists. No additional motion, tokens or layout system. The orchestrator verified walking to Maya, typed input with a G1 checklist update, and the End placeholder in the offline browser preview. Full scene smart/trap playthroughs remain NOT RUN.
+
+## S1-10 debrief (Operate, narrow refinement)
+The established end modal now hosts the debrief, using the same ivory/purple palette, fonts, close button, Escape behavior and viewport focus return. No animation or new dependency. It expands to a readable 720px maximum with the existing scrollable modal; on small screens padding reduces and tables wrap instead of overflowing.
+
+Order: provisional/final score with explicit deterministic75/judged25 separation; What went well; metric breakdown and expandable quality evidence; two priorities; quoted timeline; one historical coaching moment (positive feedback first); post-session missed facts/questions; settings and scoring version. Values and strings come from the server and are escaped. The browser formats/render values and performs no scoring arithmetic.
+
+States: pending has a readable status message; bounded polling offers Check feedback after a delay; network error offers Check feedback; partial/offline retains deterministic results and labels the rubric/coaching unavailable, with one explicit feedback retry; ready shows available feedback. Cached results remain visible while refreshing. Polls are bound to the originating session/scenario/thread set and modal element, so closing/restarting/switching cannot overwrite a new run. No S1-11 attempt retry/progress features were added.
+
+Root completed rendered desktop/small-screen debrief verification and saved screenshots; full scene smart/trap and live acceptance remain NOT RUN. Automated browser tooling dependency was not added; pure rendering/escaping/stale-poll tests cover critical state logic.
+
+S1-10 review refinement: priorities for missing achievements name the specific goal/question and say it was not observed by session end; absence is never pinned to an unrelated final quote. If a feedback retry POST has an uncertain network outcome, polling/Check feedback recovers the server job while preserving previous results. Already available judge/coaching sections survive retry. User-facing offline copy says a practice question is shown.
+
+Final S1-10 verification: 390px source labels use Code/Judge to avoid split words; the deterministic75/judged25 distinction remains explicit. Dialog content scrolls without horizontal overflow. Retry/check updates preserve surviving focused controls or restore Close without scrolling when a control disappears. Root verified actual Tab/Shift+Tab, Escape, reopening ended feedback, and focus after retry. Saved synthetic screenshots live under evals/reports/s1-10-debrief-*.jpg. Live scoring remains uncalibrated. No work beyond prompt 10.

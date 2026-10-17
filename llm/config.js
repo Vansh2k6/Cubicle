@@ -1,12 +1,11 @@
-// llm/config.js — Per-role LLM routing config. Provider UNCHOSEN (P0.2 deferred):
-// models are placeholder strings, overridable by env. No keys here (R-50).
+// Per-role Groq defaults, overridable server-side. Offline remains the default.
 // ESM, stdlib only.
 
 const DEFAULTS = {
-  classifier: { model: "pending-provider:classifier", temperature: 0, timeoutMs: 1500, promptVersion: "v1", schemaVersion: 1 },
-  npc: { model: "pending-provider:npc", temperature: 0.8, timeoutMs: 3000, promptVersion: "v1", schemaVersion: 1 },
-  judge: { model: "pending-provider:judge", temperature: 0, timeoutMs: 8000, promptVersion: "v1", schemaVersion: 1 },
-  coach: { model: "pending-provider:coach", temperature: 0.7, timeoutMs: 8000, promptVersion: "v1", schemaVersion: 1 },
+  classifier: { model: "openai/gpt-oss-20b", temperature: 0, maxTokens: 512, reasoningEffort: "low", extraParams: {}, timeoutMs: 8000, promptVersion: "v1", schemaVersion: 1 },
+  npc: { model: "qwen/qwen3.8-27b", temperature: 0.8, maxTokens: 512, reasoningEffort: "none", extraParams: {}, timeoutMs: 8000, promptVersion: "v2", schemaVersion: 1 },
+  judge: { model: "openai/gpt-oss-120b", temperature: 0, maxTokens: 1024, reasoningEffort: "low", extraParams: {}, timeoutMs: 8000, promptVersion: "v2", schemaVersion: 2 },
+  coach: { model: "openai/gpt-oss-120b", temperature: 0.7, maxTokens: 1024, reasoningEffort: "low", extraParams: {}, timeoutMs: 8000, promptVersion: "v2", schemaVersion: 2 },
 };
 
 const MODEL_ENV = {
@@ -42,9 +41,28 @@ export function loadConfig(env = process.env) {
     const override = env && typeof env[MODEL_ENV[role]] === "string" && env[MODEL_ENV[role]].trim() !== ""
       ? env[MODEL_ENV[role]].trim()
       : base.model;
-    config[role] = { ...base, model: override };
+    const prefix = role.toUpperCase();
+    let extraParams = {};
+    try { extraParams = JSON.parse(env[`${prefix}_EXTRA_PARAMS`] || "{}"); } catch { /* ignore invalid optional params */ }
+    if (!extraParams || typeof extraParams !== "object" || Array.isArray(extraParams)) extraParams = {};
+    const modelExtras = /^openai\/gpt-oss-(20b|120b)$/.test(override) ? { include_reasoning: false }
+      : override === "qwen/qwen3.8-27b" ? { reasoning_format: "hidden" } : {};
+    config[role] = { ...base, model: override,
+      maxTokens: positiveInt(env[`${prefix}_MAX_TOKENS`], base.maxTokens),
+      reasoningEffort: env[`${prefix}_REASONING_EFFORT`] || base.reasoningEffort,
+      extraParams: { ...modelExtras, ...extraParams },
+    };
   }
   return Object.freeze(config);
+}
+
+export function positiveInt(value, fallback) {
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n > 0 ? n : fallback;
+}
+
+export function providerName(env = process.env) {
+  return env.LLM_PROVIDER === "groq" && typeof env.GROQ_API_KEY === "string" && env.GROQ_API_KEY.trim() ? "groq" : "offline";
 }
 
 // Stable hash of the canonical default role table (env overrides excluded).

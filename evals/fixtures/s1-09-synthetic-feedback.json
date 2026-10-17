@@ -1,0 +1,107 @@
+{
+  "synthetic": true,
+  "description": "Fake-provider shape and fallback evidence only; no live measurement. Trap was ended in memory without changing the source fixture.",
+  "manifest": {
+    "id": "manifest-eda84832",
+    "roles": {
+      "classifier": {
+        "model": "fake:classifier",
+        "promptVersion": "v1",
+        "schemaVersion": 1
+      },
+      "coach": {
+        "model": "fake:coach",
+        "promptVersion": "v2",
+        "schemaVersion": 2
+      },
+      "judge": {
+        "model": "fake:judge",
+        "promptVersion": "v2",
+        "schemaVersion": 2
+      },
+      "npc": {
+        "model": "fake:npc",
+        "promptVersion": "v2",
+        "schemaVersion": 1
+      }
+    },
+    "createdAt": "2026-10-17T07:06:57.282Z"
+  },
+  "judge": {
+    "points": 15,
+    "cap": 25,
+    "dimensions": [
+      {
+        "id": "honest_status",
+        "score": 3,
+        "turn_id": 1,
+        "quote": "I own the delay and the work is unfinished.",
+        "explanation": "Synthetic example of clear wording.",
+        "status": "verified",
+        "points": 3,
+        "manifestId": "manifest-eda84832"
+      },
+      {
+        "id": "ownership",
+        "score": 3,
+        "turn_id": 1,
+        "quote": "I own the delay and the work is unfinished.",
+        "explanation": "Synthetic example of clear wording.",
+        "status": "verified",
+        "points": 3,
+        "manifestId": "manifest-eda84832"
+      },
+      {
+        "id": "recovery_planning",
+        "score": 3,
+        "turn_id": 1,
+        "quote": "I own the delay and the work is unfinished.",
+        "explanation": "Synthetic example of clear wording.",
+        "status": "verified",
+        "points": 3,
+        "manifestId": "manifest-eda84832"
+      },
+      {
+        "id": "communication",
+        "score": 3,
+        "turn_id": 1,
+        "quote": "I own the delay and the work is unfinished.",
+        "explanation": "Synthetic example of clear wording.",
+        "status": "verified",
+        "points": 3,
+        "manifestId": "manifest-eda84832"
+      },
+      {
+        "id": "collaboration_under_pushback",
+        "score": 3,
+        "turn_id": 1,
+        "quote": "I own the delay and the work is unfinished.",
+        "explanation": "Synthetic example of clear wording.",
+        "status": "verified",
+        "points": 3,
+        "manifestId": "manifest-eda84832"
+      }
+    ],
+    "deterministic": 60,
+    "manifestId": "manifest-eda84832",
+    "attempts": 1,
+    "source": "llm"
+  },
+  "coach": {
+    "moments": [
+      {
+        "general": false,
+        "turn_id": 1,
+        "quote": "I will deliver tomorrow.",
+        "what_went_well": "You put your perspective into words.",
+        "what_happened": "This moment offers a chance to clarify the situation.",
+        "why_it_matters": "Checking missing information can make the next step clearer.",
+        "better_reply": "Is there any flexibility, and what happens if it slips?",
+        "manifestId": "manifest-eda84832",
+        "source": "fallback"
+      }
+    ],
+    "manifestId": "manifest-eda84832",
+    "attempts": 2
+  }
+}

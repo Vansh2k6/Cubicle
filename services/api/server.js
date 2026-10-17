@@ -1,8 +1,8 @@
 // services/api/server.js — Minimal Node built-in HTTP API (P2c, ARCHITECTURE.md §18 slice).
 // Endpoints: POST /sessions, POST /sessions/{id}/turn, GET /scenarios/{id}.
 // Server-side spec only (R-08): the client receives briefing + visible goals.
-// Offline only: runTurn is wired to deterministic stub providers (D-28: no live
-// LLM, Groq wiring deferred). Debug fields (_debug) are emitted only when
+// Defaults to offline; explicit Groq configuration enables the live gateway.
+// Debug fields (_debug) are emitted only when
 // CUBICLE_DEBUG=1 or --debug is set (R-03); shared-demo builds run without it.
 // Idempotency: a turn request may carry idempotencyKey. Completed responses are
 // cached per key and replayed without re-applying engine state; a failed
@@ -18,6 +18,10 @@ import { SessionStore } from "../../engine/store.js";
 import { createConversation, runTurn, publicResponse, projectGoals, nextHintFor } from "../../llm/pipeline.js";
 import { createManifest } from "../../llm/manifest.js";
 import { classifyProviderFor, npcFn } from "./offlineProviders.js";
+import { loadConfig, providerName } from "../../llm/config.js";
+import { createGroqProvider } from "../../llm/providers/groq.js";
+import { assembleDebrief } from "../../scoring/debrief.js";
+import { createScoreRecord } from "../../scoring/score.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SPEC = JSON.parse(readFileSync(join(root, "scenarios", "missed_deadline.json"), "utf8"));
@@ -29,11 +33,13 @@ const TURN_TIMEOUT_MS = 15000;
 const MAX_TEXT = 2000;
 const MAX_BODY = 1 << 20;
 
-const manifest = createManifest({
+const selectedProvider = providerName();
+const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
+const manifest = createManifest(liveProvider ? loadConfig() : {
   classifier: { model: "offline-stub:rules-v1", promptVersion: "v1", schemaVersion: 1 },
-  npc: { model: "offline-stub:store-v1", promptVersion: "v1", schemaVersion: 1 },
-  judge: { model: "pending-provider:judge", promptVersion: "v1", schemaVersion: 1 },
-  coach: { model: "pending-provider:coach", promptVersion: "v1", schemaVersion: 1 },
+  npc: { model: "offline-stub:store-v1", promptVersion: "v2", schemaVersion: 1 },
+  judge: { model: "offline-unavailable:judge", promptVersion: "v2", schemaVersion: 2 },
+  coach: { model: "authored-fallback:coach", promptVersion: "v2", schemaVersion: 2 },
 });
 
 function moodLabel(mood) {
@@ -67,7 +73,7 @@ function debugOf(res) {
     events: res.trace.events,
     act: res.trace.act,
     source: res.trace.replySource,
-    provider: "offline-stub (no live LLM)",
+    provider: selectedProvider,
     guard: res.trace.guardEvents,
     latencyMs: res.trace.latencyMs,
     stages: res.trace.stages,
@@ -95,11 +101,30 @@ function restoreInPlace(obj, snapshotJson) {
   Object.assign(obj, data);
 }
 
-export function createServer({ debug = false } = {}) {
+export function createServer({ debug = false, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = liveProvider || npcFn } = {}) {
   const store = new SessionStore(engine);
   const convos = new Map();
   const idem = new Map(); // `${sessionId}:${key}` -> response body
   const inflight = new Map(); // `${sessionId}:${key}` -> promise
+  const debriefs = new Map();
+  function beginDebrief(session, retry = false) {
+    let job = debriefs.get(session.id);
+    if (job && (!retry || job.status === "pending" || job.retryUsed || job.status === "ready")) return job;
+    if (!job) job = { record: createScoreRecord(session, convos.get(session.id), SPEC), retryUsed: false };
+    if (retry) job.retryUsed = true;
+    const previous = job.result || null;
+    job.status = "pending"; job.result = previous;
+    debriefs.set(session.id, job);
+    job.promise = Promise.resolve().then(() => debriefAssembler({ record: structuredClone(job.record), providers: feedbackProviders, manifest, previous }))
+      .then((result) => { job.result = result; job.status = result.status; })
+      .catch(async () => {
+        try { job.result = await assembleDebrief({ record: structuredClone(job.record), providers: {}, manifest, previous }); job.status = "partial"; }
+        catch { job.status = "error"; }
+      });
+    return job;
+  }
+  const debriefBody = (job) => ({ status: job.status, debrief: job.result || null,
+    retry_allowed: !job.retryUsed && ["partial", "error"].includes(job.status) });
 
   function send(res, status, body) {
     const text = JSON.stringify(body);
@@ -151,6 +176,19 @@ export function createServer({ debug = false } = {}) {
       return;
     }
     try {
+      const debriefMatch = /^\/sessions\/([^/]+)\/debrief(\/retry)?$/.exec(path);
+      if (debriefMatch && ((req.method === "GET" && !debriefMatch[2]) || (req.method === "POST" && debriefMatch[2]))) {
+        const session = store.getState(decodeURIComponent(debriefMatch[1]));
+        if (!session) { send(res, 404, { error: "unknown session" }); return; }
+        if (!session.ended) { send(res, 409, { status: "not_ready", error: "end the session first" }); return; }
+        if (inflight.has(session.id)) { send(res, 202, { status: "pending", debrief: null, retry_allowed: false }); return; }
+        const existing = debriefs.get(session.id);
+        if (debriefMatch[2] && existing && existing.status !== "pending" && (existing.retryUsed || existing.status === "ready")) {
+          send(res, 409, { error: "feedback retry is unavailable", ...debriefBody(existing) }); return;
+        }
+        const job = beginDebrief(session, !!debriefMatch[2]);
+        send(res, job.status === "pending" ? 202 : 200, debriefBody(job)); return;
+      }
       // GET /scenarios/{id} — briefing + visible goals only (R-03/R-08).
       if (req.method === "GET" && path.startsWith("/scenarios/")) {
         const id = decodeURIComponent(path.slice("/scenarios/".length));
@@ -187,6 +225,17 @@ export function createServer({ debug = false } = {}) {
         });
         return;
       }
+      const endMatch = /^\/sessions\/([^/]+)\/end$/.exec(path);
+      if (req.method === "POST" && endMatch) {
+        const id = decodeURIComponent(endMatch[1]);
+        const session = store.getState(id);
+        if (!session) { send(res, 404, { error: "unknown session" }); return; }
+        if (inflight.has(id)) { send(res, 409, { error: "wait for the current turn", retryable: true }); return; }
+        engine.endSession(session);
+        beginDebrief(session);
+        send(res, 200, { ended: true, end_reason: session.endReason, public_state: { ...initialPublic(session), ended: true } });
+        return;
+      }
       // POST /sessions/{id}/turn
       const turnMatch = /^\/sessions\/([^/]+)\/turn$/.exec(path);
       if (req.method === "POST" && turnMatch) {
@@ -195,10 +244,6 @@ export function createServer({ debug = false } = {}) {
         const convo = convos.get(sessionId);
         if (!session || !convo) {
           send(res, 404, { error: "unknown session" });
-          return;
-        }
-        if (session.ended) {
-          send(res, 409, { error: "session ended", retryable: false });
           return;
         }
         const body = await readBody(req);
@@ -230,6 +275,8 @@ export function createServer({ debug = false } = {}) {
           }
           return;
         }
+        if (session.ended) { send(res, 409, { error: "session ended", retryable: false }); return; }
+        if (inflight.has(sessionId)) { send(res, 409, { error: "wait for the current turn", retryable: true }); return; }
         const snapSession = JSON.stringify(session);
         const snapConvo = JSON.stringify(convo);
         const attempt = (async () => {
@@ -241,24 +288,28 @@ export function createServer({ debug = false } = {}) {
               npcId,
               text,
               engine,
-              providers: { classify: classifyProviderFor(text), npc: npcFn },
+              providers: { classify: liveProvider || classifyProviderFor(text), npc: npcProvider },
               manifestId: manifest.id,
             }),
-            TURN_TIMEOUT_MS,
+            liveProvider ? 180000 : TURN_TIMEOUT_MS, // includes capped live Retry-After and guard regeneration
           );
           const pub = publicResponse(out);
           if (debug) pub._debug = debugOf(out);
           return pub;
         })();
         if (ck) inflight.set(ck, attempt);
+        inflight.set(sessionId, attempt);
         try {
           const bodyOut = await attempt;
+          inflight.delete(sessionId);
+          if (bodyOut.ended) beginDebrief(session);
           if (ck) {
             idem.set(ck, bodyOut);
             inflight.delete(ck);
           }
           send(res, 200, bodyOut);
         } catch (e) {
+          inflight.delete(sessionId);
           if (ck) inflight.delete(ck);
           // Roll back the partial mutation so a same-key retry applies once.
           try {

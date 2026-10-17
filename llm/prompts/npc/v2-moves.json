@@ -1,0 +1,7 @@
+{
+  "version": "v2",
+  "callbackChallenge": "Engine-selected callback: challenge the earlier promise and ask for a workable revision. Do not disclose the reason or suggest a date.",
+  "callbackAcknowledge": "Engine-selected callback: acknowledge the earlier promise and ask for a progress update. Do not invent terms.",
+  "agreement": "The engine authorizes acceptance of the user's current plan. Reply with exactly this single sentence and no other words: That plan works for me.",
+  "closing": "The engine authorizes closing after the user's recap. Reply with exactly this single sentence and no other words: We have a plan."
+}

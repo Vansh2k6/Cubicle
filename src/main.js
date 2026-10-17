@@ -60,7 +60,10 @@ const icons = {
   Circle,
 };
 import { createOffice } from "./office.js";
-import { createSession, sendTurn, newKey } from "./api.js";
+import { createSession, sendTurn, endSession, getDebrief, retryDebrief, newKey } from "./api.js";
+import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
+import { createEndCoordinator, captureRun } from "./endCoordinator.js";
+const ending = createEndCoordinator();
 const scenarios = {
   deadline: {
     title: "Missed a project deadline",
@@ -386,17 +389,19 @@ function openTextConversation() {
 
 function startTextSession() {
   if (state.sessionId || !state.textMode || !state.text) return;
+  const current = captureRun(state);
   state.text.loadError = null;
   renderTextDialogue();
   createSession("deadline").then(
     (data) => {
-      if (!state.textMode || !state.text) return;
+      if (!current() || !state.textMode || !state.text) return;
       state.sessionId = data.session_id;
       state.sharedGoals = (data.public_state && data.public_state.goals) || [];
       state.sharedHint = (data.public_state && data.public_state.next_hint) || "";
       renderTextDialogue();
     },
     (err) => {
+      if (!current()) return;
       if (!state.textMode || !state.text) {
         // Session creation failed while closed: keep the error on the open
         // thread so reopening shows Retry instead of a dead panel.
@@ -416,6 +421,7 @@ function startTextSession() {
 function renderTextDialogue() {
   const t = state.text;
   if (!t || !state.dialogue) return;
+  const busy = t.busy || ending.busy(state.sessionId, state.scenario);
   const p = people[state.dialogue];
   const first = p.name.split(" ")[0];
   const lines = t.transcript
@@ -452,14 +458,14 @@ function renderTextDialogue() {
       : "") +
     (state.sessionId && !t.over
       ? `<form class="text-form" id="text-form"><label for="text-input">Reply to ${escapeHtml(first)}</label>` +
-        `<div class="text-row"><input id="text-input" name="text" type="text" maxlength="500" autocomplete="off" placeholder="Type your reply…" ${t.busy ? "disabled" : ""} aria-describedby="text-hint" />` +
-        `<button class="primary-button" type="submit" ${t.busy ? "disabled" : ""}>Send ${icon("arrow-right")}</button></div>` +
+        `<div class="text-row"><input id="text-input" name="text" type="text" maxlength="500" autocomplete="off" placeholder="Type your reply…" ${busy ? "disabled" : ""} aria-describedby="text-hint" />` +
+        `<button class="primary-button" type="submit" ${busy ? "disabled" : ""}>Send ${icon("arrow-right")}</button></div>` +
         `<small id="text-hint">${state.sharedHint ? escapeHtml(state.sharedHint) : "Enter sends · Esc closes"}</small></form>`
       : "") +
     (goals ? `<ul class="goal-list" aria-label="Visible goals">${goals}</ul>` : "") +
     `<div id="text-debug"></div>` +
     (state.sessionId
-      ? `<button class="primary-button text-finish" id="finish-text">${t.over ? "Wrap up & reflect" : "End & reflect"} ${icon("arrow-right")}</button>`
+      ? `<button class="primary-button text-finish" id="finish-text" ${ending.busy(state.sessionId, state.scenario) ? "disabled" : ""}>${ending.busy(state.sessionId, state.scenario) ? "Ending…" : t.over ? "Wrap up & reflect" : "End & reflect"} ${icon("arrow-right")}</button>`
       : "") +
     `</section>`;
   $("#close-dialogue").onclick = closeConversation;
@@ -498,7 +504,9 @@ async function sendTextTurn(text, key, isRetry) {
   // reopen; retries reuse the same key so the server applies it once.
   const thread = state.text;
   const npcId = state.dialogue;
-  if (!thread || !npcId || thread.busy || state.sessionId == null || thread.over) return;
+  const sessionId = state.sessionId;
+  const current = captureRun(state);
+  if (!thread || !npcId || thread.busy || state.sessionId == null || thread.over || ending.busy(state.sessionId, state.scenario)) return;
   // The user line is appended exactly once: retries resend the same key and
   // must not duplicate the transcript or double-apply engine state.
   if (!isRetry) thread.transcript.push({ who: "user", name: "You", text });
@@ -506,22 +514,27 @@ async function sendTextTurn(text, key, isRetry) {
   thread.failed = null;
   if (state.text === thread) renderTextDialogue();
   try {
-    const data = await sendTurn(state.sessionId, npcId, text, key);
+    const data = await sendTurn(sessionId, npcId, text, key);
     thread.busy = false;
     thread.transcript.push({
       who: "npc",
       name: people[npcId].name.split(" ")[0],
       text: data.npc_reply,
     });
+    if (!current()) return;
     if (data.public_state) {
       state.sharedGoals = data.public_state.goals || state.sharedGoals;
       thread.mood = data.public_state.mood_label || thread.mood;
       state.sharedHint = data.public_state.next_hint || state.sharedHint;
       if (data.public_state.ended) thread.over = true;
     }
-    if (data.ended) thread.over = true;
+    if (data.ended) {
+      for (const t of Object.values(threadsFor())) t.over = true;
+      state.endReason = data.end_reason;
+    }
     if (window.__CUBICLE_DEBUG) stashTextTrace(data, thread);
-    if (state.text === thread) renderTextDialogue();
+    if (data.ended) openDebrief(sessionId);
+    else if (state.text === thread) renderTextDialogue();
   } catch (err) {
     thread.busy = false;
     thread.failed = {
@@ -529,6 +542,7 @@ async function sendTextTurn(text, key, isRetry) {
       key,
       message: (err && err.message) || "Something went wrong.",
     };
+    if (!current()) return;
     if (state.text === thread) renderTextDialogue();
   }
 }
@@ -562,8 +576,19 @@ function paintTextDebug() {
     .catch(() => {});
 }
 
-function completeTextSession() {
-  const npcName = state.dialogue ? people[state.dialogue].name.split(" ")[0] : "the team";
+async function completeTextSession() {
+  if (ending.busy(state.sessionId, state.scenario)) return;
+  if (Object.values(threadsFor()).some((t) => t.busy)) { toast("Wait for the current reply before ending."); return; }
+  const sessionId = state.sessionId, scenarioId = state.scenario;
+  const current = (id, scenario) => state.sessionId === id && state.scenario === scenario;
+  try {
+    const pending = ending.run(sessionId, scenarioId, endSession, current);
+    renderTextDialogue();
+    const result = await pending;
+    if (!result) return;
+    state.endReason = result.end_reason;
+    for (const t of Object.values(threadsFor())) t.over = true;
+  } catch { if (current(sessionId, scenarioId)) { renderTextDialogue(); toast("Could not end the session. Please try again."); } return; }
   state.complete[state.scenario] = {
     date: new Date().toISOString(),
     mode: "text",
@@ -581,23 +606,47 @@ function completeTextSession() {
   $("#next-description").textContent =
     "Try another scenario, or chat with your teammates.";
   $(".step-number").innerHTML = "03 <span>/ 03</span>";
-  showModal(
-    "A small step worth celebrating.",
-    `<div class="completion-symbol">${icon("check")}</div><p>You practiced <strong>${scenarios[state.scenario].short.toLowerCase()}</strong> in a live text session with ${escapeHtml(npcName)}.</p><div class="reflection"><strong>Take this into your next conversation</strong><p>Own what happened. Recognize the impact. Offer a specific next step.</p></div><button id="try-next" class="primary-button">Try another scenario ${icon("arrow-right")}</button>`,
-  );
-  $("#try-next").onclick = () => {
-    const keys = Object.keys(scenarios);
-    state.scenario = keys[(keys.indexOf(state.scenario) + 1) % keys.length];
-    $("#scenario").value = state.scenario;
-    state.sessionId = null;
-    state.threads = null;
-    state.sharedGoals = [];
-    state.sharedHint = "";
-    closeModal();
-    office.reset();
-    updateScenario();
-  };
+  openDebrief(sessionId);
   refreshIcons();
+}
+
+function openDebrief(sessionId) {
+  const run = captureRun(state);
+  showModal("Your practice debrief", '<div id="debrief-content" aria-live="polite"></div>');
+  const box = $("#debrief-content");
+  $(".modal").classList.add("debrief-modal");
+  $(".modal .eyebrow")?.remove();
+  const current = () => run() && state.sessionId === sessionId && $("#debrief-content") === box;
+  const load = () => getDebrief(sessionId);
+  const disableFeedbackControl = (button) => {
+    const hadFocus = document.activeElement === button;
+    button.disabled = true;
+    if (hadFocus && current()) $(".modal-close").focus({ preventScroll: true });
+  };
+  let latest = null;
+  const render = (packet) => {
+    if (!current()) return;
+    const focused = document.activeElement;
+    const hadContentFocus = box.contains(focused);
+    const focusedId = focused?.id;
+    latest = packet.debrief || latest;
+    box.innerHTML = renderDebrief({ ...packet, debrief: latest });
+    const check = $("#feedback-refresh");
+    if (check) check.onclick = () => { disableFeedbackControl(check); poll(); };
+    const retry = $("#feedback-retry");
+    if (retry) retry.onclick = async () => {
+      disableFeedbackControl(retry); retry.textContent = "Requesting feedback…";
+      await recoverFeedbackRetry({ request: () => retryDebrief(sessionId), current, refresh: poll });
+    };
+    if (hadContentFocus && current()) {
+      const replacement = focusedId ? document.getElementById(focusedId) : null;
+      const target = replacement && box.contains(replacement) && !replacement.disabled ? replacement : $(".modal-close");
+      target.focus({ preventScroll: true });
+    }
+  };
+  const poll = () => pollDebrief({ load, current, render });
+  render({ status: "pending", debrief: null });
+  poll();
 }
 
 function completeScenario() {

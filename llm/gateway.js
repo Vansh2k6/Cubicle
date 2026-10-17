@@ -25,13 +25,20 @@ export function validateAgainstSchema(data, schema) {
   const errors = [];
   function check(value, sch, path) {
     if (!sch || typeof sch !== "object") return;
+    if (Array.isArray(sch.type)) {
+      const valid = sch.type.some((type) => validateAgainstSchema(value, { ...sch, type }).ok);
+      if (!valid) errors.push(`${path}: no permitted type`);
+      return;
+    }
     if (Array.isArray(sch.enum)) {
       if (!sch.enum.some((e) => e === value)) errors.push(`${path}: not in enum`);
       return;
     }
     const t = sch.type;
     if (t === undefined || t === null) return;
-    if (t === "object") {
+    if (t === "null") {
+      if (value !== null) errors.push(`${path}: expected null`);
+    } else if (t === "object") {
       if (!isPlainObject(value)) { errors.push(`${path}: expected object`); return; }
       for (const key of sch.required || []) {
         if (!(key in value)) errors.push(`${path}.${key}: missing required`);
@@ -39,17 +46,26 @@ export function validateAgainstSchema(data, schema) {
       for (const key of Object.keys(sch.properties || {})) {
         if (key in value) check(value[key], sch.properties[key], `${path}.${key}`);
       }
+      if (sch.additionalProperties === false && Object.keys(value).some((key) => !(key in (sch.properties || {})))) errors.push(`${path}: extra property`);
     } else if (t === "array") {
       if (!Array.isArray(value)) { errors.push(`${path}: expected array`); return; }
+      if (Number.isInteger(sch.minItems) && value.length < sch.minItems) errors.push(`${path}: too few items`);
+      if (Number.isInteger(sch.maxItems) && value.length > sch.maxItems) errors.push(`${path}: too many items`);
       if (sch.items) value.forEach((v, i) => check(v, sch.items, `${path}[${i}]`));
     } else if (t === "string") {
       if (typeof value !== "string") errors.push(`${path}: expected string`);
+      else if (Number.isInteger(sch.minLength) && value.length < sch.minLength) errors.push(`${path}: too short`);
     } else if (t === "number") {
       if (typeof value !== "number") errors.push(`${path}: expected number`);
     } else if (t === "integer") {
       if (!Number.isInteger(value)) errors.push(`${path}: expected integer`);
     } else if (t === "boolean") {
       if (typeof value !== "boolean") errors.push(`${path}: expected boolean`);
+    }
+    if ((t === "number" || t === "integer") && typeof value === "number") {
+      if (!Number.isFinite(value)) errors.push(`${path}: expected finite number`);
+      if (typeof sch.minimum === "number" && value < sch.minimum) errors.push(`${path}: below minimum`);
+      if (typeof sch.maximum === "number" && value > sch.maximum) errors.push(`${path}: above maximum`);
     }
   }
   check(data, schema, "$");
@@ -78,7 +94,7 @@ function zeroTokens() {
 export async function complete(opts) {
   const {
     role, system, messages, schema = null, temperature,
-    timeoutMs = 3000, provider, manifestId = null, fallback,
+    timeoutMs = 3000, provider, manifestId = null, fallback, validateData,
   } = opts || {};
   if (typeof provider !== "function") {
     throw Object.assign(new Error("provider function required"), { code: "BAD_INPUT" });
@@ -101,12 +117,12 @@ export async function complete(opts) {
     let res;
     try {
       res = await withTimeout(
-        Promise.resolve(provider({ role, system, messages, temperature })),
-        timeoutMs
+        Promise.resolve(provider({ role, system, messages, temperature, schema })),
+        provider.timeoutMs || timeoutMs
       );
     } catch (e) {
       const code = e && e.code;
-      if ((code === "TIMEOUT" || code === "PROVIDER_ERROR") && i === 0) continue; // one retry
+      if (e?.retryable !== false && ["TIMEOUT", "PROVIDER_ERROR", "OUTPUT_INVALID"].includes(code) && i === 0) continue; // one retry
       return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
     }
     const text = res && res.text;
@@ -125,7 +141,9 @@ export async function complete(opts) {
       return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
     }
     const v = validateAgainstSchema(data, schema);
-    if (!v.ok) {
+    let customOk = true;
+    try { if (typeof validateData === "function") customOk = validateData(data) === true; } catch { customOk = false; }
+    if (!v.ok || !customOk) {
       if (i === 0) continue; // one retry on schema failure
       return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
     }

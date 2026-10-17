@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P0
+**Current phase:** S1-P4 acceptance. Implementation through S1-10 is accepted offline and stopped here at the user's request; S1-11 is not started. Full scene smart/trap and live exit gates remain open under D-28. This is not demo readiness.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
@@ -21,7 +21,7 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 
 ## S1-P0 — Baseline audit and freeze
 - [x] P0.1 Audit the existing build: vanilla JavaScript/Vite, Three.js scene and proximity/E hooks in `src/office.js`; authored scenarios, button dialogue, completion and localStorage progress in `src/main.js`; static shell in `index.html`. Confirmed npm dev/build/preview scripts; no API, engine, test or lint setup. Recorded in AGENT.md and ARCHITECTURE.md; this is baseline inspection, not a feature/test completion claim.
-- [ ] P0.2 Decide LLM provider/keys and a single model per role (classifier, NPC, judge, coach). Record in `DECISIONS.md` (O-06). DEFERRED in S1-01 (provider-agnostic; live evals NOT RUN; blocks P2 live work).
+- [x] P0.2 Provider/models selected and Groq adapter implemented (D-30). Bounded two-call smoke passed; full live evals remain NOT RUN. Credentials are server-side process input only.
 - [x] P0.3 Confirm or edit the proposed SC-01 content (goals, facts F1–F3, beats) and D-12, D-22. DONE S1-01: relative-day fixture confirmed (D-27 amends D-25); D-12/D-22 Accepted.
 - [x] P0.4 Create repo layout (engine / api / llm / scenarios / replies / scoring / evals) and commands in `AGENT.md`. DONE S1-01 (P0 slice): /engine, /engine/tests, /scenarios, /evals exist; test commands added; /llm, /services/api, /replies, /scoring deferred to their parts.
 - [x] P0.5 Define the scenario JSON schema and write `missed_deadline.json`, including fixed `clock`, filtered `canon` and `commitment_model` (D-25), plus R-22 goal/fact event-set disjointness validation. Proposed SC-01 constants require P0.3 confirmation. DONE S1-01: schema + spec validate; relative-day clock; disjointness enforced.
@@ -59,19 +59,19 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 - [ ] P3.1 Scene → API: `interact{npc_id}` opens that NPC's conversation; ESC closes.
 - [ ] P3.2 Visible goal checklist and "next small step" driven by goal state (FR-20, FR-25).
 - [ ] P3.3 Per-NPC knowledge silos (R-04); Jordan and Sam have their own facts and moods.
-- [ ] P3.4 Relay detection: user tells Maya what Jordan/Sam said → `relayed_fact` with accuracy.
-- [ ] P3.5 Beats B2/B3 and the commitment callback ("you said …").
-- [ ] P3.6 Scenario ends when required goals are done; end screen hands off to the debrief.
+- [x] P3.4 S1-07 implementation accepted: known-fact and supporting-text validation, conservative uncertain-relay rejection, no accurate-relay mood bonus.
+- [x] P3.5 S1-07 offline callback timing/deferral and NPC knowledge isolation verified; no duplicate commitment penalty. Live wording remains NOT RUN.
+- [x] P3.6 S1-07 guarded ending and idempotent End API implemented; S1-10 now supplies the ended-session debrief. Full scene smart/trap exit remains NOT RUN.
 
 **Exit:** the smart path completes G1–G3 with Maya/Jordan; optional Sam exploration discovers F3. The unrealistic-commitment trap triggers the callback; scene and text-only fallback both work. Callbacks do not reveal private bounds or repeat penalties.
 
 ## S1-P4 — Scoring and debrief (core)
-- [ ] P4.1 Deterministic metrics: goals, delivered hidden facts, integrity and relationship with disjoint credit sources and no duplicate penalties (D-07/D-24, R-22); relationship scoring excludes allocated goal/fact/integrity source events.
-- [ ] P4.2 Judge call with **quality-only** rubric anchors; JSON; temp 0. No goal/fact achievement or commitment/relay correctness points already assessed by code (R-22).
-- [ ] P4.3 Quote validator; failed quotes → `insufficient` (R-21).
-- [ ] P4.4 Code-derived timeline flags (R-24).
-- [ ] P4.5 Coach: at least one improved response using only information the user had (R-25).
-- [ ] P4.6 Debrief screen: score + band, breakdown (deterministic vs judged shown separately), timeline, top-2 priorities, "what you missed" with unlocking question, one improved reply.
+- [x] P4.1 S1-08 deterministic metrics accepted offline: goals, delivered facts, integrity and relationship with source allocation, deduplication and all-NPC averaging. Smart/trap deterministic fixtures are 60/7; judged points remain pending.
+- [x] P4.2 S1-09 quality-only judge module accepted offline: JSON, temperature 0, five dimensions and achievement exclusions. Live consistency/fairness/no-reaward behavior remain NOT RUN.
+- [x] P4.3 S1-09 code quote validation accepted offline; invalid evidence becomes insufficient/zero (R-21).
+- [x] P4.4 S1-08 code-derived flags accepted offline; missed_probe is provisional informational guidance with no penalty (R-24).
+- [x] P4.5 S1-09 coaching module accepted offline: one verified code moment, before-moment knowledge, guarded improved reply and authored fallback. Empty ended histories receive a general starter without invented evidence.
+- [x] P4.6 S1-10 implementation accepted: ended-only async debrief, separate deterministic/judged breakdown, provisional offline totals, verified timeline/coaching quotes, named priorities, missed facts/questions and settings/version. Desktop/narrow-layout, retry and keyboard checks passed. Live score targets remain NOT RUN; the P4 exit is not complete.
 
 **Exit:** every displayed quote is verified; trap path flags *premature commitment* with the right quote; smart path scores ≥85 and ends positively.
 
@@ -230,3 +230,5 @@ All Stage 1 acceptance criteria hold across every scenario and language; reply-s
 - Replay (S2-P4) depends on per-turn snapshots from S1-P1.5.
 - Community library (S2-P8) depends on the frozen scenario schema (S2-P1.3).
 - Trained classifier (S2-P3) depends on logged, human-reviewed labels from Stage 1 play.
+
+**Implementation status note, 2026-10-17:** Groq adapter and two-call connectivity smoke are recorded in D-30. The root accepted S1-07 relay/beats/ending implementation after review, offline/API checks and a limited browser check; evidence is in `evals/reports/S1-07-gate.md`. Full P2/P3 live acceptance and complete scene smart/trap runs remain NOT RUN. Checked implementation items do not close those phase exit gates.

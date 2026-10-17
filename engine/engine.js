@@ -1,7 +1,7 @@
 // engine/engine.js — P1 pure turn engine (ESM, ZERO imports).
 // Pure function of (state, events, scenario-model). No network, no model
-// calls, no clock reads, no randomness. Acts are ids only; no dialogue text
-// is produced or inspected here.
+// calls, no clock reads, no randomness. Acts are ids only; local user-text
+// evidence validates relays. No generated NPC prose is produced or inspected.
 //
 // R-16 zero-import rule: this file takes no imports, so the numeric
 // constants below MIRROR engine/config.js (authoritative source). Keep the
@@ -250,9 +250,36 @@ export function createSession(scenario, opts) {
 }
 
 function dueB3Commitments(session) {
+  const owner = session.model.beats.find((b) => b.id === "B3")?.npc || "maya";
   return session.commitments.filter(
-    (c) => c.status === "active" && !c.callbackFired && session.turn - c.turn_id >= B3_GAP_TURNS,
+    (c) => c.status === "active" && c.npc_id === owner && !c.callbackFired && session.turn - c.turn_id >= B3_GAP_TURNS,
   );
+}
+
+// shortcut: conservative SC-01 relay evidence; add reviewed patterns with new scenarios.
+export function relayAccuracy(factId, text) {
+  const s = String(text || "").toLowerCase();
+  if (/\b(not|never|no|isn't|isnt|didn't|didnt|wasn't|wasnt)\b/.test(s)) return null;
+  if (/\?|\b(if|maybe|perhaps|might|guess|not sure)\b/.test(s)) return null;
+  if (factId === "F1" && /\b(client|cutoff|deadline)\b/.test(s)) {
+    if (/\b(friday|3 days|three days)\b/.test(s) && !/\b(not|no|isn't|isnt)\b/.test(s)) return true;
+    if (/\b(tomorrow|thursday|1 day|one day|2 days|two days)\b/.test(s)) return false;
+  }
+  if (factId === "F2" && /\bjordan\b/.test(s) && /\b(module|remaining work)\b/.test(s)) {
+    if (/\b(half|50 percent)\b/.test(s) && /\b(all the remaining work|entire remaining work|nothing built|no module)\b/.test(s)) return null;
+    if (/\b(no module|nothing built|all the remaining work|entire remaining work)\b/.test(s)) return false;
+    if (/\b(half|50 percent)\b/.test(s) && !/\b(not|no|isn't|isnt)\b/.test(s)) return true;
+  }
+  if (factId === "F3" && /\b(heads.up|headsup)\b/.test(s) && /\breview\b/.test(s)) {
+    if (/\b(counts against|counted against|hurts)\b/.test(s) && !/\b(not|never|isn't|isnt)\b/.test(s)) return false;
+    if (/\b(not|never|isn't|isnt)\b/.test(s) && /\b(same.day|same day)\b/.test(s)) return true;
+  }
+  return null;
+}
+
+export function endSession(session) {
+  if (!session.ended) { session.ended = true; session.endReason = "user_ended"; session.staged = null; }
+  return session;
 }
 
 export function applyTurn(session, npc_id, events, opts) {
@@ -327,9 +354,15 @@ export function applyTurn(session, npc_id, events, opts) {
         }
         continue;
       }
+      const accuracy = relayAccuracy(ref, o.text);
+      if (accuracy === null || accuracy !== params.accurate) {
+        session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none", validated: false });
+        continue;
+      }
       relayValidated = true;
-      const alloc = params.accurate === false ? "integrity" : "none";
-      session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: alloc });
+      const duplicate = session.events_log.some((e) => e.turn_id === t && e.type === type && e.params.fact_id === ref && e.validated);
+      const alloc = accuracy === false && !duplicate ? "integrity" : "none";
+      session.events_log.push({ turn_id: t, npc_id, type, params: { fact_id: ref, accurate: accuracy }, source_id: sourceId, allocation: alloc, validated: true });
       continue;
     }
     if (type === "confirmed_next_steps") {
@@ -371,6 +404,7 @@ export function applyTurn(session, npc_id, events, opts) {
       if (prior) prior.status = "superseded";
       const cm = {
         id,
+        source_id: sourceId,
         what: params.what ?? "deadline",
         target_day: target,
         original_words: params.original_words ?? params.what ?? "",
@@ -388,8 +422,8 @@ export function applyTurn(session, npc_id, events, opts) {
           assisted_min: session.model.commitment_model.assisted_min_day,
         },
         unrealistic: !realistic,
-        accepted_with:
-          realistic && npc_id === session.model.commitment_model.agreement_npc ? npc_id : null,
+        accepted_with: null,
+        pending_acceptance: realistic && npc_id === session.model.commitment_model.agreement_npc,
         recap_turn_id: null,
         supersedes: prior ? prior.id : null,
       };
@@ -410,8 +444,8 @@ export function applyTurn(session, npc_id, events, opts) {
       const active = session.commitments.filter(
         (c) => c.status === "active" && c.accepted_with,
       ).pop();
-      if (active && npc_id === session.model.commitment_model.agreement_npc) {
-        active.recap_turn_id = t;
+      if (active && npc_id === session.model.commitment_model.agreement_npc && session.goals.G1?.status === "done" && session.goals.G2?.status === "done") {
+        active.pending_recap_turn = t;
       }
       session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none" });
       continue;
@@ -436,9 +470,9 @@ export function applyTurn(session, npc_id, events, opts) {
     const g1 = !session.goals.G1 || session.goals.G1.status === "done";
     const g2 = !session.goals.G2 || session.goals.G2.status === "done";
     const agreed = session.commitments.some(
-      (c) => c.status === "active" && c.accepted_with && c.recap_turn_id,
+      (c) => c.status === "active" && c.accepted_with && (c.recap_turn_id || c.pending_recap_turn),
     );
-    if (g1 && g2 && agreed) session.goals.G3 = { status: "done", turn_id: t };
+    if (g1 && g2 && agreed) session.goals.G3 = { status: "pending_delivery", turn_id: t };
   }
 
   // 5. Eligible reveals (trigger fired + forthcomingness gate passed).
@@ -510,7 +544,7 @@ export function applyTurn(session, npc_id, events, opts) {
           // Closing needs every visible required goal done; hidden goals
           // (visible:false) never gate ending or closing.
           const required = session.model.goals.filter((g) => g.required && g.visible);
-          const allDone = required.length > 0 && required.every((g) => session.goals[g.id] && session.goals[g.id].status === "done");
+          const allDone = required.length > 0 && required.every((g) => session.goals[g.id] && ["done", "pending_delivery"].includes(session.goals[g.id].status));
           if (allDone) {
             act = "close_positive";
           } else if (relayValidated) {
@@ -528,15 +562,22 @@ export function applyTurn(session, npc_id, events, opts) {
 
   // 8. Apply act effects. A reveal stages ONLY when its act wins; suppressed
   // reveals leave facts sealed/probed with no staged trace.
+  const agreementAllowed = session.commitments.some((c) => c.id === newCommitmentId && c.status === "active" && c.pending_acceptance === true) && ["react_freely", "greet"].includes(act);
+  const closingAllowed = act === "close_positive" && session.goals.G3?.status === "pending_delivery";
+  if (!closingAllowed) {
+    for (const c of session.commitments) { if (c.pending_recap_turn === t) delete c.pending_recap_turn; }
+    if (session.goals.G3?.status === "pending_delivery") session.goals.G3 = { status: "pending", turn_id: null };
+  }
   if (act.startsWith("reveal_fact:")) {
     const fid = act.slice("reveal_fact:".length);
     if (session.facts[fid]) session.facts[fid].status = "pending_delivery";
-    session.staged = { factId: fid, agreementCommitmentId: newCommitmentId, npcId: npc_id, turnId: t };
+    session.staged = { factId: fid, agreementCommitmentId: null, npcId: npc_id, turnId: t };
   } else {
     session.staged =
-      newCommitmentId != null
-        ? { factId: null, agreementCommitmentId: newCommitmentId, npcId: npc_id, turnId: t }
-        : null;
+      agreementAllowed
+        ? { factId: null, agreementCommitmentId: newCommitmentId, agreementAllowed: true, npcId: npc_id, turnId: t }
+        : session.commitments.some((c) => c.pending_recap_turn === t)
+          ? { factId: null, agreementCommitmentId: null, closingAllowed: true, npcId: npc_id, turnId: t } : null;
   }
   if (act === "callback_commitment" && b3fire) {
     b3fire.callbackFired = true;
@@ -592,6 +633,16 @@ export function commitDelivery(session, turn_id, opts) {
   const st = session.staged;
   if (!st || st.turnId !== turn_id) return session;
   if (delivered) {
+    for (const c of session.commitments) {
+      if (c.status !== "active") continue;
+      if (st.agreementAllowed && opts?.agreementExpressed && c.id === st.agreementCommitmentId && c.pending_acceptance) { c.accepted_with = st.npcId; c.pending_acceptance = false; }
+      if (st.closingAllowed && opts?.closingExpressed && c.pending_recap_turn === turn_id) { c.recap_turn_id = turn_id; delete c.pending_recap_turn; }
+    }
+    if (session.goals.G3?.status === "pending_delivery" && st.closingAllowed && opts?.closingExpressed) {
+      session.goals.G3.status = "done";
+      session.ended = true; session.endReason = "goals_complete";
+    }
+    if (session.goals.G3?.status === "pending_delivery") session.goals.G3 = { status: "pending", turn_id: null };
     if (st.factId && session.facts[st.factId] && session.facts[st.factId].status === "pending_delivery") {
       session.facts[st.factId].status = "revealed";
       if (!session.user_known.includes(st.factId)) session.user_known.push(st.factId);
@@ -599,9 +650,15 @@ export function commitDelivery(session, turn_id, opts) {
     session.staged = null;
     reevaluateCommitments(session);
   } else {
+    for (const c of session.commitments) { if (c.pending_recap_turn === turn_id) delete c.pending_recap_turn; }
+    for (const c of session.commitments) { if (c.id === st.agreementCommitmentId) c.pending_acceptance = false; }
+    if (session.goals.G3?.status === "pending_delivery") session.goals.G3 = { status: "pending", turn_id: null };
     // Failed delivery: fact stays pending, earns nothing, staged cleared for retry.
     session.staged = null;
   }
+  const snapshot = deepClone(session);
+  delete snapshot.snapshots;
+  if (session.snapshots.length) session.snapshots[session.snapshots.length - 1] = snapshot;
   return session;
 }
 

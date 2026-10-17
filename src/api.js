@@ -38,6 +38,11 @@ async function req(path, { method = "GET", body = null, timeoutMs = 12000 } = {}
 export const createSession = (scenario_id) =>
   req("/sessions", { method: "POST", body: { scenario_id } });
 
+export const endSession = (sessionId) =>
+  req(`/sessions/${encodeURIComponent(sessionId)}/end`, { method: "POST", body: {} });
+export const getDebrief = (sessionId) => req(`/sessions/${encodeURIComponent(sessionId)}/debrief`);
+export const retryDebrief = (sessionId) => req(`/sessions/${encodeURIComponent(sessionId)}/debrief/retry`, { method: "POST", body: {} });
+
 export const sendTurn = (sessionId, npc_id, text, idempotencyKey) =>
   req(`/sessions/${encodeURIComponent(sessionId)}/turn`, {
     method: "POST",

@@ -1951,3 +1951,25 @@ h2 {
   line-height: 1.7;
   margin: 8px 0 4px;
 }
+
+/* S1-10: the existing end modal becomes a readable, scrollable debrief. */
+.debrief-modal { max-width: 720px; }
+#debrief-content { color: #454254; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+#debrief-content section { margin-top: 28px; }
+#debrief-content h3 { color: var(--purple); font-size: 16px; margin: 0 0 10px; }
+#debrief-content h4 { font-size: 13px; margin: 18px 0 5px; }
+#debrief-content p { margin: 7px 0; }
+#debrief-content ul, #debrief-content ol { padding-left: 20px; }
+#debrief-content li { margin: 8px 0; }
+#debrief-content table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; text-align: left; }
+#debrief-content th, #debrief-content td { padding: 10px 6px; border-bottom: 1px solid #ddd8e4; vertical-align: top; }
+#debrief-content th:first-child { width: 45%; }
+#debrief-content tbody th { font-weight: 500; }
+#debrief-content blockquote { margin: 10px 0; padding: 10px 14px; background: #eeebf2; border-radius: 8px; }
+#debrief-content blockquote span, #debrief-content .debrief-muted { color: #625c70; font-size: 12px; }
+#debrief-content .debrief-entry { padding: 12px 0; border-bottom: 1px solid #ddd8e4; }
+#debrief-content .debrief-total { color: var(--purple); font-size: 18px; }
+#debrief-content details { margin: 24px 0; }
+#debrief-content summary { cursor: pointer; font-weight: 600; }
+#debrief-content button { margin: 14px 8px 0 0; }
+@media (max-width: 600px) { .debrief-modal { padding: 30px 20px 24px; } }
