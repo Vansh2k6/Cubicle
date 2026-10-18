@@ -93,7 +93,7 @@ let cachedPrompt = null;
 export function getClassifierPrompt() {
   if (!cachedPrompt) {
     const dir = dirname(fileURLToPath(import.meta.url));
-    cachedPrompt = readFileSync(join(dir, "prompts", "classifier", "v1.md"), "utf8");
+    cachedPrompt = readFileSync(join(dir, "prompts", "classifier", "v2.md"), "utf8");
   }
   return cachedPrompt;
 }

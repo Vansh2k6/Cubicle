@@ -207,3 +207,62 @@ test("trace carries codes only, never sealed text", async () => {
     assert.ok(!blob.toLowerCase().includes(secret), secret);
   }
 });
+
+test("NPC transport fallback uses guarded authored copy without a generation retry or delivery credit", async () => {
+  clearMemory();
+  const session = newSession();
+  const convo = createConversation();
+  const classifier = new FakeProvider([cannedClassifier([])]);
+  let npcCalls = 0;
+  const npc = async () => {
+    npcCalls++;
+    throw Object.assign(new Error("synthetic transport"), { code: "PROVIDER_ERROR", retryable: false });
+  };
+  const res = await runTurn({ session, scenario, convo, npcId: "maya", text: "Hello.", engine,
+    providers: { classify: classifier.fn(), npc }, manifestId: "m1" });
+  assert.equal(npcCalls, 1);
+  assert.equal(res.usedFallback, true);
+  assert.equal(res.delivered, false);
+  assert.equal(res.trace.regen, false);
+  assert.equal(res.trace.npcFailure, "PROVIDER_ERROR");
+  assert.notEqual(res.reply, "Let me get back to you on that.");
+  assert.deepEqual(session.user_known, []);
+});
+
+test("a guard-rejected LLM reply followed by generation fallback still uses authored fallback", async () => {
+  clearMemory();
+  const session = newSession();
+  const convo = createConversation();
+  const classifier = new FakeProvider([cannedClassifier([])]);
+  let npcCalls = 0;
+  const npc = async () => {
+    npcCalls++;
+    if (npcCalls === 1) return { text: LEAK };
+    throw Object.assign(new Error("synthetic outage"), { code: "TIMEOUT", retryable: false });
+  };
+  const res = await runTurn({ session, scenario, convo, npcId: "maya", text: "Hello.", engine,
+    providers: { classify: classifier.fn(), npc }, manifestId: "m1" });
+  assert.equal(npcCalls, 2);
+  assert.equal(res.trace.regen, true);
+  assert.equal(res.usedFallback, true);
+  assert.equal(res.delivered, false);
+  assert.equal(res.trace.npcFailure, "TIMEOUT");
+  assert.notEqual(res.reply, "Let me get back to you on that.");
+  assert.deepEqual(session.user_known, []);
+});
+
+test("a reveal-turn NPC outage deflects without exposing or delivering the staged fact", async () => {
+  clearMemory();
+  const session = newSession({ maya: { forthcomingness: 100 } });
+  const convo = createConversation();
+  const classifier = new FakeProvider([cannedClassifier([{ type: "asked_deadline_flexibility", params: {} }])]);
+  const npc = async () => { throw Object.assign(new Error("synthetic outage"), { code: "THROTTLED", retryable: false }); };
+  const res = await runTurn({ session, scenario, convo, npcId: "maya", text: "Is there any flexibility?", engine,
+    providers: { classify: classifier.fn(), npc }, manifestId: "m1" });
+  assert.equal(res.act, "reveal_fact:F1");
+  assert.equal(res.usedFallback, true);
+  assert.equal(res.delivered, false);
+  assert.deepEqual(session.user_known, []);
+  assert.notEqual(session.facts.F1.status, "revealed");
+  assert.ok(!res.reply.includes(scenario.facts.find((fact) => fact.id === "F1").content.en));
+});

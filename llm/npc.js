@@ -46,12 +46,12 @@ export async function generateNpcReply(opts = {}) {
     fallback: { fallback: true },
   });
   if (res.source !== "llm" || typeof res.text !== "string") {
-    return { text: fbText, source: "fallback", trimmed: false, manifestId };
+    return { text: fbText, source: "fallback", trimmed: false, manifestId, failureCode: res.failureCode, httpStatus: res.httpStatus };
   }
   const cleaned = stripStageDirections(res.text);
   const sentences = splitSentences(cleaned);
   if (sentences.length === 0) {
-    return { text: fbText, source: "fallback", trimmed: false, manifestId };
+    return { text: fbText, source: "fallback", trimmed: false, manifestId, failureCode: "EMPTY_OUTPUT" };
   }
   const trimmed = sentences.length > 3;
   return { text: sentences.slice(0, 3).join(" "), source: "llm", trimmed, manifestId };

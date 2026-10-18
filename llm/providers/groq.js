@@ -1,11 +1,12 @@
 import { loadConfig, positiveInt, providerName } from "../config.js";
-import { validateAgainstSchema } from "../gateway.js";
+import { safeFailure, validateAgainstSchema } from "../gateway.js";
 
 const processState = { calls: 0, tokens: 0, buckets: new Map() };
 export class LLMBudgetExceeded extends Error {
   constructor() { super("LLM process budget exceeded"); this.name = "LLMBudgetExceeded"; this.code = "LLM_BUDGET_EXCEEDED"; }
 }
-const failure = (code) => Object.assign(new Error(`LLM ${code.toLowerCase()}`), { code, retryable: false });
+const failure = (code, httpStatus) => Object.assign(new Error(`LLM ${code.toLowerCase()}`), { code, retryable: false,
+  ...(Number.isInteger(httpStatus) && httpStatus >= 400 && httpStatus <= 599 ? { httpStatus } : {}) });
 
 // https://console.groq.com/docs/reasoning and /docs/structured-outputs
 function modelParams(model, roleConfig, schema) {
@@ -27,6 +28,17 @@ function modelParams(model, roleConfig, schema) {
   return params;
 }
 
+function supportsStrictJsonSchema(model) {
+  return model === "qwen/qwen3.8-27b" || /^openai\/gpt-oss-(20b|120b)$/.test(model);
+}
+
+const NPC_ENVELOPE_SCHEMA = {
+  type: "object",
+  required: ["text"],
+  additionalProperties: false,
+  properties: { text: { type: "string" } },
+};
+
 export function createGroqProvider({ env = process.env, config = loadConfig(env), fetchFn = globalThis.fetch,
   state = processState, now = Date.now, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), timeoutMs = 8000 } = {}) {
   const key = env.GROQ_API_KEY;
@@ -38,7 +50,7 @@ export function createGroqProvider({ env = process.env, config = loadConfig(env)
     const c = config[role];
     if (!c) throw failure("BAD_ROLE");
     const npcEnvelope = role === "npc" && !schema;
-    if (npcEnvelope) schema = { type: "object", required: ["text"], properties: { text: { type: "string" } } };
+    if (npcEnvelope) schema = NPC_ENVELOPE_SCHEMA;
     const chat = [{ role: "system", content: system }, ...messages];
     if (schema) chat[0].content += `\nReturn only JSON matching this schema: ${JSON.stringify(schema)}`;
     const estimated = Math.ceil(JSON.stringify(chat).length / 4) + c.maxTokens;
@@ -62,26 +74,31 @@ export function createGroqProvider({ env = process.env, config = loadConfig(env)
     let response;
     try {
       response = await Promise.race([(async () => {
+        const body = { model: c.model, messages: chat, temperature: c.temperature ?? temperature,
+          max_tokens: c.maxTokens, ...modelParams(c.model, c, schema) };
+        if (npcEnvelope && supportsStrictJsonSchema(c.model)) {
+          body.response_format = { type: "json_schema", json_schema: { name: "npc_reply", strict: true, schema: NPC_ENVELOPE_SCHEMA } };
+        }
         const res = await fetchFn("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
           signal: controller.signal,
-          body: JSON.stringify({ model: c.model, messages: chat, temperature: c.temperature ?? temperature,
-            max_tokens: c.maxTokens, ...modelParams(c.model, c, schema) }),
+          body: JSON.stringify(body),
         });
         if (res.status === 429 || !res.ok) {
           // Abort transport even when a failed response body never finishes.
           controller.abort();
           if (res.body?.cancel) Promise.resolve(res.body.cancel()).catch(() => {});
-          if (res.status === 429) return { rateLimited: true, retryAfter: res.headers?.get("retry-after") };
-          throw failure("PROVIDER_ERROR");
+          if (res.status === 429) return { rateLimited: true, retryAfter: res.headers?.get("retry-after"), httpStatus: res.status };
+          throw failure("PROVIDER_ERROR", res.status);
         }
         const data = await res.json();
         const text = data?.choices?.[0]?.message?.content;
-        if (typeof text !== "string") throw failure("PROVIDER_ERROR");
+        if (typeof text !== "string") throw failure("EMPTY_OUTPUT");
         return { text, model: c.model, tokens: { in: data.usage?.prompt_tokens || 0, out: data.usage?.completion_tokens || 0 } };
       })(), deadline]);
-    } catch {
-      throw failure(timedOut ? "TIMEOUT" : "PROVIDER_ERROR");
+    } catch (error) {
+      const safe = safeFailure(error);
+      throw failure(timedOut ? "TIMEOUT" : safe.failureCode, safe.httpStatus);
     } finally { clearTimeout(timer); }
     if (response.rateLimited) {
       const raw = response.retryAfter;
@@ -90,7 +107,7 @@ export function createGroqProvider({ env = process.env, config = loadConfig(env)
       const delay = Math.min(20000, Math.max(0, Number.isFinite(seconds) ? seconds : 0));
       bucket.blockedUntil = now() + delay;
       await sleep(delay);
-      throw failure("RATE_LIMITED");
+      throw failure("RATE_LIMITED", response.httpStatus);
     }
     if (npcEnvelope) {
       let data;

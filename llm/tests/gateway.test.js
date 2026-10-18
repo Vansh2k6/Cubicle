@@ -74,6 +74,21 @@ test("slow provider hits gateway timeout", async () => {
   assert.equal(res.attempts, 2);
 });
 
+test("gateway retains only fixed failure metadata and retries its bounded transport errors", async () => {
+  const injected = "test-credential-do-not-log";
+  let calls = 0;
+  const provider = async () => {
+    calls++;
+    throw Object.assign(new Error(injected), { code: "arbitrary-" + injected, httpStatus: 418 });
+  };
+  const res = await complete({ ...base(new FakeProvider([])), provider });
+  assert.equal(calls, 1);
+  assert.equal(res.source, "fallback");
+  assert.equal(res.failureCode, "PROVIDER_ERROR");
+  assert.equal(res.httpStatus, 418);
+  assert.ok(!JSON.stringify(res).includes(injected));
+});
+
 test("no-schema call returns raw text (npc path)", async () => {
   const fake = new FakeProvider([{ text: "Hello there." }]);
   const res = await complete({ ...base(fake), role: "npc", schema: null, temperature: 0.8 });

@@ -37,7 +37,7 @@ const MAX_BODY = 1 << 20;
 const selectedProvider = providerName();
 const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
 const manifest = createManifest(liveProvider ? loadConfig() : {
-  classifier: { model: "offline-stub:rules-v1", promptVersion: "v1", schemaVersion: 1 },
+  classifier: { model: "offline-stub:rules-v1", promptVersion: "v2", schemaVersion: 1 },
   npc: { model: "offline-stub:store-v1", promptVersion: "v3", schemaVersion: 1 },
   judge: { model: "offline-unavailable:judge", promptVersion: "v2", schemaVersion: 2 },
   coach: { model: "authored-fallback:coach", promptVersion: "v2", schemaVersion: 2 },
@@ -83,7 +83,17 @@ function debugOf(res) {
     delivered: res.delivered,
     regen: res.regen,
     fallback: res.usedFallback ? res.fallbackAct : null,
+    npcFailure: res.trace.npcFailure || null,
+    npcHttpStatus: res.trace.npcHttpStatus,
   };
+}
+
+export function warnNpcFallback(npcId, trace) {
+  const reasons = new Set(["TIMEOUT", "PROVIDER_ERROR", "OUTPUT_INVALID", "PROVIDER_UNAVAILABLE", "LLM_BUDGET_EXCEEDED", "THROTTLED", "RATE_LIMITED", "INVALID_JSON", "SCHEMA_INVALID", "EMPTY_OUTPUT", "GUARD_REJECTED"]);
+  const reason = reasons.has(trace?.npcFailure) ? trace.npcFailure : "PROVIDER_ERROR";
+  const httpStatus = Number.isInteger(trace?.npcHttpStatus) && trace.npcHttpStatus >= 400 && trace.npcHttpStatus <= 599 ? trace.npcHttpStatus : undefined;
+  const npc = SPEC.npcs.some((candidate) => candidate.id === npcId) ? npcId : "maya";
+  console.warn(JSON.stringify({ event: "npc_fallback", npc, reason, ...(httpStatus ? { httpStatus } : {}) }));
 }
 
 function withTimeout(promise, ms) {
@@ -301,6 +311,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
             }),
             liveProvider ? 180000 : TURN_TIMEOUT_MS, // includes capped live Retry-After and guard regeneration
           );
+          if (out.usedFallback) warnNpcFallback(npcId, out.trace);
           const pub = publicResponse(out);
           if (debug) pub._debug = debugOf(out);
           return pub;

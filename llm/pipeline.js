@@ -140,7 +140,7 @@ export async function runTurn(opts = {}) {
     throw new Error("runTurn: engine.applyTurn/commitDelivery required");
   }
 
-  const trace = { turn: null, events: [], act: null, guardEvents: [], regen: false, delivered: false, replySource: null };
+  const trace = { turn: null, events: [], act: null, guardEvents: [], regen: false, delivered: false, replySource: null, npcFailure: null, npcHttpStatus: undefined };
 
   // 1. Append user turn.
   convo.seq += 1;
@@ -221,6 +221,10 @@ export async function runTurn(opts = {}) {
   let gen = await generateNpcReply({ prompt, provider: providers.npc, manifestId });
   stages.generateMs = Date.now() - tGen0;
   trace.replySource = gen.source;
+  if (gen.source === "fallback") {
+    trace.npcFailure = gen.failureCode || "PROVIDER_ERROR";
+    trace.npcHttpStatus = gen.httpStatus;
+  }
 
   const positiveOk = (replyText) => {
     if (session.staged?.agreementAllowed && !expressesAcceptance(replyText)) return false;
@@ -229,9 +233,9 @@ export async function runTurn(opts = {}) {
     return checkPositiveReveal(replyText, scenario, authorised.factId, session.locale || "en").ok;
   };
 
-  let verdict = guardTimed(() => checkReply(gen.text, guardCtx()));
-  let positive = positiveOk(gen.text);
-  trace.guardEvents.push({
+  let verdict = gen.source === "llm" ? guardTimed(() => checkReply(gen.text, guardCtx())) : { ok: false, failures: [] };
+  let positive = gen.source === "llm" && positiveOk(gen.text);
+  if (gen.source === "llm") trace.guardEvents.push({
     stage: "initial",
     ok: verdict.ok && positive,
     codes: verdict.failures.map((f) => f.code + (f.factId ? ":" + f.factId : "")).concat(positive ? [] : ["reveal_omitted"]),
@@ -240,7 +244,7 @@ export async function runTurn(opts = {}) {
   // 6. At most ONE shared regeneration for both guards.
   let usedFallback = false;
   let fallbackAct = null;
-  if (!verdict.ok || !positive) {
+  if (gen.source === "llm" && (!verdict.ok || !positive)) {
     trace.regen = true;
     const regenPrompt = {
       system: prompt.system + "\nCorrection: " + REGEN_INSTRUCTION,
@@ -250,6 +254,10 @@ export async function runTurn(opts = {}) {
     gen = await generateNpcReply({ prompt: regenPrompt, provider: providers.npc, manifestId });
     stages.regenMs = Date.now() - tReg0;
     trace.replySource = gen.source;
+    if (gen.source === "fallback") {
+      trace.npcFailure = gen.failureCode || "PROVIDER_ERROR";
+      trace.npcHttpStatus = gen.httpStatus;
+    }
     verdict = guardTimed(() => checkReply(gen.text, guardCtx()));
     positive = positiveOk(gen.text);
     trace.guardEvents.push({
@@ -260,7 +268,8 @@ export async function runTurn(opts = {}) {
   }
 
   // 7. Second failure -> act-specific fallback (guard-checked) -> neutral.
-  if (!verdict.ok || !positive) {
+  if (gen.source !== "llm" || !verdict.ok || !positive) {
+    if (!trace.npcFailure) trace.npcFailure = "GUARD_REJECTED";
     // A failed reveal must never fall back to its own reveal lines (they
     // contain the fact); deflect instead.
     const fbAct = act.startsWith("reveal_fact:") ? "deflect_sealed" : act;

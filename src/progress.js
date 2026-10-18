@@ -49,7 +49,8 @@ export function summaryFromDebrief(session_id, scenario, debrief, date = new Dat
   if (typeof session_id !== "string" || !object(debrief)) return null;
   const metrics = Object.fromEntries((debrief.breakdown || []).map((row) => [row.id, row.points]));
   const candidate = { date, session_id, scenario, total: debrief.total, band: debrief.band,
-    scoring_version: debrief.scoring_version, metrics, provisional: debrief.total_status === "provisional" };
+    scoring_version: debrief.scoring_version, metrics,
+    provisional: !(debrief.total_status === "assessed" && debrief.judged?.status === "available") };
   return cleanAttempt(candidate, [scenario]);
 }
 
@@ -66,6 +67,18 @@ export function compareAttempts(first, second) {
   return { first, second, metrics: METRICS.map((id) => ({ id, first: first.metrics[id], second: second.metrics[id] })),
     crossVersion: first.scoring_version !== second.scoring_version,
     provisional: first.provisional || second.provisional };
+}
+
+export function displayAttemptScore(attempt) {
+  return attempt.provisional ? "Assessment incomplete · Communication not assessed" : `${displayNumber(attempt.total)} / 100 · ${attempt.band}`;
+}
+
+export function displayAttemptMetric(attempt, id) {
+  return id === "rubric" && attempt.provisional ? "Not assessed" : displayNumber(attempt.metrics[id]);
+}
+
+function displayNumber(value) {
+  return String(Math.round(value * 10) / 10);
 }
 
 export function saveProgress(storage, progress, scenarios) {

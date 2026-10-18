@@ -2,7 +2,7 @@
 // ESM, stdlib only.
 
 const DEFAULTS = {
-  classifier: { model: "openai/gpt-oss-20b", temperature: 0, maxTokens: 512, reasoningEffort: "low", extraParams: {}, timeoutMs: 8000, promptVersion: "v1", schemaVersion: 1 },
+  classifier: { model: "openai/gpt-oss-20b", temperature: 0, maxTokens: 512, reasoningEffort: "low", extraParams: {}, timeoutMs: 8000, promptVersion: "v2", schemaVersion: 1 },
   npc: { model: "qwen/qwen3.8-27b", temperature: 0.8, maxTokens: 512, reasoningEffort: "none", extraParams: {}, timeoutMs: 8000, promptVersion: "v3", schemaVersion: 1 },
   judge: { model: "openai/gpt-oss-120b", temperature: 0, maxTokens: 1024, reasoningEffort: "low", extraParams: {}, timeoutMs: 8000, promptVersion: "v2", schemaVersion: 2 },
   coach: { model: "openai/gpt-oss-120b", temperature: 0.7, maxTokens: 1024, reasoningEffort: "low", extraParams: {}, timeoutMs: 8000, promptVersion: "v2", schemaVersion: 2 },

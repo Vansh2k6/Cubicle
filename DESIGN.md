@@ -108,3 +108,21 @@ Root verified all three vectors and Easy/Medium/Hard previews, manual changes re
 npm run demo serves built assets and the API together on localhost. The production client uses relative API paths; the existing dev base and explicit override remain available. No deployment or live-provider claim is made.
 
 Root verified the actual built app at 127.0.0.1:4173: setup loaded, a typed ownership turn ended with provisional 25/code25/judge0 feedback, Restart retained that summary in My progress and opened a fresh setup and blank conversation. No fresh browser errors. The existing reset control is reused without adding UI. Screenshots are in evals/reports/s1-p7. Live acceptance and new narrow rendering remain deferred.
+
+## 2026-10-18 accepted debrief refinement
+
+The user approved a learning-first debrief: positives, one evidence-backed coaching moment when available, next priorities and replay actions lead; compact results and optional supporting detail follow. Public objectives and optional hints remain guidance only. The refinement keeps the ivory/purple modal and separates deterministic scenario outcomes from optional AI-assessed communication, without changing scoring or making live calls. Implementation verification remains pending with the orchestrator; this is not a browser-check or demo-readiness claim.
+
+## 2026-10-18 handoff and progress refinement
+
+Starting setup from a nearby colleague opens that colleague's empty loading panel immediately; only the still-open matching thread receives the session result or retryable failure. Ended panels and the next-step guidance offer a guarded View debrief action. Progress keeps its existing local summary schema: incomplete assessment hides totals, bands, and rubric values while still showing deterministic metrics; assessed values are rounded only for display. The existing ivory/purple system remains intact, with the objective label darkened for contrast.
+
+## 2026-10-18 compact-summary refinement
+
+The office uses the selected scenario title as its page heading. A closed native Briefing disclosure retains the full scenario description and scenario objective, while the existing `.next-step` panel sits above the office as the only always-visible current objective. Help and the concise movement hint remain available. The text conversation is modal, so it keeps public-only current guidance, visible goals, and optional hints in a closed native `Goals & hints` disclosure; this does not add hidden facts or scoring state.
+
+The debrief is a single-column, learning-first summary: one positive takeaway, one primary coaching moment, and the existing retry action appear before supporting detail. Its compact score strip always distinguishes deterministic scenario outcomes (75) from AI-assessed communication (25); the overall total and band appear only when the assessment is valid. Exactly three native disclosures preserve all additional material without clipping: `Scores & evidence`, `Missed opportunities`, and `Session details`. Existing quoted evidence, escaping, unavailable/general/partial feedback, polling/retry controls, focus recovery, and 390px wrapping continue to use the established modal system.
+
+## 2026-10-18 workspace surface revision
+
+The earlier ivory-and-purple interface record above is historical. The active interface direction is the green-and-graphite workspace contract in `docs/superpowers/specs/2026-10-18-taste-ui-design.md`: a `#f4f6f3` canvas, white panels, graphite text, and restrained deep-green actions. The office scene, all public/session contracts, native disclosures, transcript behavior, scoring presentation rules, and accessibility mechanics remain unchanged. This is a presentation-only revision; it makes no claim of runtime or browser verification.

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createServer } from "../server.js";
+import { createServer, warnNpcFallback } from "../server.js";
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const scenario = JSON.parse(readFileSync(join(dir, "..", "..", "..", "scenarios", "missed_deadline.json"), "utf8"));
@@ -80,6 +80,18 @@ test("POST /sessions returns session_id, briefing, public_state", async () => {
 test("POST /sessions rejects unknown scenario_id", async () => {
   const { status } = await post(base, "/sessions", { scenario_id: "nope" });
   assert.equal(status, 400);
+});
+
+test("NPC fallback diagnostic is fixed-field and cannot log injected provider data", () => {
+  const injected = "test-credential-do-not-log";
+  const lines = [];
+  const original = console.warn;
+  console.warn = (line) => lines.push(line);
+  try {
+    warnNpcFallback("not-a-public-npc", { npcFailure: "arbitrary-" + injected, npcHttpStatus: 601, message: injected });
+  } finally { console.warn = original; }
+  assert.deepEqual(JSON.parse(lines[0]), { event: "npc_fallback", npc: "maya", reason: "PROVIDER_ERROR" });
+  assert.ok(!lines[0].includes(injected));
 });
 
 test("session settings are strict, shared, and immutable after creation", async () => {

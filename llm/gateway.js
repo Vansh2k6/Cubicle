@@ -9,6 +9,14 @@ const ROLE_FALLBACK = {
   judge: { insufficient: true },
   coach: { insufficient: true },
 };
+const FAILURE_CODES = new Set(["TIMEOUT", "PROVIDER_ERROR", "OUTPUT_INVALID", "PROVIDER_UNAVAILABLE", "LLM_BUDGET_EXCEEDED", "THROTTLED", "RATE_LIMITED", "INVALID_JSON", "SCHEMA_INVALID", "EMPTY_OUTPUT"]);
+
+export function safeFailure(error) {
+  const failureCode = FAILURE_CODES.has(error?.code) ? error.code : "PROVIDER_ERROR";
+  const httpStatus = Number.isInteger(error?.httpStatus) && error.httpStatus >= 400 && error.httpStatus <= 599
+    ? error.httpStatus : undefined;
+  return { failureCode, httpStatus };
+}
 
 export function fallbackFor(role) {
   const fb = ROLE_FALLBACK[role];
@@ -101,7 +109,7 @@ export async function complete(opts) {
   }
   const fb = fallback !== undefined ? fallback : fallbackFor(role);
   const t0 = Date.now();
-  const done = (ok, data, text, raw, tokens, model, source, attempts) => ({
+  const done = (ok, data, text, raw, tokens, model, source, attempts, failure = null) => ({
     ok, data, text, raw,
     latencyMs: Date.now() - t0,
     tokens: tokens || zeroTokens(),
@@ -109,6 +117,7 @@ export async function complete(opts) {
     manifestId,
     source,
     attempts,
+    ...(failure || {}),
   });
 
   let attempts = 0;
@@ -121,14 +130,14 @@ export async function complete(opts) {
         provider.timeoutMs || timeoutMs
       );
     } catch (e) {
-      const code = e && e.code;
-      if (e?.retryable !== false && ["TIMEOUT", "PROVIDER_ERROR", "OUTPUT_INVALID"].includes(code) && i === 0) continue; // one retry
-      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
+      const failure = safeFailure(e);
+      if (e?.retryable !== false && ["TIMEOUT", "PROVIDER_ERROR", "OUTPUT_INVALID"].includes(e?.code) && i === 0) continue;
+      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts, failure);
     }
     const text = res && res.text;
     if (typeof text !== "string") {
-      if (i === 0) continue; // one retry on empty/non-string
-      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
+      if (i === 0) continue; // one retry on locally detected empty output
+      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts, { failureCode: "EMPTY_OUTPUT" });
     }
     if (!schema) {
       return done(true, { text }, text, text, res.tokens || zeroTokens(), res.model, "llm", attempts);
@@ -138,16 +147,16 @@ export async function complete(opts) {
       data = JSON.parse(text);
     } catch {
       if (i === 0) continue; // one retry on parse failure
-      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
+      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts, { failureCode: "INVALID_JSON" });
     }
     const v = validateAgainstSchema(data, schema);
     let customOk = true;
     try { if (typeof validateData === "function") customOk = validateData(data) === true; } catch { customOk = false; }
     if (!v.ok || !customOk) {
       if (i === 0) continue; // one retry on schema failure
-      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
+      return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts, { failureCode: "SCHEMA_INVALID" });
     }
     return done(true, data, text, text, res.tokens || zeroTokens(), res.model, "llm", attempts);
   }
-  return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts);
+  return done(false, fb, null, null, zeroTokens(), null, "fallback", attempts, { failureCode: "PROVIDER_ERROR" });
 }

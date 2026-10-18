@@ -1,8 +1,14 @@
 // llm/tests/classifier.test.js — classifier post-validation via fake provider.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyTurn, buildClassifierInput } from "../classifier.js";
+import { readFileSync } from "node:fs";
+import { classifyTurn, buildClassifierInput, getClassifierPrompt, TAXONOMY } from "../classifier.js";
+import { loadConfig } from "../config.js";
 import { cannedClassifier, FakeProvider } from "../fakeProvider.js";
+import { createSession, applyTurn } from "../../engine/engine.js";
+
+const scenario = JSON.parse(readFileSync(new URL("../../scenarios/missed_deadline.json", import.meta.url), "utf8"));
+const ownershipCases = JSON.parse(readFileSync(new URL("../../evals/cases/ownership-status.json", import.meta.url), "utf8")).cases;
 
 const deps = (fake) => ({ provider: fake.fn(), manifestId: "m-class" });
 const input = (text) => buildClassifierInput({ text, lastTurns: [], userKnown: [], clock: { day: 0 } });
@@ -12,6 +18,36 @@ test("buildClassifierInput slices lastTurns to <=2", () => {
   const in1 = buildClassifierInput({ text: "hi", lastTurns: turns, userKnown: ["F2"], clock: { day: 0 } });
   assert.equal(in1.lastTurns.length, 2);
   assert.deepEqual(in1.lastTurns.map((t) => t.text), ["b", "c"]);
+});
+
+test("classifier v2 prompt and config share provenance", () => {
+  assert.equal(loadConfig({}).classifier.promptVersion, "v2");
+  assert.match(getClassifierPrompt(), /Classifier prompt v2/);
+  assert.match(getClassifierPrompt(), /Ownership and status are independent multi-labels/);
+});
+
+test("ownership-status fixture is internally valid", () => {
+  assert.ok(ownershipCases.length >= 6 && ownershipCases.length <= 8);
+  assert.equal(new Set(ownershipCases.map((c) => c.id)).size, ownershipCases.length);
+  for (const c of ownershipCases) {
+    assert.ok(c.id && c.utterance && Array.isArray(c.required_events) && Array.isArray(c.forbidden_events));
+    assert.equal(typeof c.goal_complete, "boolean");
+    assert.equal(c.required_events.some((type) => c.forbidden_events.includes(type)), false);
+    for (const type of [...c.required_events, ...c.forbidden_events]) assert.ok(TAXONOMY.has(type), `${c.id}: ${type}`);
+  }
+});
+
+test("post-validated ownership and status labels are the complete G1 input", async () => {
+  for (const c of ownershipCases) {
+    const fake = new FakeProvider([cannedClassifier(c.required_events.map((type) => ({ type })))]);
+    const classified = await classifyTurn(deps(fake), input(c.utterance));
+    const types = classified.events.map((event) => event.type);
+    assert.deepEqual(types, c.required_events, c.id);
+    for (const type of c.forbidden_events) assert.equal(types.includes(type), false, c.id);
+    const session = createSession(scenario);
+    applyTurn(session, "maya", classified.events);
+    assert.equal(session.goals.G1.status === "done", c.goal_complete, c.id);
+  }
 });
 
 test("unknown event types are dropped and counted", async () => {

@@ -66,7 +66,9 @@ import { settingsPreview } from "./settingsPreview.js";
 import { PRESETS, presetName, presetSettings, presetsEnabled } from "../shared/presets.js";
 import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
 import { createEndCoordinator, captureRun } from "./endCoordinator.js";
-import { compareAttempts, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
+import { compareAttempts, displayAttemptMetric, displayAttemptScore, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
+import { projectGuidance } from "./guidance.js";
+import "./guidance.css";
 const ending = createEndCoordinator();
 const scenarios = {
   deadline: {
@@ -195,14 +197,48 @@ let state = {
 const icon = (name, cls = "") => `<i data-lucide="${name}" class="${cls}"></i>`;
 const $ = (s) => document.querySelector(s);
 const refreshIcons = () => createIcons({ icons });
+function currentGuidance() {
+  return projectGuidance({
+    goals: state.sharedGoals,
+    currentNpc: state.dialogue,
+    hint: state.sharedHint,
+    ended: state.endReason != null,
+  });
+}
+function updatePublicGuidance() {
+  if (state.scenario !== "deadline") return;
+  const guidance = currentGuidance();
+  const heading = $("#next-heading"), description = $("#next-description"), step = $(".step-number");
+  if (heading) heading.textContent = guidance.heading;
+  if (description) {
+    description.textContent = guidance.description;
+    if (state.endReason && state.sessionId && !state.dialogue) {
+      const sessionId = state.sessionId;
+      const run = captureRun(state);
+      const button = document.createElement("button");
+      button.className = "secondary-button next-debrief";
+      button.textContent = "View debrief";
+      button.onclick = () => {
+        if (run() && !state.dialogue && state.endReason && state.sessionId === sessionId) openDebrief(sessionId);
+      };
+      description.append(" ", button);
+    }
+  }
+  if (step) step.innerHTML = `${guidance.step} <span>/ 03</span>`;
+}
 function updateScenario() {
   let s = scenarios[state.scenario];
+  const title = $("#scenario-title");
+  if (title) title.textContent = s.title;
   $("#scenario-description").textContent = s.description;
   $("#objective-text").textContent = s.goal;
-  $("#next-heading").textContent = "Say hello to Maya";
-  $("#next-description").innerHTML =
-    "Walk up to your manager and press <kbd>E</kbd> to start the conversation.";
-  $(".step-number").innerHTML = "01 <span>/ 03</span>";
+  if (state.scenario === "deadline") updatePublicGuidance();
+  else {
+    $("#next-heading").textContent = "Say hello to Maya";
+    $("#next-description").innerHTML =
+      "Walk up to your manager and press <kbd>E</kbd> to start the conversation.";
+    $(".step-number").innerHTML = "01 <span>/ 03</span>";
+  }
   updateProgress();
   refreshIcons();
 }
@@ -299,6 +335,7 @@ function closeConversation() {
   $("#dialogue-layer").innerHTML = "";
   $("#game-viewport").focus({ preventScroll: true });
   $("#talk-prompt").classList.toggle("hidden", !state.near);
+  updatePublicGuidance();
 }
 function renderDialogue(feedback = "") {
   const p = people[state.dialogue],
@@ -382,25 +419,29 @@ function openTextConversation() {
     renderTextDialogue();
     return;
   }
-  openSettings(state.appliedSettings || DEFAULT_SLIDERS);
+  openSettings(state.appliedSettings || DEFAULT_SLIDERS, state.dialogue);
 }
 
 function startTextSession() {
   if (state.sessionId || state.startingSession || !state.textMode || !state.text) return;
-  const current = captureRun(state);
+  const current = captureRun(state), thread = state.text;
+  state.startingSession = true;
   state.text.loadError = null;
   renderTextDialogue();
   createSession("deadline", state.appliedSettings || DEFAULT_SLIDERS).then(
     (data) => {
-      if (!current() || !state.textMode || !state.text) return;
+      if (!current()) return;
+      state.startingSession = false;
       state.sessionId = data.session_id;
       state.sharedGoals = (data.public_state && data.public_state.goals) || [];
       state.sharedHint = (data.public_state && data.public_state.next_hint) || "";
       state.appliedSettings = data.settings || state.appliedSettings;
-      renderTextDialogue();
+      updatePublicGuidance();
+      if (state.textMode && state.text === thread) renderTextDialogue();
     },
     (err) => {
       if (!current()) return;
+      state.startingSession = false;
       if (!state.textMode || !state.text) {
         // Session creation failed while closed: keep the error on the open
         // thread so reopening shows Retry instead of a dead panel.
@@ -423,6 +464,7 @@ function renderTextDialogue() {
   const busy = t.busy || ending.busy(state.sessionId, state.scenario);
   const p = people[state.dialogue];
   const first = p.name.split(" ")[0];
+  const guidance = currentGuidance();
   const lines = t.transcript
     .map((l) =>
       l.who === "user"
@@ -444,9 +486,11 @@ function renderTextDialogue() {
     `<div class="dialogue-heading"><span class="dialogue-avatar ${p.color}">${p.initials}</span>` +
     `<div><strong id="dialogue-name">${p.name}</strong><small>${p.role}</small></div>` +
     `<span class="conversation-label">TEXT SESSION${t.mood ? ` · ${escapeHtml(t.mood).toUpperCase()}` : ""}</span>` +
-    `<button id="close-dialogue" class="icon-button" aria-label="Close conversation">${icon("x")}</button></div>` +
+    `<button id="close-dialogue" class="icon-button" aria-label="Leave conversation and continue exploring" title="Leave conversation and continue exploring">${icon("x")}</button></div>` +
     `<div class="transcript" role="log" aria-live="polite" aria-label="Conversation transcript">${lines || `<div class="t-empty">Say hello to ${escapeHtml(first)} — type your reply below.</div>`}</div>` +
-    (t.busy
+    (state.startingSession
+      ? `<div class="typing" role="status"><span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>Preparing this conversation…</div>`
+      : t.busy
       ? `<div class="typing" role="status"><span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>${escapeHtml(first)} is typing…</div>`
       : "") +
     (t.loadError
@@ -459,12 +503,15 @@ function renderTextDialogue() {
       ? `<form class="text-form" id="text-form"><label for="text-input">Reply to ${escapeHtml(first)}</label>` +
         `<div class="text-row"><input id="text-input" name="text" type="text" maxlength="500" autocomplete="off" placeholder="Type your reply…" ${busy ? "disabled" : ""} aria-describedby="text-hint" />` +
         `<button class="primary-button" type="submit" ${busy ? "disabled" : ""}>Send ${icon("arrow-right")}</button></div>` +
-        `<small id="text-hint">${state.sharedHint ? escapeHtml(state.sharedHint) : "Enter sends · Esc closes"}</small></form>`
+        `<small id="text-hint">Enter sends · Esc leaves this conversation</small></form>`
       : "") +
-    (goals ? `<ul class="goal-list" aria-label="Visible goals">${goals}</ul>` : "") +
+    `<details class="guidance-hint"><summary>Goals & hints</summary><section class="public-objective" aria-label="Current objective"><strong>Current objective</strong>${escapeHtml(guidance.objective)}</section>${goals ? `<ul class="goal-list" aria-label="Visible goals">${goals}</ul>` : ""}${!t.over ? `${guidance.hint ? `<p>${escapeHtml(guidance.hint)}</p>` : ""}<p>${escapeHtml(guidance.question)}</p>` : ""}</details>` +
     `<div id="text-debug"></div>` +
-    (state.sessionId
-      ? `<button class="primary-button text-finish" id="finish-text" ${ending.busy(state.sessionId, state.scenario) ? "disabled" : ""}>${ending.busy(state.sessionId, state.scenario) ? "Ending…" : t.over ? "Wrap up & reflect" : "End & reflect"} ${icon("arrow-right")}</button>`
+    (state.sessionId && !t.over
+      ? `<button class="secondary-button text-finish" id="finish-text" ${ending.busy(state.sessionId, state.scenario) ? "disabled" : ""}>${ending.busy(state.sessionId, state.scenario) ? "Ending…" : "Finish practice & reflect"} ${icon("arrow-right")}</button>`
+      : "") +
+    (state.sessionId && t.over
+      ? `<button class="secondary-button text-view-debrief" id="text-view-debrief">View debrief</button>`
       : "") +
     `</section>`;
   $("#close-dialogue").onclick = closeConversation;
@@ -488,6 +535,14 @@ function renderTextDialogue() {
     };
   const finish = $("#finish-text");
   if (finish) finish.onclick = completeTextSession;
+  const viewDebrief = $("#text-view-debrief");
+  if (viewDebrief) {
+    const sessionId = state.sessionId;
+    const run = captureRun(state);
+    viewDebrief.onclick = () => {
+      if (run() && state.text === t && t.over && state.sessionId === sessionId) openDebrief(sessionId);
+    };
+  }
   refreshIcons();
   const transcript = document.querySelector(".transcript");
   if (transcript) transcript.scrollTop = transcript.scrollHeight;
@@ -526,13 +581,19 @@ async function sendTextTurn(text, key, isRetry) {
       thread.mood = data.public_state.mood_label || thread.mood;
       state.sharedHint = data.public_state.next_hint || state.sharedHint;
       if (data.public_state.ended) thread.over = true;
+      if (data.public_state.ended) state.endReason = data.end_reason || "ended";
+      updatePublicGuidance();
     }
     if (data.ended) {
       for (const t of Object.values(threadsFor())) t.over = true;
       state.endReason = data.end_reason;
+      updatePublicGuidance();
     }
     if (window.__CUBICLE_DEBUG) stashTextTrace(data, thread);
-    if (data.ended) openDebrief(sessionId);
+    if (data.ended) {
+      if (state.text === thread) renderTextDialogue();
+      openDebrief(sessionId);
+    }
     else if (state.text === thread) renderTextDialogue();
   } catch (err) {
     thread.busy = false;
@@ -587,6 +648,11 @@ async function completeTextSession() {
     if (!result) return;
     state.endReason = result.end_reason;
     for (const t of Object.values(threadsFor())) t.over = true;
+    if (result.public_state) {
+      state.sharedGoals = result.public_state.goals || state.sharedGoals;
+      state.sharedHint = result.public_state.next_hint || state.sharedHint;
+    }
+    updatePublicGuidance();
   } catch { if (current(sessionId, scenarioId)) { renderTextDialogue(); toast("Could not end the session. Please try again."); } return; }
   state.complete[state.scenario] = {
     date: new Date().toISOString(),
@@ -595,10 +661,7 @@ async function completeTextSession() {
   persistProgress();
   closeConversation();
   updateProgress();
-  $("#next-heading").textContent = "One conversation. A little more confident.";
-  $("#next-description").textContent =
-    "Try another scenario, or chat with your teammates.";
-  $(".step-number").innerHTML = "03 <span>/ 03</span>";
+  updatePublicGuidance();
   openDebrief(sessionId);
   refreshIcons();
 }
@@ -606,7 +669,7 @@ async function completeTextSession() {
 function openDebrief(sessionId, historical = false) {
   const run = captureRun(state);
   const attemptScenario = state.attempts.find((attempt) => attempt.session_id === sessionId)?.scenario || state.scenario;
-  showModal("Your practice debrief", '<div id="debrief-content" aria-live="polite"></div>');
+  showModal("Practice debrief", '<div id="debrief-content" aria-live="polite"></div>');
   const box = $("#debrief-content");
   $(".modal").classList.add("debrief-modal");
   $(".modal .eyebrow")?.remove();
@@ -638,7 +701,7 @@ function openDebrief(sessionId, historical = false) {
       const actions = document.createElement("div");
       actions.className = "debrief-actions";
       actions.innerHTML = `<button class="primary-button" id="try-again">Try again</button><button class="secondary-button" id="try-settings">Try again with new settings</button>`;
-      box.append(actions);
+      (box.querySelector("[data-debrief-actions]") || box).append(actions);
       const attemptSettings = latest.settings?.maya || state.appliedSettings || DEFAULT_SLIDERS;
       $("#try-again").onclick = () => restartTextRun(false, attemptScenario, attemptSettings);
       $("#try-settings").onclick = () => restartTextRun(true, attemptScenario, attemptSettings);
@@ -703,10 +766,12 @@ function resetTextRun(scenarioId = state.scenario) {
   office.reset();
   updateScenario();
 }
-function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS) {
+function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null) {
   const threads = threadsFor();
+  const thread = resumeNpc ? threads[resumeNpc] : null;
   const current = captureRun(state);
   state.startingSession = true;
+  if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) renderTextDialogue();
   createSession("deadline", sliders).then((data) => {
     if (!current() || state.threads !== threads || state.sessionId) return;
     state.sessionId = data.session_id;
@@ -714,13 +779,20 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS) {
     state.sharedHint = data.public_state?.next_hint || "";
     state.appliedSettings = data.settings || sliders;
     state.startingSession = false;
+    updatePublicGuidance();
+    if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) renderTextDialogue();
   }, () => {
     if (!current() || state.threads !== threads) return;
     state.startingSession = false;
+    if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) {
+      thread.loadError = "Could not reach the conversation server.";
+      renderTextDialogue();
+      return;
+    }
     toast("Could not start a fresh conversation. Find Maya and retry.");
   });
 }
-function openSettings(initial = DEFAULT_SLIDERS) {
+function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
   const draft = { ...initial };
   const showPresets = presetsEnabled(import.meta.env.VITE_PRESETS);
   const preview = () => settingsPreview(draft);
@@ -738,13 +810,24 @@ function openSettings(initial = DEFAULT_SLIDERS) {
     document.querySelectorAll("[data-slider]").forEach((input) => input.oninput = () => { draft[input.dataset.slider] = Number(input.value); const selector = $("#setup-preset"); if (selector) selector.value = presetName(draft); refreshDraft(); });
     const preset = $("#setup-preset");
     if (preset) preset.onchange = () => { const values = presetSettings(preset.value); if (values) Object.assign(draft, values); refreshDraft(); };
-    $("#setup-start").onclick = () => { closeModal(); state.appliedSettings = { ...draft }; startRetrySession(draft); toast("Settings fixed for this attempt. Find Maya to begin."); };
+    $("#setup-start").onclick = () => {
+      closeModal();
+      state.appliedSettings = { ...draft };
+      if (resumeNpc && state.near === resumeNpc) {
+        state.dialogue = resumeNpc;
+        state.textMode = true;
+        state.text = threadsFor()[resumeNpc];
+        $("#talk-prompt").classList.add("hidden");
+      }
+      startRetrySession(draft, resumeNpc);
+      toast(resumeNpc ? "Settings fixed. Preparing your conversation…" : "Settings fixed for this attempt. Find Maya to begin.");
+    };
   };
   getScenario("deadline").then(render, () => {
     if (!current()) return;
     box.innerHTML = '<div class="turn-error" role="alert"><p>Could not load this practice.</p><button class="secondary-button" id="setup-retry">Retry</button></div>';
     const retry = $("#setup-retry");
-    if (retry) retry.onclick = () => openSettings(draft);
+    if (retry) retry.onclick = () => openSettings(draft, resumeNpc);
   });
 }
 function restartTextRun(withSettings, scenarioId = state.scenario, settings = state.appliedSettings || DEFAULT_SLIDERS) {
@@ -764,15 +847,16 @@ function restartTextRun(withSettings, scenarioId = state.scenario, settings = st
   openSettings(previous);
 }
 function attemptLabel(attempt) {
-  return `${new Date(attempt.date).toLocaleDateString()} · ${attempt.total}/100 · ${attempt.band}${attempt.provisional ? " · Provisional" : ""}`;
+  return `${new Date(attempt.date).toLocaleDateString()} · ${displayAttemptScore(attempt)}`;
 }
 function showProgress() {
   let selected = [];
+  const metricLabels = { goals: "Goals", hidden_facts: "Hidden facts", integrity: "Integrity", relationship: "Relationship", rubric: "Communication (AI-assessed)" };
   const render = () => {
     const attempts = state.attempts.filter((attempt) => attempt.scenario === "deadline");
     const comparison = compareAttempts(...selected.map((id) => attempts.find((attempt) => attempt.session_id === id)));
     const rows = attempts.length ? attempts.map((attempt) => `<div class="attempt-row"><span><strong>${escapeHtml(scenarios[attempt.scenario].title)}</strong><small>${escapeHtml(attemptLabel(attempt))} · v${escapeHtml(attempt.scoring_version)}</small></span><button class="secondary-button" data-select-attempt="${escapeHtml(attempt.session_id)}">${selected.includes(attempt.session_id) ? "Selected" : "Compare"}</button><button class="secondary-button" data-open-attempt="${escapeHtml(attempt.session_id)}">Open feedback</button></div>`).join("") : "<p>No scored attempts yet. Finish a deadline conversation to see its feedback here.</p>";
-    const compare = comparison ? `<section class="attempt-compare"><h3>Compare attempts${comparison.crossVersion ? " · versions differ" : ""}</h3><p>${escapeHtml(comparison.first.total)} / 100 · ${escapeHtml(comparison.first.band)} &nbsp; | &nbsp; ${escapeHtml(comparison.second.total)} / 100 · ${escapeHtml(comparison.second.band)}${comparison.provisional ? " · Includes provisional feedback" : ""}</p><table><thead><tr><th>Metric</th><th>First</th><th>Second</th></tr></thead><tbody>${comparison.metrics.map((metric) => `<tr><th>${escapeHtml(metric.id.replaceAll("_", " "))}</th><td>${escapeHtml(metric.first)}</td><td>${escapeHtml(metric.second)}</td></tr>`).join("")}</tbody></table></section>` : "<p class=\"debrief-muted\">Select two attempts from the same scenario to compare their server-reported totals and metrics.</p>";
+    const compare = comparison ? `<section class="attempt-compare"><h3>Compare attempts${comparison.crossVersion ? " · versions differ" : ""}</h3><p>${escapeHtml(displayAttemptScore(comparison.first))} &nbsp; | &nbsp; ${escapeHtml(displayAttemptScore(comparison.second))}</p><table><thead><tr><th>Metric</th><th>First</th><th>Second</th></tr></thead><tbody>${comparison.metrics.map((metric) => `<tr><th>${escapeHtml(metricLabels[metric.id] || metric.id.replaceAll("_", " "))}</th><td>${escapeHtml(displayAttemptMetric(comparison.first, metric.id))}</td><td>${escapeHtml(displayAttemptMetric(comparison.second, metric.id))}</td></tr>`).join("")}</tbody></table></section>` : "<p class=\"debrief-muted\">Select two attempts from the same scenario to compare their server-reported totals and metrics.</p>";
     showModal("My progress", `<p>${Object.keys(state.complete).length} of 3 workplace scenarios practiced. Every conversation counts.</p><div class="progress-list attempt-list">${rows}</div>${compare}`);
     document.querySelectorAll("[data-select-attempt]").forEach((button) => button.onclick = () => {
       const id = button.dataset.selectAttempt;
@@ -889,9 +973,10 @@ window.addEventListener("keydown", (e) => {
     if (dialog) {
       let f = [
         ...dialog.querySelectorAll(
-          'button,input,textarea,select,[tabindex="0"]',
+          'button,input,textarea,select,summary,[tabindex="0"]',
         ),
-      ].filter((el) => !el.disabled);
+      ].filter((el) => !el.disabled && el.getClientRects().length > 0);
+      if (!f.length) return;
       if (e.shiftKey && document.activeElement === f[0]) {
         e.preventDefault();
         f.at(-1).focus();
