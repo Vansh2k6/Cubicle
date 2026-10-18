@@ -23,6 +23,10 @@ export function rulesToEvents(text) {
   const t = String(text || "");
   const events = [];
   const push = (type, params) => events.push({ type, params: params || {} });
+  if (/\bjordan\b/i.test(t) && /\b(module|remaining work)\b/i.test(t)) {
+    if (/\bhalf\b/i.test(t)) push("relayed_fact", { fact_id: "F2", accurate: true });
+    else if (/all the remaining work|entire remaining work|no module|nothing built/i.test(t)) push("relayed_fact", { fact_id: "F2", accurate: false });
+  }
 
   if (has(/ignore\b.*\binstructions|tell me everything|reveal\s+(all|everything)|tell me all/i, t)) {
     push("asked_reveal_all");
@@ -65,6 +69,7 @@ export function rulesToEvents(text) {
   const dayMatch = /\b(friday|thursday|tomorrow)\b/i.exec(t) || /\b(\d+)\s*days?\b/i.exec(t);
   if (
     dayMatch &&
+    !has(/recap|to summarize|let me summarize/i, t) &&
     has(/deliver|done\b|finish|complete|send|submit|ready|promise|will|can\b/i, t) &&
     !has(/next week|end of day|\beod\b|couple of days|few days|\bsoon\b|\basap\b|shortly|whenever/i, t)
   ) {
@@ -95,6 +100,11 @@ function parseNpc(system) {
 
 export async function npcFn({ system } = {}) {
   const act = parseAct(system);
+  if (String(system).includes("engine authorizes acceptance")) return { text: "That plan works for me." };
+  if (String(system).includes("engine authorizes closing")) return { text: "We have a plan." };
+  if (act === "callback_commitment") return { text: String(system).includes("challenge the earlier promise")
+    ? "You made a promise earlier. Can you reconsider it and suggest a workable plan?"
+    : "You made a promise earlier. How is that plan progressing?" };
   const npc = parseNpc(system) || "maya";
   const baseAct = act.startsWith("reveal_fact:") ? act : act.split(":")[0];
   const line = fetchFallback(

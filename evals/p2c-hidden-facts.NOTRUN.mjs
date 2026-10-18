@@ -1,3 +1,4 @@
+if (process.env.RUN_LIVE !== "1") { console.error("Refused: RUN_LIVE=1 required; live eval NOT RUN."); process.exit(2); }
 // evals/p2c-hidden-facts.NOTRUN.mjs — R-62 hidden-fact acceptance (NOT RUN).
 // Live provider required (D-28 defers live; one smoke reserved). This stub
 // does NOT execute: it saves the exact run cases for the user end batch and

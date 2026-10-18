@@ -1,0 +1,41 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { projectGuidance } from "../../src/guidance.js";
+
+const goals = (done = []) => ["G1", "G2", "G3"].map((id) => ({ id, status: done.includes(id) ? "done" : "pending" }));
+
+test("public goal states lead through Maya, Jordan, Maya, then reflection", () => {
+  assert.match(projectGuidance({ goals: goals() }).description, /Maya/);
+  assert.match(projectGuidance({ goals: goals(["G1"]) }).description, /Jordan/);
+  assert.match(projectGuidance({ goals: goals(["G1", "G2"]) }).description, /Maya/);
+  assert.match(projectGuidance({ goals: goals(["G1", "G2", "G3"]) }).heading, /reflect/i);
+});
+
+test("hints stay optional, useful, and limited to public state", () => {
+  const sam = projectGuidance({ goals: goals(["G1"]), currentNpc: "sam", hint: "Ask for advice." });
+  assert.match(sam.question, /Sam/);
+  assert.equal(sam.hint, "Ask for advice.");
+  assert.match(projectGuidance({ goals: goals(["G1"]) }).question, /Jordan/);
+});
+
+test("completion and reset direction are explicit without interpreting goal labels", () => {
+  const hostile = [{ id: "G1", status: "done", label: '<img src=x>' }, { id: "G2", status: "pending" }];
+  assert.equal(projectGuidance({ goals: hostile }).heading, "Check in with Jordan");
+  const ended = projectGuidance({ goals: [], ended: true, currentNpc: "sam" });
+  assert.match(ended.description, /View your debrief|continue exploring/);
+  assert.equal(ended.question, "");
+  assert.match(projectGuidance({ goals: [] }).description, /Maya/);
+});
+
+test("client escapes public guidance and keeps modal-safe goals and hints reachable", () => {
+  const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
+  assert.match(source, /escapeHtml\(guidance\.objective\)/);
+  assert.match(source, /escapeHtml\(guidance\.hint\)/);
+  assert.match(source, /<details class="guidance-hint"><summary>Goals & hints<\/summary><section class="public-objective"/);
+  assert.match(source, /\$\{goals \? `<ul class="goal-list"/);
+  assert.match(source, /<small id="text-hint">Enter sends · Esc leaves this conversation<\/small>/);
+  assert.doesNotMatch(source, /id="text-hint">\$\{state\.sharedHint/);
+  assert.match(source, /button,input,textarea,select,summary,\[tabindex="0"\]/);
+  assert.match(source, /el\.getClientRects\(\)\.length > 0/);
+});

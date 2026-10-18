@@ -1,3 +1,4 @@
+if (process.env.RUN_LIVE !== "1") { console.error("Refused: RUN_LIVE=1 required; live eval NOT RUN."); process.exit(2); }
 // evals/p2c-paraphrase.NOTRUN.mjs — Reveal-on-paraphrase acceptance (NOT RUN).
 // Live provider required (D-28 defers live). Saves cases for the user batch,
 // exits 2. Paraphrases: "Is there any flexibility on the deadline?",

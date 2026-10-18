@@ -1,0 +1,819 @@
+{
+  "synthetic": true,
+  "scoring_version": 2,
+  "results": {
+    "smart": {
+      "scoring_version": 2,
+      "weights": {
+        "goals": 30,
+        "hidden_facts": 20,
+        "integrity": 15,
+        "relationship": 10,
+        "rubric": 25
+      },
+      "penalties": {
+        "unrealistic_commitment": 8,
+        "contradicted_commitment": 4,
+        "inaccurate_relay": 3
+      },
+      "relationship_population": "all_scenario_npcs",
+      "metrics": {
+        "goals": {
+          "points": 30,
+          "cap": 30,
+          "evidence": [
+            {
+              "metric": "goals",
+              "source_id": "goal:G1",
+              "turn_id": 1,
+              "user_turn_id": 1,
+              "points": 10,
+              "loss": 0,
+              "status": "awarded",
+              "evidence": [
+                {
+                  "source_id": "T1-maya-took_ownership-0",
+                  "turn_id": 1,
+                  "user_turn_id": 1
+                },
+                {
+                  "source_id": "T1-maya-gave_honest_status-1",
+                  "turn_id": 1,
+                  "user_turn_id": 1
+                }
+              ]
+            },
+            {
+              "metric": "goals",
+              "source_id": "goal:G2",
+              "turn_id": 4,
+              "user_turn_id": 7,
+              "points": 10,
+              "loss": 0,
+              "status": "awarded",
+              "evidence": [
+                {
+                  "source_id": "T4-jordan-asked_requirement_details-0",
+                  "turn_id": 4,
+                  "user_turn_id": 7
+                }
+              ]
+            },
+            {
+              "metric": "goals",
+              "source_id": "goal:G3",
+              "turn_id": 10,
+              "user_turn_id": 19,
+              "points": 10,
+              "loss": 0,
+              "status": "awarded",
+              "evidence": [
+                {
+                  "source_id": "T10-maya-recapped_agreement-0",
+                  "turn_id": 10,
+                  "user_turn_id": 19
+                }
+              ],
+              "commitment_id": "C1"
+            }
+          ]
+        },
+        "hidden_facts": {
+          "points": 15,
+          "cap": 20,
+          "evidence": [
+            {
+              "metric": "hidden_facts",
+              "source_id": "fact:F1",
+              "turn_id": 3,
+              "user_turn_id": 5,
+              "points": 8,
+              "loss": 0,
+              "status": "awarded",
+              "evidence": [
+                {
+                  "source_id": "T2-maya-asked_deadline_flexibility-0",
+                  "turn_id": 2,
+                  "user_turn_id": 3
+                },
+                {
+                  "source_id": "T3-maya-asked_impact-0",
+                  "turn_id": 3,
+                  "user_turn_id": 5
+                }
+              ]
+            },
+            {
+              "metric": "hidden_facts",
+              "source_id": "fact:F2",
+              "turn_id": 6,
+              "user_turn_id": 11,
+              "points": 7,
+              "loss": 0,
+              "status": "awarded",
+              "evidence": [
+                {
+                  "source_id": "T5-jordan-asked_for_help-0",
+                  "turn_id": 5,
+                  "user_turn_id": 9
+                },
+                {
+                  "source_id": "T6-jordan-asked_for_help-0",
+                  "turn_id": 6,
+                  "user_turn_id": 11
+                }
+              ]
+            },
+            {
+              "metric": "hidden_facts",
+              "source_id": "fact:F3",
+              "turn_id": 10,
+              "user_turn_id": 19,
+              "points": 0,
+              "loss": 5,
+              "status": "missed",
+              "evidence": []
+            }
+          ]
+        },
+        "integrity": {
+          "points": 15,
+          "cap": 15,
+          "evidence": [
+            {
+              "metric": "integrity",
+              "source_id": "integrity:baseline",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 15,
+              "loss": 0,
+              "reason": "baseline"
+            }
+          ]
+        },
+        "relationship": {
+          "points": 0,
+          "cap": 10,
+          "evidence": [
+            {
+              "metric": "relationship",
+              "source_id": "relationship:maya",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 0,
+              "loss": 0,
+              "start": 50,
+              "final": 50,
+              "evidence": []
+            },
+            {
+              "metric": "relationship",
+              "source_id": "relationship:jordan",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 0,
+              "loss": 0,
+              "start": 50,
+              "final": 50,
+              "evidence": []
+            },
+            {
+              "metric": "relationship",
+              "source_id": "relationship:sam",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 0,
+              "loss": 0,
+              "start": 50,
+              "final": 50,
+              "evidence": []
+            }
+          ]
+        },
+        "rubric": {
+          "points": 0,
+          "cap": 25,
+          "status": "pending",
+          "evidence": []
+        }
+      },
+      "deterministic": 60,
+      "rubric": "pending",
+      "total": 60,
+      "ledger": [
+        {
+          "metric": "goals",
+          "source_id": "goal:G1",
+          "turn_id": 1,
+          "user_turn_id": 1,
+          "points": 10,
+          "loss": 0,
+          "status": "awarded",
+          "evidence": [
+            {
+              "source_id": "T1-maya-took_ownership-0",
+              "turn_id": 1,
+              "user_turn_id": 1
+            },
+            {
+              "source_id": "T1-maya-gave_honest_status-1",
+              "turn_id": 1,
+              "user_turn_id": 1
+            }
+          ]
+        },
+        {
+          "metric": "goals",
+          "source_id": "goal:G2",
+          "turn_id": 4,
+          "user_turn_id": 7,
+          "points": 10,
+          "loss": 0,
+          "status": "awarded",
+          "evidence": [
+            {
+              "source_id": "T4-jordan-asked_requirement_details-0",
+              "turn_id": 4,
+              "user_turn_id": 7
+            }
+          ]
+        },
+        {
+          "metric": "goals",
+          "source_id": "goal:G3",
+          "turn_id": 10,
+          "user_turn_id": 19,
+          "points": 10,
+          "loss": 0,
+          "status": "awarded",
+          "evidence": [
+            {
+              "source_id": "T10-maya-recapped_agreement-0",
+              "turn_id": 10,
+              "user_turn_id": 19
+            }
+          ],
+          "commitment_id": "C1"
+        },
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F1",
+          "turn_id": 3,
+          "user_turn_id": 5,
+          "points": 8,
+          "loss": 0,
+          "status": "awarded",
+          "evidence": [
+            {
+              "source_id": "T2-maya-asked_deadline_flexibility-0",
+              "turn_id": 2,
+              "user_turn_id": 3
+            },
+            {
+              "source_id": "T3-maya-asked_impact-0",
+              "turn_id": 3,
+              "user_turn_id": 5
+            }
+          ]
+        },
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F2",
+          "turn_id": 6,
+          "user_turn_id": 11,
+          "points": 7,
+          "loss": 0,
+          "status": "awarded",
+          "evidence": [
+            {
+              "source_id": "T5-jordan-asked_for_help-0",
+              "turn_id": 5,
+              "user_turn_id": 9
+            },
+            {
+              "source_id": "T6-jordan-asked_for_help-0",
+              "turn_id": 6,
+              "user_turn_id": 11
+            }
+          ]
+        },
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F3",
+          "turn_id": 10,
+          "user_turn_id": 19,
+          "points": 0,
+          "loss": 5,
+          "status": "missed",
+          "evidence": []
+        },
+        {
+          "metric": "integrity",
+          "source_id": "integrity:baseline",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 15,
+          "loss": 0,
+          "reason": "baseline"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "relationship:maya",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 0,
+          "loss": 0,
+          "start": 50,
+          "final": 50,
+          "evidence": []
+        },
+        {
+          "metric": "relationship",
+          "source_id": "relationship:jordan",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 0,
+          "loss": 0,
+          "start": 50,
+          "final": 50,
+          "evidence": []
+        },
+        {
+          "metric": "relationship",
+          "source_id": "relationship:sam",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 0,
+          "loss": 0,
+          "start": 50,
+          "final": 50,
+          "evidence": []
+        }
+      ],
+      "excluded": [
+        {
+          "metric": "relationship",
+          "source_id": "T1-maya-took_ownership-0",
+          "reason": "allocated_to_goals"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "T1-maya-gave_honest_status-1",
+          "reason": "allocated_to_goals"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "T2-maya-asked_deadline_flexibility-0",
+          "reason": "allocated_to_hidden_facts"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "T3-maya-asked_impact-0",
+          "reason": "allocated_to_hidden_facts"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "T10-maya-recapped_agreement-0",
+          "reason": "allocated_to_goals"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "T4-jordan-asked_requirement_details-0",
+          "reason": "allocated_to_goals"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "T5-jordan-asked_for_help-0",
+          "reason": "allocated_to_hidden_facts"
+        },
+        {
+          "metric": "relationship",
+          "source_id": "T6-jordan-asked_for_help-0",
+          "reason": "allocated_to_hidden_facts"
+        }
+      ],
+      "flags": [
+        {
+          "type": "great_recap",
+          "source_id": "commitment:C1",
+          "turn_id": 10,
+          "user_turn_id": 19
+        }
+      ],
+      "priorities": [
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F3",
+          "turn_id": 10,
+          "user_turn_id": 19,
+          "loss": 5
+        }
+      ],
+      "turn_map": [
+        {
+          "engine_turn_id": 1,
+          "user_turn_id": 1,
+          "npc_id": "maya"
+        },
+        {
+          "engine_turn_id": 2,
+          "user_turn_id": 3,
+          "npc_id": "maya"
+        },
+        {
+          "engine_turn_id": 3,
+          "user_turn_id": 5,
+          "npc_id": "maya"
+        },
+        {
+          "engine_turn_id": 4,
+          "user_turn_id": 7,
+          "npc_id": "jordan"
+        },
+        {
+          "engine_turn_id": 5,
+          "user_turn_id": 9,
+          "npc_id": "jordan"
+        },
+        {
+          "engine_turn_id": 6,
+          "user_turn_id": 11,
+          "npc_id": "jordan"
+        },
+        {
+          "engine_turn_id": 7,
+          "user_turn_id": 13,
+          "npc_id": "jordan"
+        },
+        {
+          "engine_turn_id": 8,
+          "user_turn_id": 15,
+          "npc_id": "maya"
+        },
+        {
+          "engine_turn_id": 9,
+          "user_turn_id": 17,
+          "npc_id": "maya"
+        },
+        {
+          "engine_turn_id": 10,
+          "user_turn_id": 19,
+          "npc_id": "maya"
+        }
+      ]
+    },
+    "trap": {
+      "scoring_version": 2,
+      "weights": {
+        "goals": 30,
+        "hidden_facts": 20,
+        "integrity": 15,
+        "relationship": 10,
+        "rubric": 25
+      },
+      "penalties": {
+        "unrealistic_commitment": 8,
+        "contradicted_commitment": 4,
+        "inaccurate_relay": 3
+      },
+      "relationship_population": "all_scenario_npcs",
+      "metrics": {
+        "goals": {
+          "points": 0,
+          "cap": 30,
+          "evidence": [
+            {
+              "metric": "goals",
+              "source_id": "goal:G1",
+              "turn_id": 5,
+              "user_turn_id": 9,
+              "points": 0,
+              "loss": 10,
+              "status": "missed",
+              "evidence": []
+            },
+            {
+              "metric": "goals",
+              "source_id": "goal:G2",
+              "turn_id": 5,
+              "user_turn_id": 9,
+              "points": 0,
+              "loss": 10,
+              "status": "missed",
+              "evidence": []
+            },
+            {
+              "metric": "goals",
+              "source_id": "goal:G3",
+              "turn_id": 5,
+              "user_turn_id": 9,
+              "points": 0,
+              "loss": 10,
+              "status": "missed",
+              "evidence": []
+            }
+          ]
+        },
+        "hidden_facts": {
+          "points": 0,
+          "cap": 20,
+          "evidence": [
+            {
+              "metric": "hidden_facts",
+              "source_id": "fact:F1",
+              "turn_id": 5,
+              "user_turn_id": 9,
+              "points": 0,
+              "loss": 8,
+              "status": "missed",
+              "evidence": []
+            },
+            {
+              "metric": "hidden_facts",
+              "source_id": "fact:F2",
+              "turn_id": 5,
+              "user_turn_id": 9,
+              "points": 0,
+              "loss": 7,
+              "status": "missed",
+              "evidence": []
+            },
+            {
+              "metric": "hidden_facts",
+              "source_id": "fact:F3",
+              "turn_id": 5,
+              "user_turn_id": 9,
+              "points": 0,
+              "loss": 5,
+              "status": "missed",
+              "evidence": []
+            }
+          ]
+        },
+        "integrity": {
+          "points": 7,
+          "cap": 15,
+          "evidence": [
+            {
+              "metric": "integrity",
+              "source_id": "integrity:baseline",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 15,
+              "loss": 0,
+              "reason": "baseline"
+            },
+            {
+              "metric": "integrity",
+              "source_id": "commitment:C1",
+              "turn_id": 1,
+              "user_turn_id": 1,
+              "points": -8,
+              "loss": 8,
+              "reason": "unrealistic_commitment",
+              "event_source_id": "T1-maya-committed_deadline-0",
+              "requested_points": -8
+            }
+          ]
+        },
+        "relationship": {
+          "points": 0,
+          "cap": 10,
+          "evidence": [
+            {
+              "metric": "relationship",
+              "source_id": "relationship:maya",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 0,
+              "loss": 0,
+              "start": 50,
+              "final": 50,
+              "evidence": []
+            },
+            {
+              "metric": "relationship",
+              "source_id": "relationship:jordan",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 0,
+              "loss": 0,
+              "start": 50,
+              "final": 50,
+              "evidence": []
+            },
+            {
+              "metric": "relationship",
+              "source_id": "relationship:sam",
+              "turn_id": 0,
+              "user_turn_id": null,
+              "points": 0,
+              "loss": 0,
+              "start": 50,
+              "final": 50,
+              "evidence": []
+            }
+          ]
+        },
+        "rubric": {
+          "points": 0,
+          "cap": 25,
+          "status": "pending",
+          "evidence": []
+        }
+      },
+      "deterministic": 7,
+      "rubric": "pending",
+      "total": 7,
+      "ledger": [
+        {
+          "metric": "goals",
+          "source_id": "goal:G1",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "points": 0,
+          "loss": 10,
+          "status": "missed",
+          "evidence": []
+        },
+        {
+          "metric": "goals",
+          "source_id": "goal:G2",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "points": 0,
+          "loss": 10,
+          "status": "missed",
+          "evidence": []
+        },
+        {
+          "metric": "goals",
+          "source_id": "goal:G3",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "points": 0,
+          "loss": 10,
+          "status": "missed",
+          "evidence": []
+        },
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F1",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "points": 0,
+          "loss": 8,
+          "status": "missed",
+          "evidence": []
+        },
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F2",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "points": 0,
+          "loss": 7,
+          "status": "missed",
+          "evidence": []
+        },
+        {
+          "metric": "hidden_facts",
+          "source_id": "fact:F3",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "points": 0,
+          "loss": 5,
+          "status": "missed",
+          "evidence": []
+        },
+        {
+          "metric": "integrity",
+          "source_id": "integrity:baseline",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 15,
+          "loss": 0,
+          "reason": "baseline"
+        },
+        {
+          "metric": "integrity",
+          "source_id": "commitment:C1",
+          "turn_id": 1,
+          "user_turn_id": 1,
+          "points": -8,
+          "loss": 8,
+          "reason": "unrealistic_commitment",
+          "event_source_id": "T1-maya-committed_deadline-0",
+          "requested_points": -8
+        },
+        {
+          "metric": "relationship",
+          "source_id": "relationship:maya",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 0,
+          "loss": 0,
+          "start": 50,
+          "final": 50,
+          "evidence": []
+        },
+        {
+          "metric": "relationship",
+          "source_id": "relationship:jordan",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 0,
+          "loss": 0,
+          "start": 50,
+          "final": 50,
+          "evidence": []
+        },
+        {
+          "metric": "relationship",
+          "source_id": "relationship:sam",
+          "turn_id": 0,
+          "user_turn_id": null,
+          "points": 0,
+          "loss": 0,
+          "start": 50,
+          "final": 50,
+          "evidence": []
+        }
+      ],
+      "excluded": [
+        {
+          "metric": "relationship",
+          "source_id": "T1-maya-committed_deadline-0",
+          "reason": "allocated_to_integrity"
+        }
+      ],
+      "flags": [
+        {
+          "type": "premature_commitment",
+          "source_id": "commitment:C1",
+          "turn_id": 1,
+          "user_turn_id": 1
+        },
+        {
+          "type": "missed_probe",
+          "source_id": "fact:F1",
+          "turn_id": 1,
+          "user_turn_id": 1,
+          "fact_id": "F1",
+          "provisional": true
+        },
+        {
+          "type": "missed_probe",
+          "source_id": "fact:F2",
+          "turn_id": 2,
+          "user_turn_id": 3,
+          "fact_id": "F2",
+          "provisional": true
+        }
+      ],
+      "priorities": [
+        {
+          "metric": "goals",
+          "source_id": "goal:G1",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "loss": 10
+        },
+        {
+          "metric": "goals",
+          "source_id": "goal:G2",
+          "turn_id": 5,
+          "user_turn_id": 9,
+          "loss": 10
+        }
+      ],
+      "turn_map": [
+        {
+          "engine_turn_id": 1,
+          "user_turn_id": 1,
+          "npc_id": "maya"
+        },
+        {
+          "engine_turn_id": 2,
+          "user_turn_id": 3,
+          "npc_id": "jordan"
+        },
+        {
+          "engine_turn_id": 3,
+          "user_turn_id": 5,
+          "npc_id": "jordan"
+        },
+        {
+          "engine_turn_id": 4,
+          "user_turn_id": 7,
+          "npc_id": "jordan"
+        },
+        {
+          "engine_turn_id": 5,
+          "user_turn_id": 9,
+          "npc_id": "maya"
+        }
+      ]
+    }
+  }
+}

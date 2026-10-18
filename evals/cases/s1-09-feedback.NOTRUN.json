@@ -1,0 +1,22 @@
+{
+  "part": "S1-09",
+  "status": "NOT RUN",
+  "reason": "Bounded live allowance already consumed; user must separately authorize these evals.",
+  "prompt_versions": { "judge": "v2", "coach": "v2" },
+  "schema_versions": { "judge": 2, "coach": 2 },
+  "scoring_version": 2,
+  "consistency": {
+    "records": "evals/fixtures/s1-07-synthetic-sessions.json paths.smart and paths.trap",
+    "repeat_each": 5,
+    "measure": "Per-dimension score range/variance and verified quote pass rate. Target +/-1 remains unmeasured. Record manifest and actual HTTP request count; retries count."
+  },
+  "fairness": {
+    "synthetic_pairs": [
+      { "concise": "I underestimated the work. I should have flagged the delay earlier. What information do we need before choosing a next step?", "padded": "I underestimated the work. To explain that another way, I underestimated how much work there was. I should have flagged the delay earlier, and I recognize I should have done that. What information do we need before choosing a next step?" },
+      { "casual": "I got the estimate wrong. Shoulda flagged the delay earlier. What do we need to know before picking the next step?", "polished": "I misjudged the estimate and should have communicated the delay sooner. What information is needed before we choose the next step?" }
+    ],
+    "measure": "Compare verified per-dimension scores against observed repeat noise; differences are results, never assumed fairness."
+  },
+  "quote_integrity": "Require every awarded dimension's quote to pass code validation; list failures rather than counting them as successes.",
+  "coach_cases": ["flag on same user turn as F1 reveal: F1 must remain unknown", "prior snapshot includes delivered F1 while future user turns absent", "generated and authored fallback leak rejection", "empty record yields general tip without invented quote"]
+}

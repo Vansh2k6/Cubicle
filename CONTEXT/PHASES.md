@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P0
+**Current phase:** S1-P7 acceptance pending. Implementation through S1-14 hardening is present: built-only loopback demo, offline gate and operator/exit plan. Fresh checks: 217 offline tests, 35 API tests, build/bundle scan; built-browser reset/debrief/progress checks. Live acceptance and tuning remain deferred under D-28; do not start Stage 2 or claim demo readiness. Presets are opt-in; voice is not shipped.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
@@ -21,7 +21,7 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 
 ## S1-P0 — Baseline audit and freeze
 - [x] P0.1 Audit the existing build: vanilla JavaScript/Vite, Three.js scene and proximity/E hooks in `src/office.js`; authored scenarios, button dialogue, completion and localStorage progress in `src/main.js`; static shell in `index.html`. Confirmed npm dev/build/preview scripts; no API, engine, test or lint setup. Recorded in AGENT.md and ARCHITECTURE.md; this is baseline inspection, not a feature/test completion claim.
-- [ ] P0.2 Decide LLM provider/keys and a single model per role (classifier, NPC, judge, coach). Record in `DECISIONS.md` (O-06). DEFERRED in S1-01 (provider-agnostic; live evals NOT RUN; blocks P2 live work).
+- [x] P0.2 Provider/models selected and Groq adapter implemented (D-30). Bounded two-call smoke passed; full live evals remain NOT RUN. Credentials are server-side process input only.
 - [x] P0.3 Confirm or edit the proposed SC-01 content (goals, facts F1–F3, beats) and D-12, D-22. DONE S1-01: relative-day fixture confirmed (D-27 amends D-25); D-12/D-22 Accepted.
 - [x] P0.4 Create repo layout (engine / api / llm / scenarios / replies / scoring / evals) and commands in `AGENT.md`. DONE S1-01 (P0 slice): /engine, /engine/tests, /scenarios, /evals exist; test commands added; /llm, /services/api, /replies, /scoring deferred to their parts.
 - [x] P0.5 Define the scenario JSON schema and write `missed_deadline.json`, including fixed `clock`, filtered `canon` and `commitment_model` (D-25), plus R-22 goal/fact event-set disjointness validation. Proposed SC-01 constants require P0.3 confirmation. DONE S1-01: schema + spec validate; relative-day clock; disjointness enforced.
@@ -59,32 +59,32 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 - [ ] P3.1 Scene → API: `interact{npc_id}` opens that NPC's conversation; ESC closes.
 - [ ] P3.2 Visible goal checklist and "next small step" driven by goal state (FR-20, FR-25).
 - [ ] P3.3 Per-NPC knowledge silos (R-04); Jordan and Sam have their own facts and moods.
-- [ ] P3.4 Relay detection: user tells Maya what Jordan/Sam said → `relayed_fact` with accuracy.
-- [ ] P3.5 Beats B2/B3 and the commitment callback ("you said …").
-- [ ] P3.6 Scenario ends when required goals are done; end screen hands off to the debrief.
+- [x] P3.4 S1-07 implementation accepted: known-fact and supporting-text validation, conservative uncertain-relay rejection, no accurate-relay mood bonus.
+- [x] P3.5 S1-07 offline callback timing/deferral and NPC knowledge isolation verified; no duplicate commitment penalty. Live wording remains NOT RUN.
+- [x] P3.6 S1-07 guarded ending and idempotent End API implemented; S1-10 now supplies the ended-session debrief. Full scene smart/trap exit remains NOT RUN.
 
 **Exit:** the smart path completes G1–G3 with Maya/Jordan; optional Sam exploration discovers F3. The unrealistic-commitment trap triggers the callback; scene and text-only fallback both work. Callbacks do not reveal private bounds or repeat penalties.
 
 ## S1-P4 — Scoring and debrief (core)
-- [ ] P4.1 Deterministic metrics: goals, delivered hidden facts, integrity and relationship with disjoint credit sources and no duplicate penalties (D-07/D-24, R-22); relationship scoring excludes allocated goal/fact/integrity source events.
-- [ ] P4.2 Judge call with **quality-only** rubric anchors; JSON; temp 0. No goal/fact achievement or commitment/relay correctness points already assessed by code (R-22).
-- [ ] P4.3 Quote validator; failed quotes → `insufficient` (R-21).
-- [ ] P4.4 Code-derived timeline flags (R-24).
-- [ ] P4.5 Coach: at least one improved response using only information the user had (R-25).
-- [ ] P4.6 Debrief screen: score + band, breakdown (deterministic vs judged shown separately), timeline, top-2 priorities, "what you missed" with unlocking question, one improved reply.
+- [x] P4.1 S1-08 deterministic metrics accepted offline: goals, delivered facts, integrity and relationship with source allocation, deduplication and all-NPC averaging. Smart/trap deterministic fixtures are 60/7; judged points remain pending.
+- [x] P4.2 S1-09 quality-only judge module accepted offline: JSON, temperature 0, five dimensions and achievement exclusions. Live consistency/fairness/no-reaward behavior remain NOT RUN.
+- [x] P4.3 S1-09 code quote validation accepted offline; invalid evidence becomes insufficient/zero (R-21).
+- [x] P4.4 S1-08 code-derived flags accepted offline; missed_probe is provisional informational guidance with no penalty (R-24).
+- [x] P4.5 S1-09 coaching module accepted offline: one verified code moment, before-moment knowledge, guarded improved reply and authored fallback. Empty ended histories receive a general starter without invented evidence.
+- [x] P4.6 S1-10 implementation accepted: ended-only async debrief, separate deterministic/judged breakdown, provisional offline totals, verified timeline/coaching quotes, named priorities, missed facts/questions and settings/version. Desktop/narrow-layout, retry and keyboard checks passed. Live score targets remain NOT RUN; the P4 exit is not complete.
 
 **Exit:** every displayed quote is verified; trap path flags *premature commitment* with the right quote; smart path scores ≥85 and ends positively.
 
 ## S1-P5 — Retry and basic progress
-- [ ] P5.1 "Try again" restarts the scenario; previous debrief remains viewable.
-- [ ] P5.2 "Try again with new settings" wiring; use the required P6.2 controls when integrated.
-- [ ] P5.3 Basic **My progress**: list of attempts with total score and band per scenario.
+- [x] P5.1 S1-11 accepted offline: a fresh same-scenario session and conversation state; previous ended debrief remains viewable while the API process lives. Only compact summaries persist across server restarts.
+- [x] P5.2 S1-12 accepted offline: new-settings retry opens editable shared controls populated from the originating attempt, including historical feedback.
+- [x] P5.3 S1-11 accepted: persistent allowlisted attempt summaries, version/provisional labels and five-metric comparison; legacy scripted completions remain readable.
 
 **Exit:** a user can play, see feedback, retry, and compare two scores.
 
 ## S1-P6 — Core sliders; optional presets and voice (after P0–P5 exits pass)
-- [ ] P6.1 Presets: Supportive, Direct, Impatient → slider vectors (D-15).
-- [ ] P6.2 **Round 2 core / P0:** four sliders change engine parameters and prompt tone; derived difficulty label; settings fixed at session start, recorded and shown in debrief (D-15, D-23). Cannot slip with optional voice/presets.
+- [x] P6.1 S1-13 accepted offline: Supportive, Direct, Impatient use D-32 vectors, populate editable sliders and derive the difficulty label. Opt-in VITE_PRESETS=1; default off.
+- [x] P6.2 **Round 2 core / P0:** S1-12 implemented and accepted offline: four shared sliders feed unchanged engine parameters and versioned NPC tone, fixed at start and shown with display-only difficulty in the debrief. Live low/high tone/guard comparison remains NOT RUN under D-28.
 - [ ] P6.3 Push-to-talk → STT → editable transcript → normal turn (D-19).
 - [ ] P6.4 Optional spoken NPC replies with mute; captions.
 - [ ] P6.5 Listen button on the improved reply (single voice is acceptable).
@@ -93,10 +93,10 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 
 ## S1-P7 — Demo hardening
 - [ ] P7.1 Run the acceptance playthroughs (below) three times each.
-- [ ] P7.2 Tune weights and slider mappings once from playtests; record in `DECISIONS.md`.
-- [ ] P7.3 Loading and error states polished; demo reset button.
-- [ ] P7.3a Verify shared-demo static serving cannot expose CONTEXT, scenario specs, prompts, reply templates or private canon (R-08); serve frontend assets only, not the repository-root development server.
-- [ ] P7.4 Prepare demo script: trap run → low score and flagged moment; smart run → hidden facts found, high score; same scenario, different behaviour, explainable score.
+- [ ] P7.2 Tune weights and slider mappings once from playtests; record in `DECISIONS.md`. Deferred: no live playtest evidence and no tuning performed.
+- [x] P7.3 Existing loading/retry/error behavior retained; Restart scenario clears the current attempt and preserves saved progress, verified in the built browser. No new reset UI required.
+- [x] P7.3a Built-only loopback demo and pure API passed current-build forbidden-path checks: CONTEXT, scenarios, prompts, replies, .env, evals, src, engine and encoded traversal all rejected. Corrected bundle scan: 5 artifacts/81 needles/zero hits. See S1-14-gate.md; no public deployment implied.
+- [x] P7.4 Operator script and provider-failure/network-Retry plan prepared in evals/reports/s1-p7/demo-script.md. Targets are labelled unmeasured; execution is not claimed.
 
 ### Stage 1 exit criteria (demo-ready)
 1. **Hidden fact is hidden:** F1–F3 never appear in untriggered runs (≥5 each).
@@ -230,3 +230,5 @@ All Stage 1 acceptance criteria hold across every scenario and language; reply-s
 - Replay (S2-P4) depends on per-turn snapshots from S1-P1.5.
 - Community library (S2-P8) depends on the frozen scenario schema (S2-P1.3).
 - Trained classifier (S2-P3) depends on logged, human-reviewed labels from Stage 1 play.
+
+**Implementation status note, 2026-10-17:** Groq adapter and two-call connectivity smoke are recorded in D-30. The root accepted S1-07 relay/beats/ending implementation after review, offline/API checks and a limited browser check; evidence is in `evals/reports/S1-07-gate.md`. Full P2/P3 live acceptance and complete scene smart/trap runs remain NOT RUN. Checked implementation items do not close those phase exit gates.

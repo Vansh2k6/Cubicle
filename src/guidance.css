@@ -1,0 +1,35 @@
+.public-objective {
+  margin: 12px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.public-objective strong {
+  display: block;
+  color: var(--accent);
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+.guidance-hint {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.guidance-hint summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 600;
+}
+.guidance-hint summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.guidance-hint p { margin: 7px 0 0; }
+.next-debrief { margin: 8px 0 0; }
+.text-view-debrief { margin-top: 14px; width: 100%; }

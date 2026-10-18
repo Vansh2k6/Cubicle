@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#faf7ed" />
+    <meta name="theme-color" content="#f4f6f3" />
     <meta
       name="description"
       content="Explore a 3D office and build confidence in everyday workplace conversations."
@@ -27,7 +27,7 @@
             >®</span
           >
         </a>
-        <div class="workspace-label">YOUR PRACTICE SPACE</div>
+        <div class="workspace-label">Practice space</div>
         <nav aria-label="Main navigation">
           <button
             class="nav-item active"
@@ -47,7 +47,7 @@
           </button>
         </nav>
         <div class="sidebar-divider"></div>
-        <div class="section-label">LET’S SET THE SCENE <span>01</span></div>
+        <div class="section-label">Scenario</div>
         <label class="field-label" for="scenario">Your scenario</label>
         <div class="select-wrap">
           <i data-lucide="calendar-clock" class="select-icon"></i>
@@ -62,13 +62,16 @@
           <span class="difficulty"><span></span> Beginner</span
           ><span>3–5 min</span>
         </div>
-        <p id="scenario-description" class="scenario-description"></p>
-        <div class="objective">
-          <div><i data-lucide="flag"></i><span>YOUR OBJECTIVE</span></div>
-          <p id="objective-text"></p>
-        </div>
+        <details class="briefing-details">
+          <summary>Briefing</summary>
+          <p id="scenario-description" class="scenario-description"></p>
+          <div class="objective">
+            <div><i data-lucide="flag"></i><span>Scenario objective</span></div>
+            <p id="objective-text"></p>
+          </div>
+        </details>
         <div class="section-label team-label">
-          PEOPLE IN THE OFFICE <span>03</span>
+          People in the office
         </div>
         <div class="people-list">
           <button class="person" data-person="maya" title="Find Maya Chen">
@@ -96,13 +99,6 @@
           </button>
         </div>
         <div class="sidebar-bottom">
-          <div class="safe-note">
-            <i data-lucide="sprout"></i>
-            <div>
-              <strong>A little practice. A lot of growth.</strong>
-              <p>A safe space to figure things out.</p>
-            </div>
-          </div>
           <button id="profile" class="profile">
             <span class="profile-avatar">A</span>
             <span
@@ -130,9 +126,7 @@
         <div class="main-content">
           <div class="page-heading">
             <div>
-              <div class="eyebrow">REAL CONVERSATIONS. ZERO PRESSURE.</div>
-              <h1>Small steps. Big confidence<span>.</span></h1>
-              <p>Your next great conversation starts with a little practice.</p>
+              <h1 id="scenario-title">Missed a project deadline</h1>
             </div>
             <button
               class="secondary-button"
@@ -142,6 +136,21 @@
               <i data-lucide="rotate-ccw"></i><span>Restart scenario</span>
             </button>
           </div>
+          <section class="below-game" aria-label="Current objective">
+            <div class="next-step">
+              <span class="step-icon"
+                ><i data-lucide="message-square-text"></i
+              ></span>
+              <div>
+                <h2 id="next-heading">Say hello to Maya</h2>
+                <p id="next-description">
+                  Walk up to your manager and press <kbd>E</kbd> to start the
+                  conversation.
+                </p>
+              </div>
+              <span class="step-number">01 <span>/ 03</span></span>
+            </div>
+          </section>
           <section class="game-card" aria-label="Interactive 3D office">
             <div class="game-top">
               <div class="office-title">
@@ -149,11 +158,7 @@
                   ><i data-lucide="building-2"></i
                 ></span>
                 <div>
-                  <strong>The everyday office</strong>
-                  <span
-                    ><span class="green-dot"></span> Open for a little
-                    practice</span
-                  >
+                  <strong>Office</strong>
                 </div>
               </div>
               <div class="scene-actions">
@@ -183,22 +188,15 @@
               tabindex="0"
               aria-label="Office game. Use W A S D or arrow keys to move, E to talk, and Escape to close a conversation."
             >
-              <div class="scene-corner">
-                <span class="scene-corner-dot"></span> THE OFFICE
-                <span> / </span> FLOOR 01
-              </div>
               <div class="scene-labels" id="scene-labels"></div>
-              <div class="scene-tip">
-                <i data-lucide="sparkles"></i> Room to learn. Space to be you.
-              </div>
               <div class="move-hint" id="move-hint">
                 <span class="key-cluster"
                   ><kbd>W</kbd
                   ><span><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span
                 >
                 <span
-                  ><strong>Make yourself at home</strong
-                  ><small>Use WASD or arrow keys to explore</small></span
+                  ><strong>Move around</strong
+                  ><small>Use WASD or arrow keys</small></span
                 >
               </div>
               <button class="talk-prompt hidden" id="talk-prompt">
@@ -280,36 +278,7 @@
               </div>
             </div>
           </section>
-          <section class="below-game">
-            <div class="next-step">
-              <span class="step-icon"
-                ><i data-lucide="message-square-text"></i
-              ></span>
-              <div>
-                <div class="section-label">YOUR NEXT SMALL STEP</div>
-                <h2 id="next-heading">Say hello to Maya</h2>
-                <p id="next-description">
-                  Walk up to your manager and press <kbd>E</kbd> to start the
-                  conversation.
-                </p>
-              </div>
-              <span class="step-number">01 <span>/ 03</span></span>
-            </div>
-            <div class="practice-tip">
-              <i data-lucide="lightbulb"></i>
-              <div>
-                <strong>No perfect answers needed.</strong>
-                <p>Try, reflect, and try again. That’s how confidence grows.</p>
-              </div>
-            </div>
-          </section>
-          <footer class="page-footer">
-            <span>Built for the moments that matter.</span>
-            <span
-              ><span class="footer-dot"></span> Your progress stays on this
-              device</span
-            >
-          </footer>
+          <footer class="page-footer"><span><span class="footer-dot"></span> Your progress stays on this device</span></footer>
         </div>
       </main>
     </div>

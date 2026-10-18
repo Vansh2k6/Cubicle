@@ -1,0 +1,16 @@
+{
+  "part": "S1-11",
+  "status": "NOT RUN",
+  "reason": "No renewed live-provider budget; this case is saved for separately authorized live acceptance.",
+  "cases": [
+    {
+      "name": "real trap then smart retry comparison",
+      "steps": [
+        "Run a real-provider trap attempt, end it, and record its debrief total, five metrics, scoring version and provisional status.",
+        "Choose Try again, verify the new session has blank goals, facts, commitments, mood and NPC threads, then run a real-provider smart attempt.",
+        "Reopen the first feedback by session ID after the second attempt ends; compare the two summaries and verify all five metric values and any cross-version/provisional labels."
+      ],
+      "measure": "Record actual manifests, request count, totals and metrics. Do not infer score ordering or tune weights from this planned case."
+    }
+  ]
+}

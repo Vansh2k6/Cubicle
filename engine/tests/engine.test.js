@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
   createSession,
-  applyTurn,
+  applyTurn as applyUndeliveredTurn,
   commitDelivery,
   canonicalState,
   evaluateDoneWhen,
@@ -23,6 +23,14 @@ function loadScenario() {
 }
 
 const ev = (type, params) => ({ type, params: params || {} });
+
+// Existing pure-engine paths simulate successful guarded non-reveal delivery.
+// Explicit pending/failed delivery regressions use applyUndeliveredTurn directly.
+function applyTurn(session, npc, events, opts) {
+  const out = applyUndeliveredTurn(session, npc, events, opts);
+  if (session.staged && !session.staged.factId) commitDelivery(session, session.turn, { delivered: true, agreementExpressed: true, closingExpressed: true });
+  return { ...out, ended: session.ended, endReason: session.endReason };
+}
 
 function integrityCount(s) {
   return s.events_log.filter((e) => e.allocation === "integrity").length;
@@ -145,7 +153,7 @@ test("revision supersedes old id and clears acceptance/recap", () => {
   applyTurn(s, "maya", [ev("recapped_agreement")]); // t2 recap C1
   const c1 = s.commitments[0];
   assert.equal(c1.accepted_with, "maya");
-  assert.equal(c1.recap_turn_id, 2);
+  assert.equal(c1.recap_turn_id, null); // early recap cannot bypass prerequisite goals
   applyTurn(s, "maya", [ev("committed_deadline", { days: 3 })]); // t3 C2 revision
   assert.equal(s.commitments.length, 2);
   const c2 = s.commitments[1];
@@ -255,6 +263,19 @@ test("walkout: patience 0 sooner than patience 100", () => {
   }
   assert.equal(turnsToWalkout(0), 2);
   assert.equal(turnsToWalkout(100), 15);
+});
+
+test("shared slider anchors and patience trajectories remain the configured engine behavior", () => {
+  assert.deepEqual([0, 50, 100].map(config.startMood), [35, 50, 65]);
+  assert.deepEqual([0, 50, 100].map(config.patienceDrop), [-15, -8, -3]);
+  assert.deepEqual([0, 50, 100].map(config.warmthGain), [4, 7, 10]);
+  assert.deepEqual([0, 50, 100].map(config.b2TurnFor), [4, 4, 3]);
+  const turnsToWalkout = (patience) => {
+    const session = createSession(loadScenario(), { seed: 62, sliders: { patience, warmth: 50 } });
+    for (let turn = 1; turn <= 25; turn++) if (applyTurn(session, "maya", [ev("avoided_question")]).act === "walkout") return turn;
+    return Infinity;
+  };
+  assert.deepEqual([turnsToWalkout(10), turnsToWalkout(90)], [2, 11]);
 });
 
 test("silos: Jordan event to Maya does not probe F2; told_by_user is per-NPC", () => {

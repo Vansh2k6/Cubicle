@@ -71,3 +71,58 @@ Quick-reply chips, voice, scoring display in the panel (debrief work owns that),
 ## Non-goals
 
 Mood numbers (label only), per-NPC goal breakdowns (checklist is session-global), unread badges, thread deletion, voice.
+
+## S1-07 ending refinement (Operate)
+Reuses the existing completion modal, ivory palette, typography, focus handling and button styles. End waits for the active reply, calls the server End endpoint, and leaves the conversation available on failure. A server-ended session disables all NPC threads. The final placeholder says “Session ended” and “Debrief coming soon”; it does not imply a score or feedback exists. No additional motion, tokens or layout system. The orchestrator verified walking to Maya, typed input with a G1 checklist update, and the End placeholder in the offline browser preview. Full scene smart/trap playthroughs remain NOT RUN.
+
+## S1-10 debrief (Operate, narrow refinement)
+The established end modal now hosts the debrief, using the same ivory/purple palette, fonts, close button, Escape behavior and viewport focus return. No animation or new dependency. It expands to a readable 720px maximum with the existing scrollable modal; on small screens padding reduces and tables wrap instead of overflowing.
+
+Order: provisional/final score with explicit deterministic75/judged25 separation; What went well; metric breakdown and expandable quality evidence; two priorities; quoted timeline; one historical coaching moment (positive feedback first); post-session missed facts/questions; settings and scoring version. Values and strings come from the server and are escaped. The browser formats/render values and performs no scoring arithmetic.
+
+States: pending has a readable status message; bounded polling offers Check feedback after a delay; network error offers Check feedback; partial/offline retains deterministic results and labels the rubric/coaching unavailable, with one explicit feedback retry; ready shows available feedback. Cached results remain visible while refreshing. Polls are bound to the originating session/scenario/thread set and modal element, so closing/restarting/switching cannot overwrite a new run. S1-11 retry/progress work followed this accepted S1-10 surface.
+
+Root completed rendered desktop/small-screen debrief verification and saved screenshots; full scene smart/trap and live acceptance remain NOT RUN. Automated browser tooling dependency was not added; pure rendering/escaping/stale-poll tests cover critical state logic.
+
+S1-10 review refinement: priorities for missing achievements name the specific goal/question and say it was not observed by session end; absence is never pinned to an unrelated final quote. If a feedback retry POST has an uncertain network outcome, polling/Check feedback recovers the server job while preserving previous results. Already available judge/coaching sections survive retry. User-facing offline copy says a practice question is shown.
+
+Final S1-10 verification: 390px source labels use Code/Judge to avoid split words; the deterministic75/judged25 distinction remains explicit. Dialog content scrolls without horizontal overflow. Retry/check updates preserve surviving focused controls or restore Close without scrolling when a control disappears. Root verified actual Tab/Shift+Tab, Escape, reopening ended feedback, and focus after retry. Saved synthetic screenshots live under evals/reports/s1-10-debrief-*.jpg. Live scoring remains uncalibrated. No work beyond prompt 10.
+
+## S1-11 retry and basic progress (accepted offline/browser)
+The existing debrief modal carries Try again and Try again with new settings actions. Retry starts a separate default-settings session and returns focus to the office; the lightweight setup route explains that controls arrive with S1-12. My progress remains in the modal family and lists only local score summaries, with two selected attempts displayed in a compact comparison table. Version/provisional status stays visible. Historical feedback reopens by its session ID; after an API restart the user gets a friendly unavailable state while the local summary remains. Existing ivory/purple controls, close behavior, escaped content and narrow wrapping are retained. Root verified the fresh B state after A7, A7’s preserved feedback, B25 comparison with zero metrics, reload persistence, the default route, scripted email/call flow, and 390px rendering with no browser errors. Live provider verification remains NOT RUN.
+
+## S1-12 shared conversation settings (accepted offline)
+
+Before the deadline conversation, the established modal presents the public title, briefing and visible goals with four native sliders for all colleagues: assertiveness, patience, warmth and forthcomingness. Readouts update in place so range focus stays stable. The preview says the shared tone direction and the display-only difficulty; it does not calculate a score. Start fixes the draft settings for one new session. A new-settings retry begins with the attempt's applied values, including from historical feedback, while ordinary retry recreates that attempt's same settings. The ivory/purple modal shell, close behavior, asynchronous loading/retry and focus family are unchanged.
+
+Root verified all four controls, stable range focus, Hard/Easy previews, the recorded three-colleague settings, fresh same-settings retry, historical settings independent of the current attempt, Tab wrap and Escape with zero browser errors. The browser ignored the requested 390px viewport, so the two setup captures are labelled desktop and this part's narrow rendering is unverified. Live tone remains NOT RUN. The detector found only the existing avatar border at style.css:312.
+
+## S1-13 setup presets (accepted offline)
+
+When `VITE_PRESETS=1`, the existing setup modal adds one native Starting style select. Supportive, Direct and Impatient copy their approved shared slider values into the editable controls; any manual adjustment shows Custom. The feature is off by default and does not alter an active session.
+
+Root verified all three vectors and Easy/Medium/Hard previews, manual changes returning to Custom, the Direct vector recorded for all three colleagues in the ended debrief, and the disabled selector with all four sliders still usable. No fresh browser errors; changed-file detector returned no findings. Narrow rendering and live tone remain unverified.
+
+## S1-14 local demo (verified offline)
+
+npm run demo serves built assets and the API together on localhost. The production client uses relative API paths; the existing dev base and explicit override remain available. No deployment or live-provider claim is made.
+
+Root verified the actual built app at 127.0.0.1:4173: setup loaded, a typed ownership turn ended with provisional 25/code25/judge0 feedback, Restart retained that summary in My progress and opened a fresh setup and blank conversation. No fresh browser errors. The existing reset control is reused without adding UI. Screenshots are in evals/reports/s1-p7. Live acceptance and new narrow rendering remain deferred.
+
+## 2026-10-18 accepted debrief refinement
+
+The user approved a learning-first debrief: positives, one evidence-backed coaching moment when available, next priorities and replay actions lead; compact results and optional supporting detail follow. Public objectives and optional hints remain guidance only. The refinement keeps the ivory/purple modal and separates deterministic scenario outcomes from optional AI-assessed communication, without changing scoring or making live calls. Implementation verification remains pending with the orchestrator; this is not a browser-check or demo-readiness claim.
+
+## 2026-10-18 handoff and progress refinement
+
+Starting setup from a nearby colleague opens that colleague's empty loading panel immediately; only the still-open matching thread receives the session result or retryable failure. Ended panels and the next-step guidance offer a guarded View debrief action. Progress keeps its existing local summary schema: incomplete assessment hides totals, bands, and rubric values while still showing deterministic metrics; assessed values are rounded only for display. The existing ivory/purple system remains intact, with the objective label darkened for contrast.
+
+## 2026-10-18 compact-summary refinement
+
+The office uses the selected scenario title as its page heading. A closed native Briefing disclosure retains the full scenario description and scenario objective, while the existing `.next-step` panel sits above the office as the only always-visible current objective. Help and the concise movement hint remain available. The text conversation is modal, so it keeps public-only current guidance, visible goals, and optional hints in a closed native `Goals & hints` disclosure; this does not add hidden facts or scoring state.
+
+The debrief is a single-column, learning-first summary: one positive takeaway, one primary coaching moment, and the existing retry action appear before supporting detail. Its compact score strip always distinguishes deterministic scenario outcomes (75) from AI-assessed communication (25); the overall total and band appear only when the assessment is valid. Exactly three native disclosures preserve all additional material without clipping: `Scores & evidence`, `Missed opportunities`, and `Session details`. Existing quoted evidence, escaping, unavailable/general/partial feedback, polling/retry controls, focus recovery, and 390px wrapping continue to use the established modal system.
+
+## 2026-10-18 workspace surface revision
+
+The earlier ivory-and-purple interface record above is historical. The active interface direction is the green-and-graphite workspace contract in `docs/superpowers/specs/2026-10-18-taste-ui-design.md`: a `#f4f6f3` canvas, white panels, graphite text, and restrained deep-green actions. The office scene, all public/session contracts, native disclosures, transcript behavior, scoring presentation rules, and accessibility mechanics remain unchanged. This is a presentation-only revision; it makes no claim of runtime or browser verification.

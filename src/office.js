@@ -505,6 +505,7 @@ export function createOffice(container, hooks) {
     );
   }
   function step(dt) {
+    const p = player.root.position;
     const paused = hooks.isPaused();
     if (paused) {
       keys.clear();
@@ -521,7 +522,6 @@ export function createOffice(container, hooks) {
         (keys.has("w") || keys.has("arrowup") ? 1 : 0);
     dx = horizontal * 0.8 + vertical * 0.6;
     dz = -horizontal * 0.6 + vertical * 0.8;
-    let p = player.root.position;
     if (target) {
       dx = target.x - p.x;
       dz = target.z - p.z;
@@ -565,7 +565,6 @@ export function createOffice(container, hooks) {
     {
       let next = null,
         min = 2.05;
-      let p = player.root.position;
       for (let [id, n] of Object.entries(npcs)) {
         let d = Math.hypot(p.x - n.root.position.x, p.z - n.root.position.z);
         if (d < min) {

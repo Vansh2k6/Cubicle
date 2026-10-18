@@ -1,0 +1,12 @@
+{
+  "cases": [
+    { "id": "ownership-and-unfinished-work", "utterance": "I accept responsibility for the delay. The implementation remains incomplete.", "required_events": ["took_ownership", "gave_honest_status"], "forbidden_events": [], "goal_complete": true },
+    { "id": "ownership-and-blocker", "utterance": "I should have raised the risk sooner; testing is blocked while I fix the integration.", "required_events": ["took_ownership", "gave_honest_status"], "forbidden_events": [], "goal_complete": true },
+    { "id": "ownership-and-progress", "utterance": "This delay is on me. I have finished the draft, but the final checks are still pending.", "required_events": ["took_ownership", "gave_honest_status"], "forbidden_events": [], "goal_complete": true },
+    { "id": "ownership-only", "utterance": "This is on me. I accept responsibility.", "required_events": ["took_ownership"], "forbidden_events": ["gave_honest_status"], "goal_complete": false },
+    { "id": "status-only", "utterance": "Testing has not started, and the report is unfinished.", "required_events": ["gave_honest_status"], "forbidden_events": ["took_ownership"], "goal_complete": false },
+    { "id": "denial-with-status", "utterance": "I do not take responsibility. My work is unfinished.", "required_events": ["gave_honest_status"], "forbidden_events": ["took_ownership"], "goal_complete": false },
+    { "id": "quoted-ownership", "utterance": "Maya said, 'I own the delay,' but I am asking what remains.", "required_events": ["asked_requirement_details"], "forbidden_events": ["took_ownership", "gave_honest_status"], "goal_complete": false },
+    { "id": "hypothetical-ownership", "utterance": "If I had missed it, I would own it; what is still required?", "required_events": ["asked_requirement_details"], "forbidden_events": ["took_ownership", "gave_honest_status"], "goal_complete": false }
+  ]
+}

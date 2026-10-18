@@ -206,23 +206,19 @@ export function semanticHitForFact(reply, scenario, factId, corpus) {
   return { hit, overlap, ratio };
 }
 
-function resolveDayClaim(reply, clockDay) {
-  const mDay = DATE_DAY_RE.exec(String(reply || ""));
-  if (mDay) {
-    const full = DAY_FULL[mDay[1].toLowerCase()];
-    if (Object.prototype.hasOwnProperty.call(DAY_TO_OFFSET, full)) {
-      return { day: DAY_TO_OFFSET[full], label: full };
-    }
-    return { day: null, label: full };
+function resolveDayClaims(reply, clockDay) {
+  const text = String(reply || ""), claims = [];
+  for (const match of text.matchAll(new RegExp(DATE_DAY_RE.source, "gi"))) {
+    const full = DAY_FULL[match[1].toLowerCase()];
+    claims.push({ day: Object.prototype.hasOwnProperty.call(DAY_TO_OFFSET, full) ? DAY_TO_OFFSET[full] : null, label: full, index: match.index });
   }
-  const mCount = DATE_COUNT_RE.exec(String(reply || ""));
-  if (mCount) {
-    const raw = mCount[1].toLowerCase();
+  for (const match of text.matchAll(new RegExp(DATE_COUNT_RE.source, "gi"))) {
+    const raw = match[1].toLowerCase();
     const n = Object.prototype.hasOwnProperty.call(NUMBER_WORDS, raw) ? NUMBER_WORDS[raw] : Number(raw);
-    if (Number.isInteger(n)) return { day: clockDay + n, label: mCount[0] };
+    if (Number.isInteger(n)) claims.push({ day: clockDay + n, label: match[0], index: match.index });
   }
-  if (TOMORROW_RE.test(String(reply || ""))) return { day: clockDay + 1, label: "tomorrow" };
-  return null;
+  for (const match of text.matchAll(new RegExp(TOMORROW_RE.source, "gi"))) claims.push({ day: clockDay + 1, label: match[0], index: match.index });
+  return claims.sort((a, b) => a.index - b.index);
 }
 
 // Canon guard (R-09): structured checks against clock + active commitment.
@@ -244,27 +240,28 @@ export function canonCheck(reply, opts = {}) {
   };
 
   // 1. Date claims.
-  const claim = resolveDayClaim(text, clockDay);
-  if (claim && claim.day !== null) {
-    let exempt = false;
-    if (authorisedFactId === "F1" && (claim.label === "friday" || claim.day === 3)) exempt = true;
-    if (!exempt && activeCommitment && claim.day === activeCommitment.target_day) {
-      exempt = ["close_positive", "acknowledge_relay", "callback_commitment"].includes(act);
-    }
-    if (!exempt && corpus && supportedByEcho(corpus, claim.label) && hasAttribution(text) && !hasConfirmLanguage(text)) {
-      exempt = true; // pure echo attribution ("you proposed Friday")
-    }
-    if (!exempt) {
-      if (bounds && (claim.day < bounds.minDay || claim.day > bounds.cutoffDay)) {
-        failures.push({ code: "canon_date_out_of_bounds" });
-      } else {
+  for (const claim of resolveDayClaims(text, clockDay)) {
+    if (claim.day !== null) {
+      let exempt = false;
+      if (authorisedFactId === "F1" && (claim.label === "friday" || claim.day === 3)) exempt = true;
+      if (!exempt && activeCommitment && claim.day === activeCommitment.target_day) {
+        exempt = ["close_positive", "acknowledge_relay", "callback_commitment"].includes(act);
+      }
+      if (!exempt && corpus && supportedByEcho(corpus, claim.label) && hasAttribution(text) && !hasConfirmLanguage(text)) {
+        exempt = true; // pure echo attribution ("you proposed Friday")
+      }
+      if (!exempt) {
+        if (bounds && (claim.day < bounds.minDay || claim.day > bounds.cutoffDay)) {
+          failures.push({ code: "canon_date_out_of_bounds" });
+        } else {
+          failures.push({ code: "canon_unverified_date" });
+        }
+      }
+    } else {
+      // Named a weekday outside the SC-01 vocabulary: invented specifics.
+      if (!(corpus && supportedByEcho(corpus, claim.label) && hasAttribution(text) && !hasConfirmLanguage(text))) {
         failures.push({ code: "canon_unverified_date" });
       }
-    }
-  } else if (claim && claim.day === null) {
-    // Named a weekday outside the SC-01 vocabulary: invented specifics.
-    if (!(corpus && supportedByEcho(corpus, claim.label) && hasAttribution(text) && !hasConfirmLanguage(text))) {
-      failures.push({ code: "canon_unverified_date" });
     }
   }
 

@@ -1,13 +1,13 @@
 # AGENT.md — Lead project instructions and orchestrator contract
 
 Project: **Cubicle — AI Job Simulator** (CODE APEX 3.0, iMocha track IM-04, team Fathom).
-Last updated: 2026-10-16. If this file disagrees with the code, fix whichever is wrong and say which in the PR.
+Last updated: 2026-10-18. If this file disagrees with the code, fix whichever is wrong and say which in the PR.
 
 ## 1. What you are building (read this first)
 
 A practice space where a person walks around a 3D isometric office, talks (typing now, speaking later) to AI colleagues, and gets a fair, **evidence-backed** debrief afterwards. NPCs hold **hidden facts** that only come out when the user asks the right questions. The conversation is **improvised**, but the *decisions* (what is revealed, what is scored, what ends the scenario) are made by **plain code**, not by an LLM.
 
-Existing build (called "cubicle"): isometric office scene, player **Alex**, move with WASD, **E** to talk, ESC to close. NPCs: **Maya Chen** (manager), **Jordan Lee** (teammate), **Sam Taylor** (People & culture). Scenarios: *Missed a project deadline*, *Forgot to reply to an email*, *Missed an important call*. Conversations currently use scripted buttons, not user-entered free text or an LLM. The scene is presentation; the planned engine must not depend on it.
+Existing build (called "cubicle"): isometric office scene, player **Alex**, move with WASD, **E** to talk, ESC to close. NPCs: **Maya Chen** (manager), **Jordan Lee** (teammate), **Sam Taylor** (People & culture). Scenarios: *Missed a project deadline*, *Forgot to reply to an email*, *Missed an important call*. SC-01 now uses typed API conversations with per-NPC threads and guarded responses; SC-02/03 retain scripted buttons. The scene is presentation; the planned engine must not depend on it.
 
 ## 2. Source-of-truth order
 
@@ -34,7 +34,11 @@ The original hackathon PDF and older PPT are **context, not law**. An AI-generat
 
 ## 4. Repo layout
 
-**Verified baseline, 2026-10-16:** plain JavaScript ES modules, Vite 8, Three.js, Lucide, and CSS. The scripted frontend remains separate from the existing engine, scenario schema/validator and provider-agnostic LLM modules. No API, integrated typed conversation UI, leak/canon guards or scoring/debrief implementation exists yet. Module presence is not phase acceptance or live-model verification.
+**Current continuation, 2026-10-18:** S1-12 shared sliders and S1-13 optional presets are accepted offline. S1-14 built-only demo serving, malformed-path recovery, offline verification command and operator/exit documentation are implemented; final serving verification is recorded in its gate. Fresh full checks: 217 offline tests, 35 API tests, build and corrected bundle scan (5 artifacts/81 needles/zero hits). Root verified the actual built same-origin loop, provisional debrief, Restart preserving progress and fresh empty retry state with no browser errors. Presets require VITE_PRESETS=1; voice remains absent. Current work stops at Stage 1 live acceptance, not Stage 2: every live exit remains NOT RUN under D-28, and no demo-ready claim is made. D-33 corrects historical vacuous content scans; D-34 protects the user's ignored/untracked local credential file. New narrow-screen verification remains unverified. Full historical feedback lasts only while its API process lives. Push/PR is postponed.
+
+**Subsequent movement correction, 2026-10-17:** the player-position scope fix passed two added regressions, bringing the fresh offline total to 199; 27 API tests, build and bundle scan also passed. Root verified keyboard/click walking and Help pause/resume with zero fresh browser errors. Historical milestone counts below remain unchanged. The existing bundle-size warning remains; live acceptance is NOT RUN and work stops before S1-11.
+
+**Implementation snapshot, 2026-10-17:** plain JavaScript ES modules, Vite 8, Three.js, Lucide and CSS. Pure engine, guarded LLM pipeline, typed multi-NPC API conversations and opt-in Groq adapter exist. S1-07 conservative relay validation, delivered agreement/ending, explicit server End and debrief placeholder are accepted for implementation/offline progression. A limited typed-goal/End browser check passed; full scene smart/trap and live acceptance remain NOT RUN. S1-08 deterministic scoring and code flags are accepted offline (165 tests; smart/trap deterministic 60/7). S1-09 judge, quote validator and historical coach are accepted offline (187 cumulative tests); S1-10 ended-session debrief integration is accepted offline (197 tests, 27 API tests), including desktop/narrow screenshots and retry/focus checks. Work stopped after prompt 10 at the user's request; live acceptance remains NOT RUN. The two-call Groq connectivity smoke is recorded separately.
 
 ```text
 /index.html          # page shell and existing sidebar/game controls
@@ -57,16 +61,16 @@ The original hackathon PDF and older PPT are **context, not law**. An AI-generat
 /engine/tests        # engine and scenario validation node:test suites
 /scenarios           # missed_deadline.json and versioned JSON schema
 /llm                 # gateway, classifier, NPC generation, prompt builder, manifests,
-                     # placeholder model config, fake provider, versioned prompts/tests
+                     # role model config and Groq provider, fake provider, versioned prompts/tests
 /replies             # SC-01 authored fallback lines and fallbackStore.js
 /evals               # labelled events.jsonl and generic-endpoint classifier runner
 ```
 
-**Remaining additions:** retain the current frontend unless a phase requires moving it. D-28 selects Groq/models and a Node built-in HTTP API; provider wiring and guards still need implementation. Do not scaffold unused directories merely to match this map.
+**Remaining additions:** retain the current frontend. Node built-in HTTP API, safety guards and default-offline provider wiring exist; D-30 supersedes D-28 model defaults. Deterministic scoring now exists in /scoring; feedback modules now exist; S1-10 ended-session debrief integration is accepted offline (197 tests, 27 API tests), including desktop/narrow screenshots and retry/focus checks. Work stopped after prompt 10 at the user's request; live acceptance remains NOT RUN. Do not scaffold unused directories merely to match this map.
 
 ```
 /src + /index.html   # retain the current frontend
-/services/api        # planned Node built-in HTTP server API
+/services/api        # Node built-in HTTP server API
 /scoring             # deterministic metrics, judge client, quote validator
 /CONTEXT             # these markdown files
 ```
@@ -80,12 +84,14 @@ install:      npm ci
 dev (web):    npm run dev
 build (web):  npm run build
 preview:      npm run preview
-dev (api):    unavailable; no backend yet
+demo (built): npm run demo (build first; loopback frontend + API, default offline)
+dev (api):    npm run api (offline default; Groq requires explicit configuration)
 test engine:  npm run test:engine (node --test "engine/tests/*.test.js"; currently engine-only, must run without network or API keys)
-test all:     npm test (engine + llm offline suites; live evals deferred under D-28)
+test all:     npm test (engine + llm + scoring offline suites; live evals deferred under D-28)
+offline gate: npm run verify:offline (clears provider/key/debug child env; all tests + API + bundle build/scan)
 lint/format:  unavailable; no configured script yet
 evals:        node evals/runClassifier.mjs (generic LLM_PROVIDER endpoint required;
-              not yet wired to Groq; live execution deferred under D-28)
+              legacy endpoint runner; full live acceptance deferred under D-28)
 ```
 
 ## 6. Working agreements
@@ -99,6 +105,8 @@ evals:        node evals/runClassifier.mjs (generic LLM_PROVIDER endpoint requir
 5. **Orchestrator:** inspects both reports, confirms the tested candidate is still current, and accepts or sends it back. Any code fix after approval repeats review → testing; no direct-to-complete bypass.
 
 Do not merge, deploy, claim completion, or check off a phase solely on the coder's report. Agents share files: assign separate ownership and never overwrite unrelated changes. For a documentation-only task, validate contracts and consistency; do not claim the described features are implemented.
+
+**Cost-conscious assignment:** use Terra medium for new coder/worker agents handling bounded changes and routine GSD documentation; use Luna medium for tester/explorer agents executing prescribed checks or read-only mapping, including routine GSD mapping/classification. Keep reviewer/root and high-risk scoring, security, concurrency, architecture and corresponding GSD roles on Sol; never automatically lower critical roles. Root owns semantic acceptance and escalates unclear cheaper-agent results. Pass targeted context and diffs, then run one tester full sweep after the candidate is frozen and approved. These defaults belong to personal Codex configuration outside this repository: they apply to new agents/chats after reload, not existing agents.
 
 - **Engine first, UI second.** Anything that decides a score, reveal, goal, or ending lives in `/engine` and is unit-tested without an LLM.
 - **Sealed facts never enter a dialogue prompt** until the engine authorises disclosure (R-01). Pending disclosure is not user knowledge or score credit until the guarded reply is delivered. Post-session missed-fact disclosure is separate. If unsure, treat a fact as sealed.
@@ -142,8 +150,7 @@ Ask only for choices not already authorised by the user or settled by an accepte
 ## 10. Known unknowns (as of 2026-10-16)
 
 - Groq free-plan account limits and server-side credential setup remain to be verified; models are selected in D-28. Never request keys in chat.
-- Node+node:test and built-in HTTP API selected (D-28); engine/schema/LLM modules exist, but the API and guards do not yet exist.
+- Node+node:test and built-in HTTP API selected (D-28); engine/schema/LLM modules, API and guards exist; full live guard acceptance remains unverified.
 - SC-01 relative-day constants confirmed (P0.3, D-27); D-12/D-22 accepted.
 - Real-model guard accuracy, scoring calibration, and end-to-end latency. All are unmeasured in this baseline.
 - Human team ownership for coding, AI direction, and art/demo (O-09); this chat's agent roles are assigned by §6.
-

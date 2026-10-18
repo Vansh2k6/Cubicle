@@ -187,3 +187,34 @@ Confirmed in S1-01 P0.3.
 **Sliders (S1-12).** One shared set of four sliders applies to all three NPCs, fixed and recorded at session start. Display difficulty from `mean(assertiveness, 100-patience, 100-warmth, 100-forthcomingness)`: Easy below 34, Medium below 67, Hard otherwise. This label does not multiply or alter scores. Engine parameter effects still follow the existing contract.
 
 **Optional work (S1-13).** Implement the prescribed presets; keep voice disabled. No STT/TTS provider selection or live voice testing is authorised by this decision.
+
+## D-30 · Accepted · 2026-10-17 — Bounded live Groq adapter
+**Authority.** User explicitly requested Node-only Groq wiring behind the gateway, default offline, model defaults and nonsecret environment defaults. This supersedes D-28 model selection only: classifier `openai/gpt-oss-20b`, NPC `qwen/qwen3.8-27b`, judge and coach `openai/gpt-oss-120b`. No engine/frontend change or new dependency.
+
+**Bounds.** Per-process default limits: 40 dispatched HTTP calls and 60,000 conservatively estimated tokens; per-model token bucket 6,000 TPM. Fetch and response body share an 8-second deadline. Retry-After waits at most 20 seconds then falls back, with no transport retry. The gateway's one parse/schema retry remains. A provider-specific bounded deadline supersedes legacy 1.5/3-second caller defaults; API turn safety ceiling is 180 seconds for the maximum validation/guard sequence. This is a resilience ceiling, not measured compliance with the latency acceptance target.
+
+**Verification.** User's later instruction authorizes one bounded smoke after offline review/testing, at most three HTTP calls total. Full acceptance evals remain NOT RUN; the bounded smoke result is recorded separately. Smoke and P2c eval entry points require `RUN_LIVE=1`; server live opt-in requires provider selection and a server-side key. The credential shared in chat is never stored or echoed by implementation. `.env.example` now permits explicit allowlisted public defaults and empty secret values rather than requiring every value to be empty; this changes a test convention, not R-50. Calls are only R-10's existing classifier/dialogue/judge/coach uses and cannot decide engine outcomes (R-11).
+
+**Bounded smoke result, 2026-10-17.** Root executed the single authorized smoke after independent review/testing: two HTTP calls total, classifier `openai/gpt-oss-20b` 813 ms and NPC `qwen/qwen3.8-27b` 197 ms; both JSON outputs validated. [Sanitized report](../evals/reports/groq-smoke-2026-10-17.json) contains no response text or credential. No further live calls are authorized by this smoke allowance. Full live acceptance remains NOT RUN; this result establishes connectivity and JSON validation only, not classifier quality, guard accuracy or end-to-end latency acceptance.
+
+## D-31 · Implementation note · 2026-10-17 — Scoring contract version 2
+Implementing already accepted D-24 and D-29 uses SC-01 scoring version 2, with unchanged weights 30/20/15/10/25, existing penalties 8/4/3, and relationship averaged over all three scenario NPCs. This is the required technical scoring-contract version increment, not tuning or a new population decision. Scenario content/taxonomy stay unchanged. The provisional missed_probe display flag (visited owner at least once, no trigger fired) has no penalty; it is recorded for confirmation during acceptance. Pure offline scoring is the S1-08 scope; rubric/judge/coach/debrief remain subsequent work.
+
+## D-32 · Accepted · 2026-10-18 — Resume Stage 1 and confirm preset vectors
+The user resumed sequential implementation after prompt 10, preserving D-28's offline progression and live-evaluation deferral. They explicitly approved the S1-13 shared preset values below, in assertiveness / patience / warmth / forthcomingness order:
+
+- Supportive: 30 / 80 / 80 / 80 — Easy under D-29.
+- Direct: 80 / 50 / 40 / 50 — Medium under D-29.
+- Impatient: 80 / 20 / 30 / 30 — Hard under D-29.
+
+Presets only fill the four editable setup sliders and are fixed at session start. They do not change score weights or add a multiplier. Voice remains disabled; no speech provider or live calls are authorized. Implement these vectors only when S1-13 is reached and S1-12 is accepted. The user postponed pushing and creating the requested pull request until repository access is ready.
+
+## D-33 · Implementation note · 2026-10-18 — Repair bundle-content verification
+Read-only hardening preparation found that the old scanner used `if (text.includes("")) continue`, so all file contents were skipped. Earlier zero-hit content-scan reports are not evidence that private material was absent; their separately executed build/debug-reachability checks and runtime/scoring tests remain distinct evidence. The S1-12 verification repair must scan every artifact, including JavaScript containing NUL, and have a regression proving a controlled private marker is detected by the actual shared scan loop.
+
+The repaired search exposed public false positives: Three.js's complete `cutoffDistance` identifier, Vite's complete `modulepreload` identifier and quoted HTML `type=module`, the complete word `preview`, and two exact existing public scripted sentences containing `review`. Root and the Sol reviewer approved per-needle masking of only those exact public spans with equal-length spaces. The rest of the same artifact must still be scanned for the same needle, case-insensitively. Every other private fact, keyword, canon and prompt needle stays intact. Tests must append a private occurrence after each allowed context and still detect it; no whole-file or blanket common-word exemption is authorized.
+
+The public slider name `forthcomingness` is allowed in the client under D-29/S1-12; removing its obsolete name-only ban does not authorize any surrounding private material or prompt text. This is a verification repair, not a scoring change, a runtime leak-guard change, a new rule exception or a demo-readiness claim. Corrected current-build results must be reported separately from historical reports.
+
+## D-34 · Implementation note · 2026-10-18 — Local credential-file scan boundary
+The mandatory secret scan found the user's existing ignored, untracked repository-root `.env`. Root and the Sol reviewer approved exempting exactly that local server configuration file from the content scan, while retaining the independent mandatory checks that it is ignored and untracked. A tracked `.env` must still fail. `.env.example`, nested `.env` files and all other existing scan targets remain covered, with regressions for the exact boundary. The credential file is not displayed, changed, removed or committed. This corrects a test convention for local server configuration; R-50 remains unchanged and no live call is authorized.

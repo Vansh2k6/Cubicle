@@ -12,7 +12,12 @@
 // side, stdlib only).
 
 import { classifyTurn, buildClassifierInput } from "./classifier.js";
+import { readFileSync } from "node:fs";
+const MOVE_PROMPTS = JSON.parse(readFileSync(new URL("./prompts/npc/v2-moves.json", import.meta.url), "utf8"));
+const expressesAcceptance = (text) => /^that plan works for me[.!]?$/i.test(String(text).trim());
+const expressesClosing = (text) => /^we have a plan[.!]?$/i.test(String(text).trim());
 import { buildNpcPrompt } from "./promptBuilder.js";
+import { toneText } from "./tone.js";
 import { generateNpcReply } from "./npc.js";
 import { checkReply, checkPositiveReveal } from "./guards.js";
 import { fetch as fetchFallback } from "../replies/fallbackStore.js";
@@ -135,7 +140,7 @@ export async function runTurn(opts = {}) {
     throw new Error("runTurn: engine.applyTurn/commitDelivery required");
   }
 
-  const trace = { turn: null, events: [], act: null, guardEvents: [], regen: false, delivered: false, replySource: null };
+  const trace = { turn: null, events: [], act: null, guardEvents: [], regen: false, delivered: false, replySource: null, npcFailure: null, npcHttpStatus: undefined };
 
   // 1. Append user turn.
   convo.seq += 1;
@@ -158,7 +163,7 @@ export async function runTurn(opts = {}) {
 
   // 3. Engine.
   const tEng0 = Date.now();
-  const applied = engine.applyTurn(session, npcId, cls.events, {});
+  const applied = engine.applyTurn(session, npcId, cls.events, { text });
   stages.engineMs = Date.now() - tEng0;
   const act = applied.act;
   trace.act = act;
@@ -186,7 +191,7 @@ export async function runTurn(opts = {}) {
     userSaid: userTextsToNpc(convo, npcId),
     revealedTexts: revealedTextsForNpc(session, scenario, npcId),
     commitments: (session.commitments || []).filter((c) => c.npc_id === npcId),
-    revealedIds: session.user_known || [],
+    revealedIds: (session.user_known || []).filter((id) => factById(scenario, id)?.owner === npcId),
     authorised,
     activeCommitment: activeCommitmentFor(session),
     clockDay: (session.clock && session.clock.day) || 0,
@@ -203,20 +208,34 @@ export async function runTurn(opts = {}) {
     pendingReveal: authorised ? { factId: authorised.factId, content: pendingContent } : null,
     userTold: userTextsToNpc(convo, npcId),
     recentTurns: convo.turns.filter((t) => t.npcId === npcId).slice(-6),
+    toneText: toneText(session.customisation?.[npcId]),
   });
+  if (act === "callback_commitment") {
+    const c = activeCommitmentFor(session);
+    prompt.system += c?.unrealistic
+      ? "\n" + MOVE_PROMPTS.callbackChallenge : "\n" + MOVE_PROMPTS.callbackAcknowledge;
+  }
+  if (session.staged?.agreementAllowed) prompt.system += "\n" + MOVE_PROMPTS.agreement;
+  if (session.staged?.closingAllowed) prompt.system += "\n" + MOVE_PROMPTS.closing;
   const tGen0 = Date.now();
   let gen = await generateNpcReply({ prompt, provider: providers.npc, manifestId });
   stages.generateMs = Date.now() - tGen0;
   trace.replySource = gen.source;
+  if (gen.source === "fallback") {
+    trace.npcFailure = gen.failureCode || "PROVIDER_ERROR";
+    trace.npcHttpStatus = gen.httpStatus;
+  }
 
   const positiveOk = (replyText) => {
+    if (session.staged?.agreementAllowed && !expressesAcceptance(replyText)) return false;
+    if (session.staged?.closingAllowed && !expressesClosing(replyText)) return false;
     if (!authorised) return true;
     return checkPositiveReveal(replyText, scenario, authorised.factId, session.locale || "en").ok;
   };
 
-  let verdict = guardTimed(() => checkReply(gen.text, guardCtx()));
-  let positive = positiveOk(gen.text);
-  trace.guardEvents.push({
+  let verdict = gen.source === "llm" ? guardTimed(() => checkReply(gen.text, guardCtx())) : { ok: false, failures: [] };
+  let positive = gen.source === "llm" && positiveOk(gen.text);
+  if (gen.source === "llm") trace.guardEvents.push({
     stage: "initial",
     ok: verdict.ok && positive,
     codes: verdict.failures.map((f) => f.code + (f.factId ? ":" + f.factId : "")).concat(positive ? [] : ["reveal_omitted"]),
@@ -225,7 +244,7 @@ export async function runTurn(opts = {}) {
   // 6. At most ONE shared regeneration for both guards.
   let usedFallback = false;
   let fallbackAct = null;
-  if (!verdict.ok || !positive) {
+  if (gen.source === "llm" && (!verdict.ok || !positive)) {
     trace.regen = true;
     const regenPrompt = {
       system: prompt.system + "\nCorrection: " + REGEN_INSTRUCTION,
@@ -235,6 +254,10 @@ export async function runTurn(opts = {}) {
     gen = await generateNpcReply({ prompt: regenPrompt, provider: providers.npc, manifestId });
     stages.regenMs = Date.now() - tReg0;
     trace.replySource = gen.source;
+    if (gen.source === "fallback") {
+      trace.npcFailure = gen.failureCode || "PROVIDER_ERROR";
+      trace.npcHttpStatus = gen.httpStatus;
+    }
     verdict = guardTimed(() => checkReply(gen.text, guardCtx()));
     positive = positiveOk(gen.text);
     trace.guardEvents.push({
@@ -245,7 +268,8 @@ export async function runTurn(opts = {}) {
   }
 
   // 7. Second failure -> act-specific fallback (guard-checked) -> neutral.
-  if (!verdict.ok || !positive) {
+  if (gen.source !== "llm" || !verdict.ok || !positive) {
+    if (!trace.npcFailure) trace.npcFailure = "GUARD_REJECTED";
     // A failed reveal must never fall back to its own reveal lines (they
     // contain the fact); deflect instead.
     const fbAct = act.startsWith("reveal_fact:") ? "deflect_sealed" : act;
@@ -289,7 +313,9 @@ export async function runTurn(opts = {}) {
   // Fallbacks never carry discovery/agreement credit.
   const onAct = !usedFallback;
   const delivered = verdict.ok && positive && onAct && gen.source === "llm";
-  engine.commitDelivery(session, session.turn, { delivered });
+  engine.commitDelivery(session, session.turn, { delivered,
+    agreementExpressed: expressesAcceptance(gen.text),
+    closingExpressed: expressesClosing(gen.text) });
   trace.delivered = delivered;
 
   const npcState = session.npcs[npcId] || { mood: 50 };

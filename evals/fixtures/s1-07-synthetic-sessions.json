@@ -1,0 +1,5034 @@
+{
+  "synthetic": true,
+  "description": "Offline authored bot fixtures; no real user data",
+  "paths": {
+    "smart": {
+      "session": {
+        "id": "missed_deadline#s7",
+        "scenario_id": "missed_deadline",
+        "scenario_version": 1,
+        "locale": "en",
+        "seed": 7,
+        "customisation": {
+          "maya": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "jordan": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "sam": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          }
+        },
+        "clock": {
+          "day": 0
+        },
+        "turn": 10,
+        "npcs": {
+          "maya": {
+            "mood": 57,
+            "probes": {
+              "F1": 2
+            },
+            "told_by_user": [
+              1,
+              2,
+              3,
+              8,
+              9,
+              10
+            ],
+            "last_act": "close_positive",
+            "moodHistory": [
+              50,
+              57,
+              57,
+              57,
+              57,
+              57,
+              57
+            ]
+          },
+          "jordan": {
+            "mood": 50,
+            "probes": {
+              "F2": 2
+            },
+            "told_by_user": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "last_act": "redirect_to_npc",
+            "moodHistory": [
+              50,
+              50,
+              50,
+              50,
+              50
+            ]
+          },
+          "sam": {
+            "mood": 50,
+            "probes": {},
+            "told_by_user": [],
+            "last_act": null,
+            "moodHistory": [
+              50
+            ]
+          }
+        },
+        "facts": {
+          "F1": {
+            "status": "revealed"
+          },
+          "F2": {
+            "status": "revealed"
+          },
+          "F3": {
+            "status": "sealed"
+          }
+        },
+        "user_known": [
+          "F1",
+          "F2"
+        ],
+        "commitments": [
+          {
+            "id": "C1",
+            "what": "deadline",
+            "target_day": 2,
+            "original_words": "",
+            "turn_id": 9,
+            "npc_id": "maya",
+            "status": "active",
+            "model_inputs": {
+              "min_day": 2,
+              "cutoff_day": 3,
+              "assisted": true,
+              "f2_delivered": true,
+              "help_accepted": true,
+              "target_day": 2,
+              "unassisted_min": 3,
+              "assisted_min": 2
+            },
+            "unrealistic": false,
+            "accepted_with": "maya",
+            "pending_acceptance": false,
+            "recap_turn_id": 10,
+            "supersedes": null
+          }
+        ],
+        "goals": {
+          "G1": {
+            "status": "done",
+            "turn_id": 1
+          },
+          "G2": {
+            "status": "done",
+            "turn_id": 4
+          },
+          "G3": {
+            "status": "done",
+            "turn_id": 10
+          }
+        },
+        "beats": {
+          "B2": {
+            "status": "fired",
+            "fired_turn": 8
+          },
+          "B3": {
+            "status": "pending",
+            "fired_turn": null
+          }
+        },
+        "events_log": [
+          {
+            "turn_id": 1,
+            "npc_id": "maya",
+            "type": "took_ownership",
+            "params": {},
+            "source_id": "T1-maya-took_ownership-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 1,
+            "npc_id": "maya",
+            "type": "gave_honest_status",
+            "params": {},
+            "source_id": "T1-maya-gave_honest_status-1",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 2,
+            "npc_id": "maya",
+            "type": "asked_deadline_flexibility",
+            "params": {},
+            "source_id": "T2-maya-asked_deadline_flexibility-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 3,
+            "npc_id": "maya",
+            "type": "asked_impact",
+            "params": {},
+            "source_id": "T3-maya-asked_impact-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 4,
+            "npc_id": "jordan",
+            "type": "asked_requirement_details",
+            "params": {},
+            "source_id": "T4-jordan-asked_requirement_details-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 5,
+            "npc_id": "jordan",
+            "type": "asked_for_help",
+            "params": {},
+            "source_id": "T5-jordan-asked_for_help-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 6,
+            "npc_id": "jordan",
+            "type": "asked_for_help",
+            "params": {},
+            "source_id": "T6-jordan-asked_for_help-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 7,
+            "npc_id": "jordan",
+            "type": "confirmed_next_steps",
+            "params": {
+              "help_accepted": true
+            },
+            "source_id": "T7-jordan-confirmed_next_steps-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 8,
+            "npc_id": "maya",
+            "type": "relayed_fact",
+            "params": {
+              "fact_id": "F2",
+              "accurate": true
+            },
+            "source_id": "T8-maya-relayed_fact-0",
+            "allocation": "none",
+            "validated": true
+          },
+          {
+            "turn_id": 9,
+            "npc_id": "maya",
+            "type": "committed_deadline",
+            "params": {
+              "day": 2
+            },
+            "source_id": "T9-maya-committed_deadline-0",
+            "allocation": "none"
+          },
+          {
+            "turn_id": 10,
+            "npc_id": "maya",
+            "type": "recapped_agreement",
+            "params": {},
+            "source_id": "T10-maya-recapped_agreement-0",
+            "allocation": "none"
+          }
+        ],
+        "flags": [
+          "help_accepted_with_jordan"
+        ],
+        "snapshots": [
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 1,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {},
+                "told_by_user": [
+                  1
+                ],
+                "last_act": "greet",
+                "moodHistory": [
+                  50,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "sealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 2,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 1
+                },
+                "told_by_user": [
+                  1,
+                  2
+                ],
+                "last_act": "deflect_sealed",
+                "moodHistory": [
+                  50,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "probed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 3,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3
+                ],
+                "last_act": "reveal_fact:F1",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1"
+            ],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 4,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3
+                ],
+                "last_act": "reveal_fact:F1",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  4
+                ],
+                "last_act": "greet",
+                "moodHistory": [
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1"
+            ],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "done",
+                "turn_id": 4
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 4,
+                "npc_id": "jordan",
+                "type": "asked_requirement_details",
+                "params": {},
+                "source_id": "T4-jordan-asked_requirement_details-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 5,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3
+                ],
+                "last_act": "reveal_fact:F1",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {
+                  "F2": 1
+                },
+                "told_by_user": [
+                  4,
+                  5
+                ],
+                "last_act": "deflect_sealed",
+                "moodHistory": [
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "probed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1"
+            ],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "done",
+                "turn_id": 4
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 4,
+                "npc_id": "jordan",
+                "type": "asked_requirement_details",
+                "params": {},
+                "source_id": "T4-jordan-asked_requirement_details-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 5,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T5-jordan-asked_for_help-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 6,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3
+                ],
+                "last_act": "reveal_fact:F1",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {
+                  "F2": 2
+                },
+                "told_by_user": [
+                  4,
+                  5,
+                  6
+                ],
+                "last_act": "reveal_fact:F2",
+                "moodHistory": [
+                  50,
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "revealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1",
+              "F2"
+            ],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "done",
+                "turn_id": 4
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 4,
+                "npc_id": "jordan",
+                "type": "asked_requirement_details",
+                "params": {},
+                "source_id": "T4-jordan-asked_requirement_details-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 5,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T5-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 6,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T6-jordan-asked_for_help-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 7,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3
+                ],
+                "last_act": "reveal_fact:F1",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {
+                  "F2": 2
+                },
+                "told_by_user": [
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "last_act": "redirect_to_npc",
+                "moodHistory": [
+                  50,
+                  50,
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "revealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1",
+              "F2"
+            ],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "done",
+                "turn_id": 4
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 4,
+                "npc_id": "jordan",
+                "type": "asked_requirement_details",
+                "params": {},
+                "source_id": "T4-jordan-asked_requirement_details-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 5,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T5-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 6,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T6-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 7,
+                "npc_id": "jordan",
+                "type": "confirmed_next_steps",
+                "params": {
+                  "help_accepted": true
+                },
+                "source_id": "T7-jordan-confirmed_next_steps-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [
+              "help_accepted_with_jordan"
+            ],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 8,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3,
+                  8
+                ],
+                "last_act": "press_for_date",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {
+                  "F2": 2
+                },
+                "told_by_user": [
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "last_act": "redirect_to_npc",
+                "moodHistory": [
+                  50,
+                  50,
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "revealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1",
+              "F2"
+            ],
+            "commitments": [],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "done",
+                "turn_id": 4
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "fired",
+                "fired_turn": 8
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 4,
+                "npc_id": "jordan",
+                "type": "asked_requirement_details",
+                "params": {},
+                "source_id": "T4-jordan-asked_requirement_details-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 5,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T5-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 6,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T6-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 7,
+                "npc_id": "jordan",
+                "type": "confirmed_next_steps",
+                "params": {
+                  "help_accepted": true
+                },
+                "source_id": "T7-jordan-confirmed_next_steps-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 8,
+                "npc_id": "maya",
+                "type": "relayed_fact",
+                "params": {
+                  "fact_id": "F2",
+                  "accurate": true
+                },
+                "source_id": "T8-maya-relayed_fact-0",
+                "allocation": "none",
+                "validated": true
+              }
+            ],
+            "flags": [
+              "help_accepted_with_jordan"
+            ],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 9,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3,
+                  8,
+                  9
+                ],
+                "last_act": "react_freely",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {
+                  "F2": 2
+                },
+                "told_by_user": [
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "last_act": "redirect_to_npc",
+                "moodHistory": [
+                  50,
+                  50,
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "revealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1",
+              "F2"
+            ],
+            "commitments": [
+              {
+                "id": "C1",
+                "what": "deadline",
+                "target_day": 2,
+                "original_words": "",
+                "turn_id": 9,
+                "npc_id": "maya",
+                "status": "active",
+                "model_inputs": {
+                  "min_day": 2,
+                  "cutoff_day": 3,
+                  "assisted": true,
+                  "f2_delivered": true,
+                  "help_accepted": true,
+                  "target_day": 2,
+                  "unassisted_min": 3,
+                  "assisted_min": 2
+                },
+                "unrealistic": false,
+                "accepted_with": "maya",
+                "pending_acceptance": false,
+                "recap_turn_id": null,
+                "supersedes": null
+              }
+            ],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "done",
+                "turn_id": 4
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "fired",
+                "fired_turn": 8
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 4,
+                "npc_id": "jordan",
+                "type": "asked_requirement_details",
+                "params": {},
+                "source_id": "T4-jordan-asked_requirement_details-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 5,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T5-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 6,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T6-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 7,
+                "npc_id": "jordan",
+                "type": "confirmed_next_steps",
+                "params": {
+                  "help_accepted": true
+                },
+                "source_id": "T7-jordan-confirmed_next_steps-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 8,
+                "npc_id": "maya",
+                "type": "relayed_fact",
+                "params": {
+                  "fact_id": "F2",
+                  "accurate": true
+                },
+                "source_id": "T8-maya-relayed_fact-0",
+                "allocation": "none",
+                "validated": true
+              },
+              {
+                "turn_id": 9,
+                "npc_id": "maya",
+                "type": "committed_deadline",
+                "params": {
+                  "day": 2
+                },
+                "source_id": "T9-maya-committed_deadline-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [
+              "help_accepted_with_jordan"
+            ],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 10,
+            "npcs": {
+              "maya": {
+                "mood": 57,
+                "probes": {
+                  "F1": 2
+                },
+                "told_by_user": [
+                  1,
+                  2,
+                  3,
+                  8,
+                  9,
+                  10
+                ],
+                "last_act": "close_positive",
+                "moodHistory": [
+                  50,
+                  57,
+                  57,
+                  57,
+                  57,
+                  57,
+                  57
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {
+                  "F2": 2
+                },
+                "told_by_user": [
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "last_act": "redirect_to_npc",
+                "moodHistory": [
+                  50,
+                  50,
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "revealed"
+              },
+              "F2": {
+                "status": "revealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [
+              "F1",
+              "F2"
+            ],
+            "commitments": [
+              {
+                "id": "C1",
+                "what": "deadline",
+                "target_day": 2,
+                "original_words": "",
+                "turn_id": 9,
+                "npc_id": "maya",
+                "status": "active",
+                "model_inputs": {
+                  "min_day": 2,
+                  "cutoff_day": 3,
+                  "assisted": true,
+                  "f2_delivered": true,
+                  "help_accepted": true,
+                  "target_day": 2,
+                  "unassisted_min": 3,
+                  "assisted_min": 2
+                },
+                "unrealistic": false,
+                "accepted_with": "maya",
+                "pending_acceptance": false,
+                "recap_turn_id": 10,
+                "supersedes": null
+              }
+            ],
+            "goals": {
+              "G1": {
+                "status": "done",
+                "turn_id": 1
+              },
+              "G2": {
+                "status": "done",
+                "turn_id": 4
+              },
+              "G3": {
+                "status": "done",
+                "turn_id": 10
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "fired",
+                "fired_turn": 8
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "took_ownership",
+                "params": {},
+                "source_id": "T1-maya-took_ownership-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "gave_honest_status",
+                "params": {},
+                "source_id": "T1-maya-gave_honest_status-1",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "maya",
+                "type": "asked_deadline_flexibility",
+                "params": {},
+                "source_id": "T2-maya-asked_deadline_flexibility-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 3,
+                "npc_id": "maya",
+                "type": "asked_impact",
+                "params": {},
+                "source_id": "T3-maya-asked_impact-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 4,
+                "npc_id": "jordan",
+                "type": "asked_requirement_details",
+                "params": {},
+                "source_id": "T4-jordan-asked_requirement_details-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 5,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T5-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 6,
+                "npc_id": "jordan",
+                "type": "asked_for_help",
+                "params": {},
+                "source_id": "T6-jordan-asked_for_help-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 7,
+                "npc_id": "jordan",
+                "type": "confirmed_next_steps",
+                "params": {
+                  "help_accepted": true
+                },
+                "source_id": "T7-jordan-confirmed_next_steps-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 8,
+                "npc_id": "maya",
+                "type": "relayed_fact",
+                "params": {
+                  "fact_id": "F2",
+                  "accurate": true
+                },
+                "source_id": "T8-maya-relayed_fact-0",
+                "allocation": "none",
+                "validated": true
+              },
+              {
+                "turn_id": 9,
+                "npc_id": "maya",
+                "type": "committed_deadline",
+                "params": {
+                  "day": 2
+                },
+                "source_id": "T9-maya-committed_deadline-0",
+                "allocation": "none"
+              },
+              {
+                "turn_id": 10,
+                "npc_id": "maya",
+                "type": "recapped_agreement",
+                "params": {},
+                "source_id": "T10-maya-recapped_agreement-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [
+              "help_accepted_with_jordan"
+            ],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": true,
+            "endReason": "goals_complete",
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          }
+        ],
+        "staged": null,
+        "clarification": null,
+        "deferredBeat": null,
+        "ended": true,
+        "endReason": "goals_complete",
+        "model": {
+          "facts": [
+            {
+              "id": "F1",
+              "owner": "maya",
+              "triggers": [
+                "asked_deadline_flexibility",
+                "asked_why_urgent",
+                "asked_impact"
+              ]
+            },
+            {
+              "id": "F2",
+              "owner": "jordan",
+              "triggers": [
+                "asked_for_help"
+              ]
+            },
+            {
+              "id": "F3",
+              "owner": "sam",
+              "triggers": [
+                "asked_advice",
+                "acknowledged_concern"
+              ]
+            }
+          ],
+          "npcTopics": {
+            "maya": [
+              "asked_deadline_flexibility",
+              "asked_why_urgent",
+              "asked_impact",
+              "asked_expectation",
+              "took_ownership",
+              "gave_honest_status",
+              "committed_deadline",
+              "recapped_agreement",
+              "confirmed_next_steps"
+            ],
+            "jordan": [
+              "asked_requirement_details",
+              "asked_for_help",
+              "asked_background",
+              "proposed_plan"
+            ],
+            "sam": [
+              "asked_advice",
+              "acknowledged_concern",
+              "apologized"
+            ]
+          },
+          "commitment_model": {
+            "unassisted_min_day": 3,
+            "assisted_min_day": 2,
+            "agreement_npc": "maya"
+          },
+          "cutoff_day": 3,
+          "goals": [
+            {
+              "id": "G1",
+              "visible": true,
+              "required": true,
+              "done_when": [
+                "event:took_ownership",
+                "event:gave_honest_status"
+              ],
+              "requires": []
+            },
+            {
+              "id": "G2",
+              "visible": true,
+              "required": true,
+              "done_when": [
+                "event:asked_requirement_details"
+              ],
+              "requires": []
+            },
+            {
+              "id": "G3",
+              "visible": true,
+              "required": true,
+              "done_when": [
+                "date_mutually_agreed",
+                "event:recapped_agreement"
+              ],
+              "requires": [
+                "G1",
+                "G2"
+              ]
+            }
+          ],
+          "beats": [
+            {
+              "id": "B2",
+              "npc": "maya",
+              "act": "press_for_date"
+            },
+            {
+              "id": "B3",
+              "npc": "maya",
+              "act": "callback_commitment"
+            }
+          ],
+          "max_turns": 20
+        }
+      },
+      "convo": {
+        "seq": 20,
+        "turns": [
+          {
+            "id": 1,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "I own the delay and the work is unfinished."
+          },
+          {
+            "id": 2,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "Maya here. Give me the straight story on where the project stands.",
+            "act": "greet"
+          },
+          {
+            "id": 3,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "Is there flexibility on the deadline?"
+          },
+          {
+            "id": 4,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "I can't get into that right now. Focus on what you can tell me about the delay.",
+            "act": "deflect_sealed"
+          },
+          {
+            "id": 5,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "What happens if it slips?"
+          },
+          {
+            "id": 6,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "Here is the full picture: the client has a hard cutoff on Friday, three days from now. I've been holding them off, but I can't push it further.",
+            "act": "reveal_fact:F1"
+          },
+          {
+            "id": 7,
+            "speaker": "user",
+            "npcId": "jordan",
+            "text": "What is left?"
+          },
+          {
+            "id": 8,
+            "speaker": "npc",
+            "npcId": "jordan",
+            "text": "Hey, glad you stopped by. What do you need from me?",
+            "act": "greet"
+          },
+          {
+            "id": 9,
+            "speaker": "user",
+            "npcId": "jordan",
+            "text": "Can you help?"
+          },
+          {
+            "id": 10,
+            "speaker": "npc",
+            "npcId": "jordan",
+            "text": "That part isn't mine to share. What else can I help with?",
+            "act": "deflect_sealed"
+          },
+          {
+            "id": 11,
+            "speaker": "user",
+            "npcId": "jordan",
+            "text": "Could you help me with that?"
+          },
+          {
+            "id": 12,
+            "speaker": "npc",
+            "npcId": "jordan",
+            "text": "Good news on my side: I built a reusable module that covers about half the remaining work, and I can pair with you for an afternoon to get it wired in.",
+            "act": "reveal_fact:F2"
+          },
+          {
+            "id": 13,
+            "speaker": "user",
+            "npcId": "jordan",
+            "text": "I accept your help."
+          },
+          {
+            "id": 14,
+            "speaker": "npc",
+            "npcId": "jordan",
+            "text": "Date calls sit with Maya. You should align with her on that.",
+            "act": "redirect_to_npc"
+          },
+          {
+            "id": 15,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "Jordan built a module covering half the remaining work."
+          },
+          {
+            "id": 16,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "I need a concrete day from you. When will it be done?",
+            "act": "press_for_date"
+          },
+          {
+            "id": 17,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "I will deliver Thursday."
+          },
+          {
+            "id": 18,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "That plan works for me.",
+            "act": "react_freely"
+          },
+          {
+            "id": 19,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "To recap, I will deliver Thursday."
+          },
+          {
+            "id": 20,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "We have a plan.",
+            "act": "close_positive"
+          }
+        ]
+      },
+      "manifestId": "synthetic-s1-07",
+      "npcPromptVersion": "v2"
+    },
+    "trap": {
+      "session": {
+        "id": "missed_deadline#s7",
+        "scenario_id": "missed_deadline",
+        "scenario_version": 1,
+        "locale": "en",
+        "seed": 7,
+        "customisation": {
+          "maya": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "jordan": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "sam": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          }
+        },
+        "clock": {
+          "day": 0
+        },
+        "turn": 5,
+        "npcs": {
+          "maya": {
+            "mood": 48,
+            "probes": {},
+            "told_by_user": [
+              1,
+              5
+            ],
+            "last_act": "callback_commitment",
+            "moodHistory": [
+              50,
+              50,
+              48,
+              48
+            ]
+          },
+          "jordan": {
+            "mood": 50,
+            "probes": {},
+            "told_by_user": [
+              2,
+              3,
+              4
+            ],
+            "last_act": "react_freely",
+            "moodHistory": [
+              50,
+              50,
+              50,
+              50
+            ]
+          },
+          "sam": {
+            "mood": 50,
+            "probes": {},
+            "told_by_user": [],
+            "last_act": null,
+            "moodHistory": [
+              50
+            ]
+          }
+        },
+        "facts": {
+          "F1": {
+            "status": "sealed"
+          },
+          "F2": {
+            "status": "sealed"
+          },
+          "F3": {
+            "status": "sealed"
+          }
+        },
+        "user_known": [],
+        "commitments": [
+          {
+            "id": "C1",
+            "what": "deadline",
+            "target_day": 1,
+            "original_words": "",
+            "turn_id": 1,
+            "npc_id": "maya",
+            "status": "active",
+            "model_inputs": {
+              "min_day": 3,
+              "cutoff_day": 3,
+              "assisted": false,
+              "f2_delivered": false,
+              "help_accepted": false,
+              "target_day": 1,
+              "unassisted_min": 3,
+              "assisted_min": 2
+            },
+            "unrealistic": true,
+            "accepted_with": null,
+            "pending_acceptance": false,
+            "recap_turn_id": null,
+            "supersedes": null,
+            "callbackFired": true
+          }
+        ],
+        "goals": {
+          "G1": {
+            "status": "pending",
+            "turn_id": null
+          },
+          "G2": {
+            "status": "pending",
+            "turn_id": null
+          },
+          "G3": {
+            "status": "pending",
+            "turn_id": null
+          }
+        },
+        "beats": {
+          "B2": {
+            "status": "pending",
+            "fired_turn": null
+          },
+          "B3": {
+            "status": "fired",
+            "fired_turn": 5
+          }
+        },
+        "events_log": [
+          {
+            "turn_id": 1,
+            "npc_id": "maya",
+            "type": "committed_deadline",
+            "params": {
+              "day": 1
+            },
+            "source_id": "T1-maya-committed_deadline-0",
+            "allocation": "integrity"
+          },
+          {
+            "turn_id": 2,
+            "npc_id": "jordan",
+            "type": "greeted",
+            "params": {},
+            "source_id": "T2-jordan-greeted-0",
+            "allocation": "none"
+          }
+        ],
+        "flags": [],
+        "snapshots": [
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 1,
+            "npcs": {
+              "maya": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  1
+                ],
+                "last_act": "greet",
+                "moodHistory": [
+                  50,
+                  50
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "sealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [],
+            "commitments": [
+              {
+                "id": "C1",
+                "what": "deadline",
+                "target_day": 1,
+                "original_words": "",
+                "turn_id": 1,
+                "npc_id": "maya",
+                "status": "active",
+                "model_inputs": {
+                  "min_day": 3,
+                  "cutoff_day": 3,
+                  "assisted": false,
+                  "f2_delivered": false,
+                  "help_accepted": false,
+                  "target_day": 1,
+                  "unassisted_min": 3,
+                  "assisted_min": 2
+                },
+                "unrealistic": true,
+                "accepted_with": null,
+                "pending_acceptance": false,
+                "recap_turn_id": null,
+                "supersedes": null
+              }
+            ],
+            "goals": {
+              "G1": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "committed_deadline",
+                "params": {
+                  "day": 1
+                },
+                "source_id": "T1-maya-committed_deadline-0",
+                "allocation": "integrity"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 2,
+            "npcs": {
+              "maya": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  1
+                ],
+                "last_act": "greet",
+                "moodHistory": [
+                  50,
+                  50
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  2
+                ],
+                "last_act": "greet",
+                "moodHistory": [
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "sealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [],
+            "commitments": [
+              {
+                "id": "C1",
+                "what": "deadline",
+                "target_day": 1,
+                "original_words": "",
+                "turn_id": 1,
+                "npc_id": "maya",
+                "status": "active",
+                "model_inputs": {
+                  "min_day": 3,
+                  "cutoff_day": 3,
+                  "assisted": false,
+                  "f2_delivered": false,
+                  "help_accepted": false,
+                  "target_day": 1,
+                  "unassisted_min": 3,
+                  "assisted_min": 2
+                },
+                "unrealistic": true,
+                "accepted_with": null,
+                "pending_acceptance": false,
+                "recap_turn_id": null,
+                "supersedes": null
+              }
+            ],
+            "goals": {
+              "G1": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "committed_deadline",
+                "params": {
+                  "day": 1
+                },
+                "source_id": "T1-maya-committed_deadline-0",
+                "allocation": "integrity"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "jordan",
+                "type": "greeted",
+                "params": {},
+                "source_id": "T2-jordan-greeted-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 3,
+            "npcs": {
+              "maya": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  1
+                ],
+                "last_act": "greet",
+                "moodHistory": [
+                  50,
+                  50
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  2,
+                  3
+                ],
+                "last_act": "react_freely",
+                "moodHistory": [
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "sealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [],
+            "commitments": [
+              {
+                "id": "C1",
+                "what": "deadline",
+                "target_day": 1,
+                "original_words": "",
+                "turn_id": 1,
+                "npc_id": "maya",
+                "status": "active",
+                "model_inputs": {
+                  "min_day": 3,
+                  "cutoff_day": 3,
+                  "assisted": false,
+                  "f2_delivered": false,
+                  "help_accepted": false,
+                  "target_day": 1,
+                  "unassisted_min": 3,
+                  "assisted_min": 2
+                },
+                "unrealistic": true,
+                "accepted_with": null,
+                "pending_acceptance": false,
+                "recap_turn_id": null,
+                "supersedes": null
+              }
+            ],
+            "goals": {
+              "G1": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "committed_deadline",
+                "params": {
+                  "day": 1
+                },
+                "source_id": "T1-maya-committed_deadline-0",
+                "allocation": "integrity"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "jordan",
+                "type": "greeted",
+                "params": {},
+                "source_id": "T2-jordan-greeted-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 4,
+            "npcs": {
+              "maya": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  1
+                ],
+                "last_act": "greet",
+                "moodHistory": [
+                  50,
+                  50
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  2,
+                  3,
+                  4
+                ],
+                "last_act": "react_freely",
+                "moodHistory": [
+                  50,
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "sealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [],
+            "commitments": [
+              {
+                "id": "C1",
+                "what": "deadline",
+                "target_day": 1,
+                "original_words": "",
+                "turn_id": 1,
+                "npc_id": "maya",
+                "status": "active",
+                "model_inputs": {
+                  "min_day": 3,
+                  "cutoff_day": 3,
+                  "assisted": false,
+                  "f2_delivered": false,
+                  "help_accepted": false,
+                  "target_day": 1,
+                  "unassisted_min": 3,
+                  "assisted_min": 2
+                },
+                "unrealistic": true,
+                "accepted_with": null,
+                "pending_acceptance": false,
+                "recap_turn_id": null,
+                "supersedes": null
+              }
+            ],
+            "goals": {
+              "G1": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "pending",
+                "fired_turn": null
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "committed_deadline",
+                "params": {
+                  "day": 1
+                },
+                "source_id": "T1-maya-committed_deadline-0",
+                "allocation": "integrity"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "jordan",
+                "type": "greeted",
+                "params": {},
+                "source_id": "T2-jordan-greeted-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": {
+              "beatId": "B3",
+              "commitmentId": "C1",
+              "dueTurn": 4
+            },
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          },
+          {
+            "id": "missed_deadline#s7",
+            "scenario_id": "missed_deadline",
+            "scenario_version": 1,
+            "locale": "en",
+            "seed": 7,
+            "customisation": {
+              "maya": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "jordan": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              },
+              "sam": {
+                "assertiveness": 50,
+                "patience": 50,
+                "warmth": 50,
+                "forthcomingness": 50
+              }
+            },
+            "clock": {
+              "day": 0
+            },
+            "turn": 5,
+            "npcs": {
+              "maya": {
+                "mood": 48,
+                "probes": {},
+                "told_by_user": [
+                  1,
+                  5
+                ],
+                "last_act": "callback_commitment",
+                "moodHistory": [
+                  50,
+                  50,
+                  48,
+                  48
+                ]
+              },
+              "jordan": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [
+                  2,
+                  3,
+                  4
+                ],
+                "last_act": "react_freely",
+                "moodHistory": [
+                  50,
+                  50,
+                  50,
+                  50
+                ]
+              },
+              "sam": {
+                "mood": 50,
+                "probes": {},
+                "told_by_user": [],
+                "last_act": null,
+                "moodHistory": [
+                  50
+                ]
+              }
+            },
+            "facts": {
+              "F1": {
+                "status": "sealed"
+              },
+              "F2": {
+                "status": "sealed"
+              },
+              "F3": {
+                "status": "sealed"
+              }
+            },
+            "user_known": [],
+            "commitments": [
+              {
+                "id": "C1",
+                "what": "deadline",
+                "target_day": 1,
+                "original_words": "",
+                "turn_id": 1,
+                "npc_id": "maya",
+                "status": "active",
+                "model_inputs": {
+                  "min_day": 3,
+                  "cutoff_day": 3,
+                  "assisted": false,
+                  "f2_delivered": false,
+                  "help_accepted": false,
+                  "target_day": 1,
+                  "unassisted_min": 3,
+                  "assisted_min": 2
+                },
+                "unrealistic": true,
+                "accepted_with": null,
+                "pending_acceptance": false,
+                "recap_turn_id": null,
+                "supersedes": null,
+                "callbackFired": true
+              }
+            ],
+            "goals": {
+              "G1": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G2": {
+                "status": "pending",
+                "turn_id": null
+              },
+              "G3": {
+                "status": "pending",
+                "turn_id": null
+              }
+            },
+            "beats": {
+              "B2": {
+                "status": "pending",
+                "fired_turn": null
+              },
+              "B3": {
+                "status": "fired",
+                "fired_turn": 5
+              }
+            },
+            "events_log": [
+              {
+                "turn_id": 1,
+                "npc_id": "maya",
+                "type": "committed_deadline",
+                "params": {
+                  "day": 1
+                },
+                "source_id": "T1-maya-committed_deadline-0",
+                "allocation": "integrity"
+              },
+              {
+                "turn_id": 2,
+                "npc_id": "jordan",
+                "type": "greeted",
+                "params": {},
+                "source_id": "T2-jordan-greeted-0",
+                "allocation": "none"
+              }
+            ],
+            "flags": [],
+            "staged": null,
+            "clarification": null,
+            "deferredBeat": null,
+            "ended": false,
+            "endReason": null,
+            "model": {
+              "facts": [
+                {
+                  "id": "F1",
+                  "owner": "maya",
+                  "triggers": [
+                    "asked_deadline_flexibility",
+                    "asked_why_urgent",
+                    "asked_impact"
+                  ]
+                },
+                {
+                  "id": "F2",
+                  "owner": "jordan",
+                  "triggers": [
+                    "asked_for_help"
+                  ]
+                },
+                {
+                  "id": "F3",
+                  "owner": "sam",
+                  "triggers": [
+                    "asked_advice",
+                    "acknowledged_concern"
+                  ]
+                }
+              ],
+              "npcTopics": {
+                "maya": [
+                  "asked_deadline_flexibility",
+                  "asked_why_urgent",
+                  "asked_impact",
+                  "asked_expectation",
+                  "took_ownership",
+                  "gave_honest_status",
+                  "committed_deadline",
+                  "recapped_agreement",
+                  "confirmed_next_steps"
+                ],
+                "jordan": [
+                  "asked_requirement_details",
+                  "asked_for_help",
+                  "asked_background",
+                  "proposed_plan"
+                ],
+                "sam": [
+                  "asked_advice",
+                  "acknowledged_concern",
+                  "apologized"
+                ]
+              },
+              "commitment_model": {
+                "unassisted_min_day": 3,
+                "assisted_min_day": 2,
+                "agreement_npc": "maya"
+              },
+              "cutoff_day": 3,
+              "goals": [
+                {
+                  "id": "G1",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:took_ownership",
+                    "event:gave_honest_status"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G2",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "event:asked_requirement_details"
+                  ],
+                  "requires": []
+                },
+                {
+                  "id": "G3",
+                  "visible": true,
+                  "required": true,
+                  "done_when": [
+                    "date_mutually_agreed",
+                    "event:recapped_agreement"
+                  ],
+                  "requires": [
+                    "G1",
+                    "G2"
+                  ]
+                }
+              ],
+              "beats": [
+                {
+                  "id": "B2",
+                  "npc": "maya",
+                  "act": "press_for_date"
+                },
+                {
+                  "id": "B3",
+                  "npc": "maya",
+                  "act": "callback_commitment"
+                }
+              ],
+              "max_turns": 20
+            }
+          }
+        ],
+        "staged": null,
+        "clarification": null,
+        "deferredBeat": null,
+        "ended": false,
+        "endReason": null,
+        "model": {
+          "facts": [
+            {
+              "id": "F1",
+              "owner": "maya",
+              "triggers": [
+                "asked_deadline_flexibility",
+                "asked_why_urgent",
+                "asked_impact"
+              ]
+            },
+            {
+              "id": "F2",
+              "owner": "jordan",
+              "triggers": [
+                "asked_for_help"
+              ]
+            },
+            {
+              "id": "F3",
+              "owner": "sam",
+              "triggers": [
+                "asked_advice",
+                "acknowledged_concern"
+              ]
+            }
+          ],
+          "npcTopics": {
+            "maya": [
+              "asked_deadline_flexibility",
+              "asked_why_urgent",
+              "asked_impact",
+              "asked_expectation",
+              "took_ownership",
+              "gave_honest_status",
+              "committed_deadline",
+              "recapped_agreement",
+              "confirmed_next_steps"
+            ],
+            "jordan": [
+              "asked_requirement_details",
+              "asked_for_help",
+              "asked_background",
+              "proposed_plan"
+            ],
+            "sam": [
+              "asked_advice",
+              "acknowledged_concern",
+              "apologized"
+            ]
+          },
+          "commitment_model": {
+            "unassisted_min_day": 3,
+            "assisted_min_day": 2,
+            "agreement_npc": "maya"
+          },
+          "cutoff_day": 3,
+          "goals": [
+            {
+              "id": "G1",
+              "visible": true,
+              "required": true,
+              "done_when": [
+                "event:took_ownership",
+                "event:gave_honest_status"
+              ],
+              "requires": []
+            },
+            {
+              "id": "G2",
+              "visible": true,
+              "required": true,
+              "done_when": [
+                "event:asked_requirement_details"
+              ],
+              "requires": []
+            },
+            {
+              "id": "G3",
+              "visible": true,
+              "required": true,
+              "done_when": [
+                "date_mutually_agreed",
+                "event:recapped_agreement"
+              ],
+              "requires": [
+                "G1",
+                "G2"
+              ]
+            }
+          ],
+          "beats": [
+            {
+              "id": "B2",
+              "npc": "maya",
+              "act": "press_for_date"
+            },
+            {
+              "id": "B3",
+              "npc": "maya",
+              "act": "callback_commitment"
+            }
+          ],
+          "max_turns": 20
+        }
+      },
+      "convo": {
+        "seq": 10,
+        "turns": [
+          {
+            "id": 1,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "I will deliver tomorrow."
+          },
+          {
+            "id": 2,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "Thanks for coming to me. Tell me plainly what happened with the deadline.",
+            "act": "greet"
+          },
+          {
+            "id": 3,
+            "speaker": "user",
+            "npcId": "jordan",
+            "text": "Hello."
+          },
+          {
+            "id": 4,
+            "speaker": "npc",
+            "npcId": "jordan",
+            "text": "Hi. Tell me where you're stuck and I'll see what I can do.",
+            "act": "greet"
+          },
+          {
+            "id": 5,
+            "speaker": "user",
+            "npcId": "jordan",
+            "text": "Thanks."
+          },
+          {
+            "id": 6,
+            "speaker": "npc",
+            "npcId": "jordan",
+            "text": "Got it. Tell me where you are stuck and I will see how I can help.",
+            "act": "react_freely"
+          },
+          {
+            "id": 7,
+            "speaker": "user",
+            "npcId": "jordan",
+            "text": "Understood."
+          },
+          {
+            "id": 8,
+            "speaker": "npc",
+            "npcId": "jordan",
+            "text": "Got it. Tell me where you are stuck and I will see how I can help.",
+            "act": "react_freely"
+          },
+          {
+            "id": 9,
+            "speaker": "user",
+            "npcId": "maya",
+            "text": "I am back."
+          },
+          {
+            "id": 10,
+            "speaker": "npc",
+            "npcId": "maya",
+            "text": "You made a promise earlier. Can you reconsider it and suggest a workable plan?",
+            "act": "callback_commitment"
+          }
+        ]
+      },
+      "manifestId": "synthetic-s1-07",
+      "npcPromptVersion": "v2"
+    }
+  }
+}

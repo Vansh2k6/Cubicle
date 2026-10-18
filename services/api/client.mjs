@@ -62,6 +62,13 @@ let hint = created.data.public_state.next_hint;
 let lastGoals = created.data.public_state.goals;
 
 async function turn(text) {
+  if (text.startsWith("/npc ")) { npc = text.slice(5).trim() || npc; return true; }
+  if (text === "/end") {
+    const result = await req(`/sessions/${encodeURIComponent(sid)}/end`, {});
+    if (result.status !== 200) { console.log("Could not end session; try again."); return false; }
+    console.log(`(session ended: ${result.data.end_reason}; debrief coming soon)`);
+    return "ended";
+  }
   const k = key();
   let attempt = await req(`/sessions/${encodeURIComponent(sid)}/turn`, { npc_id: npc, text, idempotencyKey: k });
   if ((attempt.status === 503 || attempt.status === 504) && attempt.data.retryable) {

@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-17T18:57:05.877Z",
+  "files": [
+    "dist\\assets\\debug-C47GIgU1.js",
+    "dist\\assets\\index-BZjUVe7z.js",
+    "dist\\assets\\index-stekVqds.css",
+    "dist\\favicon.svg",
+    "dist\\index.html"
+  ],
+  "needleCount": 82,
+  "hits": [],
+  "debugInEntry": [],
+  "debugChunks": [
+    "dist\\assets\\debug-C47GIgU1.js"
+  ],
+  "ok": true
+}

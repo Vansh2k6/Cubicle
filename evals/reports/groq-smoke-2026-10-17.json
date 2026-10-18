@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-17",
+  "calls": 2,
+  "results": [
+    {
+      "role": "classifier",
+      "model": "openai/gpt-oss-20b",
+      "latencyMs": 813,
+      "jsonValidated": true
+    },
+    {
+      "role": "npc",
+      "model": "qwen/qwen3.8-27b",
+      "latencyMs": 197,
+      "jsonValidated": true
+    }
+  ],
+  "fullAcceptance": "NOT RUN"
+}

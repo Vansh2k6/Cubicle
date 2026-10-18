@@ -15,6 +15,7 @@ import { execSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { scanArtifacts } from "./bundle-scan-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const scenario = JSON.parse(readFileSync(join(root, "scenarios", "missed_deadline.json"), "utf8"));
@@ -37,7 +38,7 @@ add("commitment_model", "spec key");
 add("leak_keywords", "spec key");
 add('"canon"', "spec key");
 add("pending_delivery", "engine internals");
-add("forthcomingness", "slider internals");
+// D-29 authorizes this public setup-slider name; private scenario terms remain banned.
 add("reveal_fact", "act internals");
 add("CURRENT MOVE", "prompt marker");
 add("Authorised disclosure", "prompt marker");
@@ -62,20 +63,8 @@ function walk(dir, out) {
   return out;
 }
 const files = walk(dist, []);
-const hits = [];
-for (const f of files) {
-  let text;
-  try {
-    text = readFileSync(f, "utf8");
-  } catch {
-    continue;
-  }
-  if (text.includes("")) continue;
-  const lower = text.toLowerCase();
-  for (const [needle, reason] of banned) {
-    if (lower.includes(needle)) hits.push({ file: f.slice(root.length + 1), needle, reason });
-  }
-}
+const artifacts = files.map((f) => ({ file: f.slice(root.length + 1), text: readFileSync(f, "utf8") }));
+const hits = scanArtifacts(artifacts, banned);
 
 // Debug-chunk reachability: the main entry must not reference _debug.
 const entries = files.filter((f) => /index-[^/]+\.js$/.test(f) || /index\.js$/.test(f));
@@ -103,14 +92,14 @@ const report = {
   debugChunks: debugChunks.map((f) => f.slice(root.length + 1)),
   ok,
 };
-const date = report.date.slice(0, 10);
+const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 mkdirSync(join(root, "evals", "reports"), { recursive: true });
 writeFileSync(join(root, "evals", "reports", `bundle-scan-${date}.json`), JSON.stringify(report, null, 2));
 
 if (process.argv.includes("--json")) {
   console.log(JSON.stringify(report, null, 2));
 } else {
-  console.log(`scanned ${files.length} dist files with ${banned.size} needles`);
+  console.log(`scanned ${artifacts.filter((artifact) => typeof artifact.text === "string").length} text artifacts with ${banned.size} needles`);
   for (const h of hits) console.log(`HIT ${h.file}: [${h.reason}] "${h.needle.slice(0, 60)}"`);
   for (const f of debugInEntry) console.log(`DEBUG-IN-ENTRY ${f}`);
   console.log(`debug chunks (lazy, unreachable without flag): ${report.debugChunks.join(", ") || "(none)"}`);
