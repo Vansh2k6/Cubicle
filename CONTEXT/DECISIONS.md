@@ -218,3 +218,16 @@ The public slider name `forthcomingness` is allowed in the client under D-29/S1-
 
 ## D-34 · Implementation note · 2026-10-18 — Local credential-file scan boundary
 The mandatory secret scan found the user's existing ignored, untracked repository-root `.env`. Root and the Sol reviewer approved exempting exactly that local server configuration file from the content scan, while retaining the independent mandatory checks that it is ignored and untracked. A tracked `.env` must still fail. `.env.example`, nested `.env` files and all other existing scan targets remain covered, with regressions for the exact boundary. The credential file is not displayed, changed, removed or committed. This corrects a test convention for local server configuration; R-50 remains unchanged and no live call is authorized.
+
+## D-35 · Proposed · 2026-10-21 — English-only voice contract and local-provider decision rule
+**Context.** The user authorised preparation of the optional Stage 1 voice path. Upon human acceptance, this record supersedes D-19's provider uncertainty and D-29's no-provider-selection statement for voice only; while Proposed, it does not supersede accepted decisions, authorise a cloud implementation, change scoring, or close a phase gate.
+
+**Decision.** Voice uses a `SpeechProvider` interface with `transcribe` and `synthesize`, configured by `VOICE_STT_CHAIN` and `VOICE_TTS_CHAIN`. The proposed local sidecar uses faster-whisper `small.en` for English STT and Piper as the default TTS engine; Kokoro is deferred unless the human asks. Local becomes the demo primary only if V4 measurement shows added STT plus TTS-first-byte latency of about 1.5 s or less p50 on the demo laptop without measured 3D-scene stutter. Otherwise a cloud adapter may become primary only through a later decision; cloud is not implemented here and local remains the offline mode.
+
+STT is delivered through `POST /sessions/{id}/voice/stt`. TTS is available only for an already committed, guarded NPC turn or stored guarded debrief reply, looked up by private session and turn/moment id; no route accepts client text for synthesis. Audio is memory-only and never persisted or logged (R-54/R-66); only opaque session IDs reach a provider (R-53). Scoring and quotes use user-confirmed text only (R-23).
+
+Voice defaults off behind server and client flags, and typed input remains permanent. Browser `SpeechRecognition` is rejected as local STT because it uses a vendor service. Static pre-rendered audio of fallback or reveal lines is forbidden.
+
+**Consequences.** V1–V4 may not start until the human accepts this decision. No installation, model verification, provider call, latency claim, or voice implementation is implied by this proposed record.
+
+**Revisit when.** The human confirms D-35, or V4 measurements indicate that local voice misses the decision rule.

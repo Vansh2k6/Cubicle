@@ -320,16 +320,25 @@ Runs asynchronously; the UI polls or subscribes. Judge: temp 0, JSON, quality-on
 - Constraint: `better_reply` uses only information the user had (R-25). Performance runs are marked as *illustrative* and never alter the score.
 - **S1 minimum**: debrief shows one improved response as text.
 
-## 13. Voice **[S1 stretch → S2]**
+## 13. Voice **[S1 stretch → S2; D-35 Proposed]**
+
+This is a proposed contract only: no voice implementation, routes, flags, or scripts are shipped yet.
+
+English only. Voice is off by default behind server `VOICE_ENABLED=1` and client `VITE_VOICE=1`; a user must explicitly enable it. Typed input remains permanently available.
 
 ```
-Mic → (push-to-talk) → STT → editable transcript → normal turn pipeline
-NPC text → TTS (per-NPC voice, locale) → audio stream → player (mutable)
+push-to-talk → MediaRecorder → POST /sessions/{id}/voice/stt → editable transcript
+→ confirmed text → existing normal turn pipeline → committed guarded NPC reply
+→ speech descriptor → nonblocking server prefetch → id-scoped fetch → playback
 ```
-- `SpeechProvider` interface: `transcribe(audio, locale)`, `synthesize(text, voice, locale)`. Providers are swappable; none are validated yet.
-- S1: push-to-talk, user edits transcript before sending (R-42). TTS optional.
-- S2: streaming STT, per-NPC voices, barge-in, audio cache, latency target < 2.5 s to first audio.
-- Scoring uses the confirmed text only (R-23). Audio not retained by default (R-54).
+
+- Server interface: `SpeechProvider.transcribe({audio, mime, signal}) → {text, duration_ms, provider}` and `SpeechProvider.synthesize({text, voice, signal}) → {audio: Buffer, mime, provider}`. The initial proposed local sidecar uses faster-whisper `small.en` for STT and Piper by default for TTS; Kokoro is deferred unless the human asks. Cloud is a future adapter only and is not implemented by D-35.
+- STT ends in an editable draft. Only user-confirmed text enters the normal turn, transcript, scoring, and quote-validation paths (R-21/R-23).
+- TTS runs only after the guarded NPC line has committed, including a guarded fallback. It never delays the text response or alters engine state, disclosure credit, scoring, or visible text.
+- The turn response may expose only `speech: { available: boolean, turn_id: string, mode: "server" | "browser" | "none" }`. It carries no text, labels, facts, voice identifiers, acts, or guard data.
+- Audio is fetched only through private, session-and-id-scoped routes for an already committed NPC turn or stored guarded debrief reply. No route accepts client-provided synthesis text. Browser `SpeechRecognition` is not local STT; browser `speechSynthesis` is only a last-resort local TTS mode.
+- Audio stays in memory only and is omitted from logs, snapshots, session dumps, progress summaries, and debug traces. It is dropped when the session ends or is deleted (R-54/R-66). Opaque session IDs are the only session identifier shared with a provider (R-53).
+- S2 retains streaming STT, barge-in, language-matched voices, and the <2.5 s first-audio target.
 
 ## 14. Localisation **[S2]**
 
@@ -398,6 +407,8 @@ WS   /sessions/{id}/stream                -> NPC text/audio streaming           
 | **Total p50 / p95** | **S1: < 3.5 s / < 5 s** (D-23); **S2: < 2 s / < 3 s**, fixed-line p50 < 0.5 s |
 
 Totals are targets, not measured guarantees; individual rows are typical-stage budgets, not additive percentile promises. Measure from submit through complete guarded reply delivery, including retries/fallbacks; report sample count, provider/model, warm/cold conditions and fallback rate. S1 levers: short outputs, prompt trimming and model routing; stored normal replies, trained tiers and streaming are S2. Provider/models are selected in D-28; live measurements remain deferred.
+
+Voice timing is measured separately: STT duration, TTS time-to-first-byte and total, and speech-end to first-audio. Voice measurements never merge into the guarded text-turn p50/p95 above; D-35's local-primary decision is pending a demo-laptop result of about 1.5 s or less p50 for added STT plus TTS-first-byte latency and no measured scene stutter.
 
 ## 20. Observability and evaluation
 

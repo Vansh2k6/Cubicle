@@ -7,6 +7,10 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+voice-sidecar/.venv/
+voice-sidecar/models/
+out/
+.worktrees/
 bundle-*.txt
 graphify-out/.graphify_python
 graphify-out/.graphify_root
