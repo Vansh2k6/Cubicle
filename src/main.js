@@ -28,6 +28,7 @@ import {
   Check,
   CircleCheck,
   Circle,
+  Mic,
 } from "lucide";
 const icons = {
   Box,
@@ -58,9 +59,10 @@ const icons = {
   Check,
   CircleCheck,
   Circle,
+  Mic,
 };
 import { createOffice } from "./office.js";
-import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, newKey } from "./api.js";
+import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, getVoiceStatus, transcribeAudio, newKey } from "./api.js";
 import { DEFAULT_SLIDERS } from "../shared/settings.js";
 import { settingsPreview } from "./settingsPreview.js";
 import { PRESETS, presetName, presetSettings, presetsEnabled } from "../shared/presets.js";
@@ -70,6 +72,40 @@ import { compareAttempts, displayAttemptMetric, displayAttemptScore, readProgres
 import { projectGuidance } from "./guidance.js";
 import "./guidance.css";
 const ending = createEndCoordinator();
+const voiceBuildEnabled = import.meta.env.VITE_VOICE === "1";
+let voiceStatus = null;
+let voiceController = null;
+let voiceMountCleanup = null;
+let voiceStatusPending = null;
+function cancelVoice() {
+  if (voiceMountCleanup) voiceMountCleanup();
+  voiceMountCleanup = null;
+  if (voiceController) voiceController.cancel();
+}
+function initialiseVoice() {
+  if (!voiceBuildEnabled || voiceStatus || voiceStatusPending) return;
+  voiceStatusPending = Promise.all([import("./voice.js"), getVoiceStatus()])
+    .then(([module, status]) => {
+      voiceStatus = status;
+      if (status.enabled && status.stt) voiceController = module.createVoiceController({ transcribe: transcribeAudio });
+      rerenderVoiceSafely();
+    })
+    .catch(() => {
+      voiceStatus = { enabled: false, stt: false, tts_mode: "none" };
+      rerenderVoiceSafely();
+    });
+}
+function rerenderVoiceSafely() {
+  if (!state.textMode || !state.text || !state.dialogue) return;
+  const old = $("#text-input");
+  const draft = old && { value: old.value, start: old.selectionStart, end: old.selectionEnd, focused: document.activeElement === old };
+  renderTextDialogue();
+  const input = $("#text-input");
+  if (draft && input) {
+    input.value = draft.value;
+    if (draft.focused) { input.focus({ preventScroll: true }); input.setSelectionRange(draft.start, draft.end); }
+  }
+}
 const scenarios = {
   deadline: {
     title: "Missed a project deadline",
@@ -329,6 +365,7 @@ function openConversation() {
   renderDialogue();
 }
 function closeConversation() {
+  cancelVoice();
   state.dialogue = null;
   state.textMode = false;
   state.text = null;
@@ -461,10 +498,13 @@ function startTextSession() {
 function renderTextDialogue() {
   const t = state.text;
   if (!t || !state.dialogue) return;
+  cancelVoice();
   const busy = t.busy || ending.busy(state.sessionId, state.scenario);
   const p = people[state.dialogue];
+  const npcId = state.dialogue;
   const first = p.name.split(" ")[0];
   const guidance = currentGuidance();
+  const voiceAvailable = !!(voiceStatus && voiceStatus.enabled && voiceStatus.stt && voiceController);
   const lines = t.transcript
     .map((l) =>
       l.who === "user"
@@ -501,9 +541,10 @@ function renderTextDialogue() {
       : "") +
     (state.sessionId && !t.over
       ? `<form class="text-form" id="text-form"><label for="text-input">Reply to ${escapeHtml(first)}</label>` +
-        `<div class="text-row"><input id="text-input" name="text" type="text" maxlength="500" autocomplete="off" placeholder="Type your reply…" ${busy ? "disabled" : ""} aria-describedby="text-hint" />` +
+        `<div class="text-row"><input id="text-input" name="text" type="text" maxlength="500" autocomplete="off" placeholder="Type your reply…" ${busy ? "disabled" : ""} aria-describedby="text-hint${voiceAvailable ? " voice-status" : ""}" />` +
+        (voiceAvailable ? `<button class="voice-toggle" type="button" id="voice-toggle" aria-pressed="false">Voice off</button><button class="voice-mic icon-button" type="button" id="voice-mic" aria-label="Hold to record a voice reply" aria-pressed="false" ${busy ? "disabled" : ""}>${icon("mic")}</button>` : "") +
         `<button class="primary-button" type="submit" ${busy ? "disabled" : ""}>Send ${icon("arrow-right")}</button></div>` +
-        `<small id="text-hint">Enter sends · Esc leaves this conversation</small></form>`
+        `<small id="text-hint">Enter sends · Esc leaves this conversation${voiceAvailable ? " · Ctrl+Shift+Space records" : ""}</small>${voiceAvailable ? `<span id="voice-status" class="voice-status" role="status" aria-live="polite"></span>` : ""}</form>`
       : "") +
     `<details class="guidance-hint"><summary>Goals & hints</summary><section class="public-objective" aria-label="Current objective"><strong>Current objective</strong>${escapeHtml(guidance.objective)}</section>${goals ? `<ul class="goal-list" aria-label="Visible goals">${goals}</ul>` : ""}${!t.over ? `${guidance.hint ? `<p>${escapeHtml(guidance.hint)}</p>` : ""}<p>${escapeHtml(guidance.question)}</p>` : ""}</details>` +
     `<div id="text-debug"></div>` +
@@ -522,6 +563,7 @@ function renderTextDialogue() {
       const input = $("#text-input");
       const value = input ? input.value.trim() : "";
       if (!value || state.text.busy) return;
+      cancelVoice();
       sendTextTurn(value, newKey(), false);
     };
   }
@@ -547,15 +589,24 @@ function renderTextDialogue() {
   const transcript = document.querySelector(".transcript");
   if (transcript) transcript.scrollTop = transcript.scrollHeight;
   const input = $("#text-input");
+  if (voiceAvailable && input) {
+    voiceMountCleanup = voiceController.mount({
+      toggle: $("#voice-toggle"), mic: $("#voice-mic"), status: $("#voice-status"), input,
+      sessionId: state.sessionId,
+      current: () => state.textMode && state.text === t && state.dialogue === npcId && state.sessionId != null && !t.busy && !t.over && !ending.busy(state.sessionId, state.scenario),
+    });
+  }
   if (input && !t.busy) input.focus({ preventScroll: true });
   else $("#close-dialogue").focus({ preventScroll: true });
   paintTextDebug();
+  initialiseVoice();
 }
 
 async function sendTextTurn(text, key, isRetry) {
   // The turn is bound to its thread at send time: closing the panel never
   // loses it. The resolved NPC line lands in the thread and renders on
   // reopen; retries reuse the same key so the server applies it once.
+  cancelVoice();
   const thread = state.text;
   const npcId = state.dialogue;
   const sessionId = state.sessionId;
@@ -637,6 +688,7 @@ function paintTextDebug() {
 }
 
 async function completeTextSession() {
+  cancelVoice();
   if (ending.busy(state.sessionId, state.scenario)) return;
   if (Object.values(threadsFor()).some((t) => t.busy)) { toast("Wait for the current reply before ending."); return; }
   const sessionId = state.sessionId, scenarioId = state.scenario;

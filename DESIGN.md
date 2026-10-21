@@ -126,3 +126,7 @@ The debrief is a single-column, learning-first summary: one positive takeaway, o
 ## 2026-10-18 workspace surface revision
 
 The earlier ivory-and-purple interface record above is historical. The active interface direction is the green-and-graphite workspace contract in `docs/superpowers/specs/2026-10-18-taste-ui-design.md`: a `#f4f6f3` canvas, white panels, graphite text, and restrained deep-green actions. The office scene, all public/session contracts, native disclosures, transcript behavior, scoring presentation rules, and accessibility mechanics remain unchanged. This is a presentation-only revision; it makes no claim of runtime or browser verification.
+
+## S1-V2 voice extension (Operate)
+
+When both client and server voice flags are enabled, the existing graphite-and-green composer gains a compact Voice on/off control and a 44px microphone control. Voice stays off until the visitor explicitly enables it; recording is hold-to-talk with keyboard equivalents, an inline live status, and a 30-second cap. A transcript returns only as an editable draft in the existing input, then uses the unchanged typed Send path. Typed input remains available through unsupported, denied, cancelled, empty, and failed recording states. At narrow phone widths, the voice composer places the input on its own row and keeps the 44px controls together below it.

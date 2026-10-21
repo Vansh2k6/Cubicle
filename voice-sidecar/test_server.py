@@ -115,9 +115,57 @@ class SidecarTests(unittest.TestCase):
                 connection.close()
 
 
-    def test_device_selection_is_opt_in_and_invalid_values_do_not_echo(self):
-        self.assertEqual(voice.stt_settings({}), ("cpu", "int8"))
-        self.assertEqual(voice.stt_settings({"VOICE_STT_DEVICE": "cuda"}), ("cuda", "float16"))
+    def test_device_selection_prefers_warm_cuda_and_auto_falls_back_to_cpu(self):
+        class Numpy:
+            @staticmethod
+            def zeros(*_args, **_kwargs): return []
+        attempts = []
+        class Model:
+            def __init__(self, _path, **kwargs):
+                self.device = kwargs["device"]; attempts.append(kwargs)
+            def transcribe(self, *_args, **_kwargs):
+                if self.device == "cuda":
+                    def failing_segments():
+                        raise RuntimeError("CUDA warm failure")
+                        yield None
+                    return failing_segments(), None
+                return iter(()), None
+        model, device, compute, handles = voice.load_stt_model(
+            {}, "model", Model, Numpy, cuda_probe=lambda: True)
+        self.assertEqual(device, "cpu")
+        self.assertEqual(compute, "int8")
+        self.assertEqual(handles, [])
+        self.assertEqual([item["device"] for item in attempts], ["cuda", "cpu"])
+        self.assertEqual(attempts[-1]["cpu_threads"], 6)
+        def broken_probe(): raise RuntimeError()
+        self.assertFalse(voice.cuda_available(broken_probe))
+
+        attempts.clear()
+        class WarmModel(Model):
+            def transcribe(self, *_args, **_kwargs): return iter(()), None
+        _model, device, compute, _handles = voice.load_stt_model(
+            {}, "model", WarmModel, Numpy, cuda_probe=lambda: True)
+        self.assertEqual((device, compute), ("cuda", "float16"))
+        self.assertEqual(attempts[-1]["device"], "cuda")
+
+    def test_explicit_device_selection_and_invalid_values_are_honest(self):
+        class Numpy:
+            @staticmethod
+            def zeros(*_args, **_kwargs): return []
+        calls = []
+        class Model:
+            def __init__(self, _path, **kwargs): calls.append(kwargs)
+            def transcribe(self, *_args, **_kwargs): return iter(()), None
+        self.assertEqual(voice.stt_settings({}), "auto")
+        self.assertEqual(voice.stt_settings({"VOICE_STT_DEVICE": "cpu"}), "cpu")
+        self.assertEqual(voice.stt_settings({"VOICE_STT_DEVICE": "cuda"}), "cuda")
+        _model, device, compute, _handles = voice.load_stt_model(
+            {"VOICE_STT_DEVICE": "cpu"}, "model", Model, Numpy, cuda_probe=lambda: True)
+        self.assertEqual((device, compute), ("cpu", "int8"))
+        with self.assertRaises(RuntimeError):
+            voice.load_stt_model({"VOICE_STT_DEVICE": "cuda"}, "model", Model, Numpy,
+                                 cuda_probe=lambda: False)
+        self.assertEqual(len(calls), 1)
         self.assertEqual(voice.cuda_libraries("cpu"), [])
         with self.assertRaises(ValueError) as failure:
             voice.stt_settings({"VOICE_STT_DEVICE": "private-invalid-setting"})

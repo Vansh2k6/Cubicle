@@ -11,6 +11,39 @@ test.before(async () => { ({ server } = createServer({ voiceConfig: { enabled: t
 test.after(async () => { SessionStore.prototype.create = original; server.closeAllConnections(); await new Promise((r) => server.close(r)); });
 async function create() { return encodeURIComponent((await (await fetch(`${base}/sessions`, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({scenario_id:"deadline"}) })).json()).session_id); }
 test("voice is disabled by default", async () => { const x=createServer(); await new Promise(r=>x.server.listen(0,"127.0.0.1",r)); const r=await fetch(`http://127.0.0.1:${x.server.address().port}/sessions/no/voice/stt`,{method:"POST"}); assert.equal(r.status,404); await new Promise(r=>x.server.close(r)); });
+test("voice status exposes only configured STT capability", async () => {
+  const disabled = createServer();
+  await new Promise((resolve) => disabled.server.listen(0, "127.0.0.1", resolve));
+  const disabledUrl = `http://127.0.0.1:${disabled.server.address().port}/voice/status`;
+  try {
+    const response = await fetch(disabledUrl);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { enabled: false, stt: false, tts_mode: "none" });
+    assert.equal(response.headers.get("cache-control"), "no-store");
+  } finally { await new Promise((resolve) => disabled.server.close(resolve)); }
+
+  let providerCalls = 0;
+  const statusOnly = createServer({ voiceConfig: { enabled: true, sttChain: ["local"] },
+    voiceProviders: [{ transcribe: async () => { providerCalls++; throw new Error("must not run"); } }] });
+  await new Promise((resolve) => statusOnly.server.listen(0, "127.0.0.1", resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${statusOnly.server.address().port}/voice/status`);
+    assert.deepEqual(await response.json(), { enabled: true, stt: true, tts_mode: "none" });
+    assert.equal(providerCalls, 0);
+  } finally { await new Promise((resolve) => statusOnly.server.close(resolve)); }
+
+  const before = captured;
+  const local = await fetch(`${base}/voice/status`, { headers: { origin: "http://localhost:5173" } });
+  assert.equal(local.status, 200);
+  assert.deepEqual(await local.json(), { enabled: true, stt: true, tts_mode: "none" });
+  assert.equal(local.headers.get("access-control-allow-origin"), "http://localhost:5173");
+  assert.equal(captured, before);
+  const nonlocal = await fetch(`${base}/voice/status`, { headers: { origin: "https://evil.test" } });
+  assert.equal(nonlocal.status, 403);
+  assert.deepEqual(await nonlocal.json(), { error: "voice_unavailable" });
+  assert.equal(nonlocal.headers.get("access-control-allow-origin"), null);
+  assert.equal((await fetch(`${base}/voice/status`, { method: "POST" })).status, 404);
+});
 test("STT is isolated and rejects unsafe uploads", async () => { const id=await create(), before=JSON.stringify(captured); const ok=await fetch(`${base}/sessions/${id}/voice/stt`,{method:"POST",headers:{"content-type":"audio/wav"},body:Buffer.from("wav")}); assert.equal(ok.status,200); assert.equal(JSON.stringify(captured),before); for (const [headers,body,status] of [[{"content-type":"text/plain"},"x",415],[{"content-type":"audio/wav"},Buffer.alloc(2*1024*1024+1),413],[{"content-type":"audio/wav",origin:"https://evil.test"},"x",403]]) { const r=await fetch(`${base}/sessions/${id}/voice/stt`,{method:"POST",headers,body}); assert.equal(r.status,status); } });
 test("STT rate limits and unknown sessions", async () => { const id=await create(); assert.equal((await fetch(`${base}/sessions/no/voice/stt`,{method:"POST",headers:{"content-type":"audio/wav"},body:"x"})).status,404); for(let i=0;i<12;i++) assert.equal((await fetch(`${base}/sessions/${id}/voice/stt`,{method:"POST",headers:{"content-type":"audio/wav"},body:"x"})).status,200); assert.equal((await fetch(`${base}/sessions/${id}/voice/stt`,{method:"POST",headers:{"content-type":"audio/wav"},body:"x"})).status,429); });
 

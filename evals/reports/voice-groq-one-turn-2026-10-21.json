@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-21T16:59:44.527Z",
+  "kind": "one-authorised-synthetic-turn",
+  "status": "PASS",
+  "call_cap": 2,
+  "groq_calls": [
+    {
+      "call": 1,
+      "model": "openai/gpt-oss-20b",
+      "http_status": 200,
+      "latency_ms": 1014,
+      "input_tokens": 1287,
+      "output_tokens": 111
+    },
+    {
+      "call": 2,
+      "model": "qwen/qwen3.8-27b",
+      "http_status": 200,
+      "latency_ms": 300,
+      "input_tokens": 285,
+      "output_tokens": 33
+    }
+  ],
+  "limitations": "One sample; excludes speaking, user review and browser playback. TTS tested manually after guarded text; voice UI still under implementation.",
+  "stt_ms": 307,
+  "guarded_turn_ms": 1333,
+  "npc_fallback": false,
+  "npc_failure": null,
+  "stages_ms": {
+    "classifyMs": 1021,
+    "engineMs": 1,
+    "generateMs": 301,
+    "regenMs": 0,
+    "guardMs": 3
+  },
+  "tts_ttfb_ms": 453,
+  "to_audio_first_byte_ms": 2093,
+  "total_ms": 2095,
+  "requests_dispatched": 2
+}

@@ -28,10 +28,21 @@ class VoiceFailure(Exception):
 
 
 def stt_settings(env):
-    device = env.get("VOICE_STT_DEVICE", "cpu").strip()
-    if device not in {"cpu", "cuda"}:
+    device = env.get("VOICE_STT_DEVICE", "auto").strip().lower()
+    if device not in {"auto", "cpu", "cuda"}:
         raise ValueError("invalid local voice device")
-    return device, "float16" if device == "cuda" else "int8"
+    return device
+
+
+def cuda_available(probe=None):
+    """Treat a missing or broken CUDA probe as unavailable, never as a crash."""
+    try:
+        if probe is None:
+            import ctranslate2
+            probe = ctranslate2.get_cuda_device_count
+        return probe() > 0
+    except Exception:
+        return False
 
 
 def cuda_libraries(device):
@@ -46,6 +57,39 @@ def cuda_libraries(device):
         if available:
             os.environ["PATH"] = os.pathsep.join([*available, os.environ.get("PATH", "")])
     return handles
+
+
+def warm_stt(model, numpy):
+    # Consume the lazy iterator: loading weights alone is not warm inference.
+    segments, _ = model.transcribe(numpy.zeros(16000, dtype="float32"), language="en",
+                                   beam_size=1, without_timestamps=True)
+    list(segments)
+
+
+def load_stt_model(env, model_path, model_factory, numpy, cuda_probe=None):
+    """Load the requested device, with auto falling back only after CUDA warm-up fails."""
+    requested = stt_settings(env)
+
+    def load(device):
+        handles = cuda_libraries(device)
+        model = model_factory(str(model_path), device=device,
+                              compute_type="float16" if device == "cuda" else "int8",
+                              cpu_threads=6, local_files_only=True)
+        warm_stt(model, numpy)
+        return model, device, "float16" if device == "cuda" else "int8", handles
+
+    if requested == "cpu":
+        return load("cpu")
+    if requested == "cuda":
+        if not cuda_available(cuda_probe):
+            raise RuntimeError("CUDA unavailable")
+        return load("cuda")
+    if cuda_available(cuda_probe):
+        try:
+            return load("cuda")
+        except Exception:
+            pass
+    return load("cpu")
 
 
 def decode_bounded(raw):
@@ -89,21 +133,15 @@ class LocalRuntime:
         os.environ["HF_HUB_OFFLINE"] = "1"
         os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
         logging.getLogger("faster_whisper").disabled = True
-        self.device, self.compute_type = stt_settings(os.environ)
-        self.dll_handles = cuda_libraries(self.device)
         from faster_whisper import WhisperModel
         from piper import PiperVoice
         import numpy as np
 
         model_dir = ROOT / "models"
-        self.model = WhisperModel(str(model_dir / "whisper-small.en"), device=self.device,
-                                  compute_type=self.compute_type, cpu_threads=6, local_files_only=True)
+        self.model, self.device, self.compute_type, self.dll_handles = load_stt_model(
+            os.environ, model_dir / "whisper-small.en", WhisperModel, np)
         self.voices = {name: PiperVoice.load(str(model_dir / "piper" / f"{name}.onnx"))
                        for name in VOICES}
-        # Consume the lazy iterator: loading weights alone is not warm inference.
-        segments, _ = self.model.transcribe(np.zeros(16000, dtype="float32"), language="en",
-                                            beam_size=1, without_timestamps=True)
-        list(segments)
         from faster_whisper.vad import get_speech_timestamps
         get_speech_timestamps(np.zeros(16000, dtype="float32"), sampling_rate=16000)
         for name in VOICES:

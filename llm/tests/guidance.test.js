@@ -34,7 +34,7 @@ test("client escapes public guidance and keeps modal-safe goals and hints reacha
   assert.match(source, /escapeHtml\(guidance\.hint\)/);
   assert.match(source, /<details class="guidance-hint"><summary>Goals & hints<\/summary><section class="public-objective"/);
   assert.match(source, /\$\{goals \? `<ul class="goal-list"/);
-  assert.match(source, /<small id="text-hint">Enter sends · Esc leaves this conversation<\/small>/);
+  assert.match(source, /<small id="text-hint">Enter sends · Esc leaves this conversation\$\{voiceAvailable \? " · Ctrl\+Shift\+Space records" : ""\}<\/small>/);
   assert.doesNotMatch(source, /id="text-hint">\$\{state\.sharedHint/);
   assert.match(source, /button,input,textarea,select,summary,\[tabindex="0"\]/);
   assert.match(source, /el\.getClientRects\(\)\.length > 0/);

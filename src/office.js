@@ -354,6 +354,7 @@ export function createOffice(container, hooks) {
     "#697079",
   );
   player.root.rotation.y = -0.65;
+  let targetYaw = player.root.rotation.y;
   const npcs = {
     maya: {
       ...character(
@@ -472,6 +473,7 @@ export function createOffice(container, hooks) {
   document.addEventListener("visibilitychange", () => {
     keys.clear();
     target = null;
+    player.root.rotation.y = targetYaw;
     last = performance.now();
   });
   const raycaster = new THREE.Raycaster(),
@@ -540,7 +542,7 @@ export function createOffice(container, hooks) {
       if (allowed(p.x, p.z + dz)) p.z += dz;
       if (Math.abs(p.x - beforeX) + Math.abs(p.z - beforeZ) < 0.001)
         target = null;
-      player.root.rotation.y = Math.atan2(dx, dz);
+      targetYaw = Math.atan2(dx, dz);
       walkTime += dt * 10;
       if (!moved) {
         moved = true;
@@ -600,6 +602,13 @@ export function createOffice(container, hooks) {
       step(1 / 60);
       accumulator -= 1 / 60;
     }
+    if (!hooks.isPaused()) {
+      if (reducedMotion) player.root.rotation.y = targetYaw;
+      else {
+        const diff = Math.atan2(Math.sin(targetYaw - player.root.rotation.y), Math.cos(targetYaw - player.root.rotation.y));
+        player.root.rotation.y += diff * (1 - Math.exp(-24 * delta));
+      }
+    }
     for (let p of Object.values(entries)) {
       projection.copy(p.root.position);
       projection.y += 2.6;
@@ -618,6 +627,7 @@ export function createOffice(container, hooks) {
     reset() {
       player.root.position.set(2.9, 0, 3.7);
       player.root.rotation.y = -0.65;
+      targetYaw = -0.65;
       keys.clear();
       target = null;
       near = null;

@@ -66,6 +66,22 @@ function readAudio(req, signal, uploadTimeoutMs) {
 export function createSttHandler({ config, providers, getSession, uploadTimeoutMs = 8000 }) {
   const limiter = new VoiceRateLimiter();
   return async (req, res, path) => {
+    if (path === "/voice/status") {
+      if (req.method !== "GET") return false;
+      const origin = req.headers.origin;
+      if (!allowedOrigin(origin)) {
+        res.writeHead(403, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+        res.end(JSON.stringify({ error: "voice_unavailable" }));
+        return true;
+      }
+      const body = JSON.stringify({ enabled: !!config.enabled,
+        stt: !!config.enabled && config.sttChain.length > 0, tts_mode: "none" });
+      const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store",
+        "content-length": Buffer.byteLength(body) };
+      if (origin) { headers["access-control-allow-origin"] = origin; headers.vary = "Origin"; }
+      res.writeHead(200, headers); res.end(body);
+      return true;
+    }
     const match = /^\/sessions\/([^/]+)\/voice\/stt$/.exec(path);
     if (!match || !["POST", "OPTIONS"].includes(req.method)) return false;
     const origin = req.headers.origin;

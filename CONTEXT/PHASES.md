@@ -89,6 +89,8 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 - [ ] P6.4 Optional spoken NPC replies with mute; captions (D-35 Accepted; V3 turn-scoped NPC TTS).
 - [ ] P6.5 Listen button on the improved reply (single voice is acceptable; D-35 Accepted; V4 hardening and Listen).
 
+Voice continuation (2026-10-22): V1 server boundary is accepted; V2 recording/confirmation and D-36 GPU preference are implemented and verified offline. See `plans/VOICE_V2_STATUS.md` and `evals/reports/S1-V2-gate.md`. P6.3 stays unchecked until its real browser/microphone acceptance is established; this implementation does not close Stage 1 live acceptance or V3/V4.
+
 **Exit:** same user script at low vs high patience gives clearly different mood trajectories and NPC tone; voice path works end-to-end or is hidden behind a flag.
 
 ## S1-P7 — Demo hardening

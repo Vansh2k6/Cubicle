@@ -231,3 +231,8 @@ Voice defaults off behind server and client flags, and typed input remains perma
 **Consequences.** This authorises implementation beginning with V1 under the approved contract. No installation, model verification, provider call, latency claim, or voice implementation occurred in V0, and no phase gate is closed by this decision.
 
 **Revisit when.** V4 measurements indicate that local voice misses the decision rule.
+
+## D-36 · Accepted · 2026-10-21 — Prefer available GPU; explicit live-call permission
+**Authority.** After the measured CUDA comparison, the user asked to use the GPU and continue V2. `VOICE_STT_DEVICE=auto` now prefers CUDA/float16 when its startup inference succeeds, with CPU/int8 as the portability fallback. Explicit `cuda` must fail honestly rather than silently substitute CPU; explicit `cpu` remains available. This does not waive D-35's scene-load/latency gate or authorize cloud speech.
+
+The user permits private inspection/loading of the ignored root `.env`, superseding the V0 agent note that prohibited reading it. Credentials must never be displayed, logged, committed or sent to the browser. Live calls still require a specific user request; routine tests stay offline. Their request to measure one Groq voice turn authorized exactly two HTTP calls (classifier and NPC), completed successfully with no fallback. The metadata-only report is `evals/reports/voice-groq-one-turn-2026-10-21.json`; this single synthetic sample is not an accuracy, percentile, microphone or browser-playback acceptance result. No continuing live-call allowance remains.

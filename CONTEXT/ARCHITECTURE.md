@@ -322,7 +322,7 @@ Runs asynchronously; the UI polls or subscribes. Judge: temp 0, JSON, quality-on
 
 ## 13. Voice **[S1 stretch → S2; D-35 Accepted]**
 
-V1 implements the opt-in local STT server boundary and operator scripts. Client recording/confirmation and turn-scoped playback remain V2/V3; voice defaults off. See voice-sidecar/README.md and plans/VOICE_V1_STATUS.md for scope and verification limitations.
+V1 implements the opt-in local STT server boundary and operator scripts. V2 adds gated recording and editable draft confirmation; turn-scoped NPC playback remains V3. Voice defaults off. See voice-sidecar/README.md and plans/VOICE_V2_STATUS.md for scope and verification limitations. Under D-36, auto device selection prefers warmed CUDA/float16 with CPU/int8 fallback; explicit CUDA fails honestly.
 
 English only. Voice is off by default behind server `VOICE_ENABLED=1` and client `VITE_VOICE=1`; a user must explicitly enable it. Typed input remains permanently available.
 
@@ -334,6 +334,7 @@ push-to-talk → MediaRecorder → POST /sessions/{id}/voice/stt → editable tr
 
 - Server interface: `SpeechProvider.transcribe({audio, mime, signal}) → {text, duration_ms, provider}` and `SpeechProvider.synthesize({text, voice, signal}) → {audio: Buffer, mime, provider}`. The initial approved local sidecar uses faster-whisper `small.en` for STT and Piper by default for TTS; Kokoro is deferred unless the human asks. Cloud is a future adapter only and is not implemented by D-35.
 - STT ends in an editable draft. Only user-confirmed text enters the normal turn, transcript, scoring, and quote-validation paths (R-21/R-23).
+- V2 probes `GET /voice/status` only with the client flag enabled; the response is exactly `{enabled:boolean, stt:boolean, tts_mode:"none"}`. It contains no sidecar credentials, paths, models or session state and performs no inference. The UI caches the capability result. Recording permission is requested only after an explicit recording action. Close, send, End, reset, blur, hidden page or thread replacement cancels the current recording/upload; stale results cannot replace a changed draft or a new conversation.
 - TTS runs only after the guarded NPC line has committed, including a guarded fallback. It never delays the text response or alters engine state, disclosure credit, scoring, or visible text.
 - The turn response may expose only `speech: { available: boolean, turn_id: string, mode: "server" | "browser" | "none" }`. It carries no text, labels, facts, voice identifiers, acts, or guard data.
 - Audio is fetched only through private, session-and-id-scoped routes for an already committed NPC turn or stored guarded debrief reply. No route accepts client-provided synthesis text. Browser `SpeechRecognition` is not local STT; browser `speechSynthesis` is only a last-resort local TTS mode.
