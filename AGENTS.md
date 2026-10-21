@@ -6,4 +6,6 @@ Read all six CONTEXT documents before writing application code. Always follow [C
 
 Voice V0–V4 entry point: [PROMPT/S1-V00-voice-start-here.md](PROMPT/S1-V00-voice-start-here.md).
 
+Supplied voice prompts guide implementation. Tested obvious improvements within approved scope are authorised; the latest human instruction and project rules govern, so routine changes do not need fresh permission. The default fresh-session-per-prompt workflow saves tokens, but prompt text does not override a later human instruction.
+
 For voice work, never read the repository-root `.env`; ignore `transcripts/`, `graphify-out/`, `dist/`, `node_modules/`, `evals/reports/`, and old `PROMPT` files except for their titles. The active prompt and its exact required source, gate, or report may be read; do not broadly scan `evals/reports`.

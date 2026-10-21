@@ -320,9 +320,9 @@ Runs asynchronously; the UI polls or subscribes. Judge: temp 0, JSON, quality-on
 - Constraint: `better_reply` uses only information the user had (R-25). Performance runs are marked as *illustrative* and never alter the score.
 - **S1 minimum**: debrief shows one improved response as text.
 
-## 13. Voice **[S1 stretch → S2; D-35 Proposed]**
+## 13. Voice **[S1 stretch → S2; D-35 Accepted]**
 
-This is a proposed contract only: no voice implementation, routes, flags, or scripts are shipped yet.
+This is the approved implementation plan: no voice implementation, routes, flags, or scripts are shipped yet.
 
 English only. Voice is off by default behind server `VOICE_ENABLED=1` and client `VITE_VOICE=1`; a user must explicitly enable it. Typed input remains permanently available.
 
@@ -332,7 +332,7 @@ push-to-talk → MediaRecorder → POST /sessions/{id}/voice/stt → editable tr
 → speech descriptor → nonblocking server prefetch → id-scoped fetch → playback
 ```
 
-- Server interface: `SpeechProvider.transcribe({audio, mime, signal}) → {text, duration_ms, provider}` and `SpeechProvider.synthesize({text, voice, signal}) → {audio: Buffer, mime, provider}`. The initial proposed local sidecar uses faster-whisper `small.en` for STT and Piper by default for TTS; Kokoro is deferred unless the human asks. Cloud is a future adapter only and is not implemented by D-35.
+- Server interface: `SpeechProvider.transcribe({audio, mime, signal}) → {text, duration_ms, provider}` and `SpeechProvider.synthesize({text, voice, signal}) → {audio: Buffer, mime, provider}`. The initial approved local sidecar uses faster-whisper `small.en` for STT and Piper by default for TTS; Kokoro is deferred unless the human asks. Cloud is a future adapter only and is not implemented by D-35.
 - STT ends in an editable draft. Only user-confirmed text enters the normal turn, transcript, scoring, and quote-validation paths (R-21/R-23).
 - TTS runs only after the guarded NPC line has committed, including a guarded fallback. It never delays the text response or alters engine state, disclosure credit, scoring, or visible text.
 - The turn response may expose only `speech: { available: boolean, turn_id: string, mode: "server" | "browser" | "none" }`. It carries no text, labels, facts, voice identifiers, acts, or guard data.
