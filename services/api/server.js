@@ -23,6 +23,9 @@ import { loadConfig, providerName } from "../../llm/config.js";
 import { createGroqProvider } from "../../llm/providers/groq.js";
 import { assembleDebrief } from "../../scoring/debrief.js";
 import { createScoreRecord } from "../../scoring/score.js";
+import { loadVoiceConfig } from "../../voice/config.js";
+import { createSttHandler } from "../../voice/http.js";
+import { createLocalVoiceProvider } from "../../voice/providers/local.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SPEC = JSON.parse(readFileSync(join(root, "scenarios", "missed_deadline.json"), "utf8"));
@@ -112,12 +115,16 @@ function restoreInPlace(obj, snapshotJson) {
   Object.assign(obj, data);
 }
 
-export function createServer({ debug = false, staticHandler = null, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = liveProvider || npcFn } = {}) {
+export function createServer({ debug = false, staticHandler = null, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = liveProvider || npcFn, voiceConfig = loadVoiceConfig(), voiceProviders = null, voiceUploadTimeoutMs = 8000 } = {}) {
   const store = new SessionStore(engine);
   const convos = new Map();
   const idem = new Map(); // `${sessionId}:${key}` -> response body
   const inflight = new Map(); // `${sessionId}:${key}` -> promise
   const debriefs = new Map();
+  const sttProviders = voiceProviders || (voiceConfig.enabled
+    ? voiceConfig.sttChain.map(() => createLocalVoiceProvider({ url: voiceConfig.localUrl, token: voiceConfig.localToken })) : []);
+  const handleVoice = createSttHandler({ config: voiceConfig, providers: sttProviders,
+    getSession: (id) => store.getState(id), uploadTimeoutMs: voiceUploadTimeoutMs });
   function beginDebrief(session, retry = false) {
     let job = debriefs.get(session.id);
     if (job && (!retry || job.status === "pending" || job.retryUsed || job.status === "ready")) return job;
@@ -179,6 +186,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     try { url = new URL(req.url || "/", "http://localhost"); }
     catch { send(res, 400, { error: "invalid request path" }); return; }
     const path = url.pathname.replace(/\/+$/, "") || "/";
+    if (await handleVoice(req, res, path)) return;
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
         "access-control-allow-origin": "*",

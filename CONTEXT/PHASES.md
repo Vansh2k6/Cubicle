@@ -85,9 +85,9 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 ## S1-P6 — Core sliders; optional presets and voice (after P0–P5 exits pass)
 - [x] P6.1 S1-13 accepted offline: Supportive, Direct, Impatient use D-32 vectors, populate editable sliders and derive the difficulty label. Opt-in VITE_PRESETS=1; default off.
 - [x] P6.2 **Round 2 core / P0:** S1-12 implemented and accepted offline: four shared sliders feed unchanged engine parameters and versioned NPC tone, fixed at start and shown with display-only difficulty in the debrief. Live low/high tone/guard comparison remains NOT RUN under D-28.
-- [ ] P6.3 Push-to-talk → STT → editable transcript → normal turn (D-19; D-35 Proposed; V1 local STT server, V2 client PTT).
-- [ ] P6.4 Optional spoken NPC replies with mute; captions (D-35 Proposed; V3 turn-scoped NPC TTS).
-- [ ] P6.5 Listen button on the improved reply (single voice is acceptable; D-35 Proposed; V4 hardening and Listen).
+- [ ] P6.3 Push-to-talk → STT → editable transcript → normal turn (D-19; D-35 Accepted; V1 local STT server, V2 client PTT).
+- [ ] P6.4 Optional spoken NPC replies with mute; captions (D-35 Accepted; V3 turn-scoped NPC TTS).
+- [ ] P6.5 Listen button on the improved reply (single voice is acceptable; D-35 Accepted; V4 hardening and Listen).
 
 **Exit:** same user script at low vs high patience gives clearly different mood trajectories and NPC tone; voice path works end-to-end or is hidden behind a flag.
 

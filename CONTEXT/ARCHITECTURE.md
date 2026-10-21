@@ -322,7 +322,7 @@ Runs asynchronously; the UI polls or subscribes. Judge: temp 0, JSON, quality-on
 
 ## 13. Voice **[S1 stretch → S2; D-35 Accepted]**
 
-This is the approved implementation plan: no voice implementation, routes, flags, or scripts are shipped yet.
+V1 implements the opt-in local STT server boundary and operator scripts. Client recording/confirmation and turn-scoped playback remain V2/V3; voice defaults off. See voice-sidecar/README.md and plans/VOICE_V1_STATUS.md for scope and verification limitations.
 
 English only. Voice is off by default behind server `VOICE_ENABLED=1` and client `VITE_VOICE=1`; a user must explicitly enable it. Typed input remains permanently available.
 

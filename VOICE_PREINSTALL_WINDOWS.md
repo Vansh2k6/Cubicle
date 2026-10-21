@@ -1,3 +1,5 @@
+> **V1 verification, 2026-10-21:** Python 3.13 and pinned Windows voice packages installed successfully on laptop A. Use `voice-sidecar/README.md` for current installation commands, local model paths, and operator steps; the draft commands below are historical guidance. Laptop B and microphone permissions remain unverified.
+
 # VOICE_PREINSTALL_WINDOWS.md — Windows voice readiness and installation guide
 
 > **Installation authority, 2026-10-21:** the user authorises agent-managed installation for this voice work. Earlier no-install advice is superseded. No installation has occurred; installed versions and model availability still require verification.
