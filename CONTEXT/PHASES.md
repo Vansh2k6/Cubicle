@@ -91,6 +91,8 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 
 Voice continuation (2026-10-22): V1 server boundary is accepted; V2 recording/confirmation and D-36 GPU preference are implemented and verified offline. See `plans/VOICE_V2_STATUS.md` and `evals/reports/S1-V2-gate.md`. P6.3 stays unchecked until its real browser/microphone acceptance is established; this implementation does not close Stage 1 live acceptance or V3/V4.
 
+V4 offline checkpoint accepted for root (2026-10-22): Sol approved the independently reviewed 25-file source manifest (fingerprint `ad2c6e781a671ecb7b36446aff10bfa8cb59d89e057338fdd038b7cd0209e6bd`) with no blockers. Luna's offline verification passed on that unchanged source manifest: 294/294 unit tests, 63/63 API tests, and default (5 artifacts) plus `VITE_VOICE=1` (6 artifacts) 81-needle scans with zero hits. Root's warmed 20-run local CUDA sidecar measurement reported 351/394 ms STT, 3/5 ms text, 190/207 ms TTS first byte and 546/590 ms speech-end-to-first-audio p50/p95. Root also checked local HTTP sidecar loss/recovery plus new NPC and ended-coaching Listen WAV responses. This does not establish browser, microphone, physical-speaker/unlock perception, narrow/full smart-path, or scene-load/stutter acceptance; P6.3–P6.5 stay unchecked. No Stage 1 live gate, demo-ready status, or local-primary/cloud decision is closed.
+
 **Exit:** same user script at low vs high patience gives clearly different mood trajectories and NPC tone; voice path works end-to-end or is hidden behind a flag.
 
 ## S1-P7 — Demo hardening

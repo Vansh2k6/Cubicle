@@ -9,7 +9,7 @@ const quote = (entry) => {
   return entry.quote ? `<blockquote>${source}<span>You said</span><p>${esc(entry.quote)}</p></blockquote>` : `<p class="debrief-muted">Original line unavailable.</p>`;
 };
 
-export function renderDebrief(packet) {
+export function renderDebrief(packet, { listenEnabled = false, listenDisabled = false } = {}) {
   const d = packet.debrief;
   if (packet.status === "unavailable") return `<div role="status"><p>This earlier feedback is unavailable because the conversation server restarted. Your saved score summary is still in My progress.</p></div>`;
   if (!d) return `<div role="status"><p>${packet.status === "error" ? "Feedback could not be loaded. Your conversation is saved for this visit." : "Your conversation has ended. Preparing your feedback…"}</p></div>` +
@@ -18,8 +18,9 @@ export function renderDebrief(packet) {
   const notice = packet.status === "error" ? "Feedback could not be refreshed. Previous results remain below." : packet.status === "paused" ? "Feedback is still processing. You can check again when ready." : packet.status === "pending" ? "Refreshing feedback…" : assessed ? (d.coach_status === "unavailable" ? "Personalized coaching is unavailable." : "") : "Communication assessment unavailable.";
   const scoreSummary = assessed ? `<p class="debrief-total"><strong>${points(d.total, d.total_cap)}</strong> · ${esc(d.band)}</p>` : "";
   const rubric = (row) => row.source === "judged" && !assessed ? "Not assessed / 25" : points(row.points, row.cap);
-  const primaryCoach = (m) => m.general ? `<div class="debrief-entry"><p class="debrief-muted">General practice tip</p><h4>Try saying</h4><p>${esc(m.better_reply)}</p></div>` : `<div class="debrief-entry">${quote(m)}<h4>Try saying</h4><p>${esc(m.better_reply)}</p></div>`;
-  const coachingContext = (m) => m.general ? `<div class="debrief-entry"><p class="debrief-muted">General practice tip</p><h4>Practice focus</h4><p>${esc(m.what_went_well)}</p><h4>What to consider</h4><p>${esc(m.what_happened)}</p><h4>Why it can help</h4><p>${esc(m.why_it_matters)}</p><h4>Try saying</h4><p>${esc(m.better_reply)}</p></div>` : `<div class="debrief-entry"><h4>What went well</h4><p>${esc(m.what_went_well)}</p>${quote(m)}<h4>What happened</h4><p>${esc(m.what_happened)}</p><h4>Why it matters</h4><p>${esc(m.why_it_matters)}</p><h4>Try saying</h4><p>${esc(m.better_reply)}</p></div>`;
+  const listen = (m) => listenEnabled && m.moment_id ? `<button class="voice-toggle" type="button" data-listen="${esc(m.moment_id)}" aria-label="Listen to the improved reply" ${listenDisabled ? "disabled" : ""}>Listen</button>` : "";
+  const primaryCoach = (m) => m.general ? `<div class="debrief-entry"><p class="debrief-muted">General practice tip</p><h4>Try saying</h4><p>${esc(m.better_reply)}</p>${listen(m)}</div>` : `<div class="debrief-entry">${quote(m)}<h4>Try saying</h4><p>${esc(m.better_reply)}</p>${listen(m)}</div>`;
+  const coachingContext = (m) => m.general ? `<div class="debrief-entry"><p class="debrief-muted">General practice tip</p><h4>Practice focus</h4><p>${esc(m.what_went_well)}</p><h4>What to consider</h4><p>${esc(m.what_happened)}</p><h4>Why it can help</h4><p>${esc(m.why_it_matters)}</p><h4>Try saying</h4><p>${esc(m.better_reply)}</p>${listen(m)}</div>` : `<div class="debrief-entry"><h4>What went well</h4><p>${esc(m.what_went_well)}</p>${quote(m)}<h4>What happened</h4><p>${esc(m.what_happened)}</p><h4>Why it matters</h4><p>${esc(m.why_it_matters)}</p><h4>Try saying</h4><p>${esc(m.better_reply)}</p>${listen(m)}</div>`;
   const primaryMoment = d.moments[0];
   const coachingDetails = d.moments.map((m) => coachingContext(m)).join("");
   const positives = d.what_went_well.length ? `<p>${esc(d.what_went_well[0])}</p>` : "<p class=\"debrief-muted\">Your practice feedback is ready.</p>";

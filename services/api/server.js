@@ -26,6 +26,7 @@ import { createScoreRecord } from "../../scoring/score.js";
 import { loadVoiceConfig } from "../../voice/config.js";
 import { createSttHandler } from "../../voice/http.js";
 import { createLocalVoiceProvider } from "../../voice/providers/local.js";
+import { createVoiceHealth } from "../../voice/health.js";
 import { createSpeechService } from "../../voice/speech.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -128,24 +129,19 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
   const debriefs = new Map();
   const sttProviders = voiceProviders || (voiceConfig.enabled
     ? voiceConfig.sttChain.map(() => createLocalVoiceProvider({ url: voiceConfig.localUrl, token: voiceConfig.localToken })) : []);
-  const handleVoice = createSttHandler({ config: voiceConfig, providers: sttProviders,
+  const health = createVoiceHealth({ config: voiceConfig, provider: sttProviders[0] });
+  if (voiceConfig.enabled) health.check();
+  const handleVoice = createSttHandler({ config: voiceConfig, providers: sttProviders, health,
     getSession: (id) => store.getState(id), uploadTimeoutMs: voiceUploadTimeoutMs });
-  const healthController = new AbortController();
-  let healthTimer;
-  const localReady = voiceConfig.enabled && voiceConfig.ttsChain?.includes("local") && typeof sttProviders[0]?.health === "function"
-    ? Promise.race([
-      Promise.resolve().then(() => sttProviders[0].health({ signal: healthController.signal }))
-        .then((voices) => !Array.isArray(voices) || Object.values(voiceConfig.voiceMap || {}).every((voice) => voices.includes(voice))).catch(() => true),
-      new Promise((resolve) => { healthTimer = setTimeout(() => { healthController.abort(); resolve(true); }, 500); }),
-      new Promise((resolve) => healthController.signal.addEventListener("abort", () => resolve(true), { once: true })),
-    ]).finally(() => { clearTimeout(healthTimer); healthController.abort(); }) : Promise.resolve(true);
-  const speech = createSpeechService({ config: voiceConfig, providers: sttProviders, localReady,
-    log: (entry) => console.info(JSON.stringify(entry)) });
+  const speechOptions = { config: voiceConfig, providers: sttProviders, localReady: async () => (await health.check()).tts,
+    onFailure: () => health.unavailable(), log: (entry) => console.info(JSON.stringify(entry)) };
+  const speech = createSpeechService(speechOptions);
+  const coachSpeech = createSpeechService({ ...speechOptions, ended: true });
   function beginDebrief(session, retry = false) {
     let job = debriefs.get(session.id);
     if (job && (!retry || job.status === "pending" || job.retryUsed || job.status === "ready")) return job;
-    if (!job) job = { record: createScoreRecord(session, convos.get(session.id), SPEC), retryUsed: false };
-    if (retry) job.retryUsed = true;
+    if (!job) job = { revision: 0, record: createScoreRecord(session, convos.get(session.id), SPEC), retryUsed: false };
+    if (retry) { job.retryUsed = true; job.revision++; coachSpeech.clear(session.id); }
     const previous = job.result || null;
     job.status = "pending"; job.result = previous;
     debriefs.set(session.id, job);
@@ -157,7 +153,8 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
       });
     return job;
   }
-  const debriefBody = (job) => ({ status: job.status, debrief: job.result || null,
+  const debriefBody = (job) => ({ status: job.status, debrief: !job.result ? null : !voiceConfig.enabled ? job.result : { ...job.result,
+    moments: job.result.moments.map((moment, index) => ({ ...moment, moment_id: `${job.revision}-${index}` })) },
     retry_allowed: !job.retryUsed && ["partial", "error"].includes(job.status) });
 
   function send(res, status, body) {
@@ -209,7 +206,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
       for (const [key, value] of Object.entries(res.audioPolicy)) res.setHeader(key, value);
     }
     if (await handleVoice(req, res, path)) return;
-    const audioPath = /^\/sessions\/[^/]+\/turns\/[^/]+\/audio$/.test(path);
+    const audioPath = isAudio;
     if (req.method === "OPTIONS") {
       if (isAudio && !localOrigin(req.headers.origin)) { res.writeHead(403).end(); return; }
       res.writeHead(204, {
@@ -222,18 +219,32 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     }
     try {
       const audioMatch = /^\/sessions\/([^/]+)\/turns\/([^/]+)\/audio$/.exec(path);
-      if (audioMatch || path.includes("/audio")) {
-        if (!audioMatch || req.method !== "GET" || url.search) { send(res, 404, { error: "not found" }); return; }
+      const momentMatch = /^\/sessions\/([^/]+)\/debrief\/moments\/([^/]+)\/audio$/.exec(path);
+      if (isAudio) {
         if (!localOrigin(req.headers.origin)) { send(res, 403, { error: "voice_unavailable" }); return; }
-        let id, turnId;
-        try { id = decodeURIComponent(audioMatch[1]); turnId = decodeURIComponent(audioMatch[2]); } catch { send(res, 404, { error: "not found" }); return; }
-        const session = store.getState(id), convo = convos.get(id);
-        const turn = convo?.turns.find((candidate) => String(candidate.id) === turnId);
-        if (!session || session.ended || !turn || turn.speaker !== "npc") { send(res, 404, { error: "not found" }); return; }
-        const result = await speech.audio(session, turnId);
+        const match = audioMatch || momentMatch;
+        if (!match || req.method !== "GET" || url.search) { send(res, 404, { error: "not found" }); return; }
+        let id, itemId;
+        try { id = decodeURIComponent(match[1]); itemId = decodeURIComponent(match[2]); } catch { send(res, 404, { error: "not found" }); return; }
+        const session = store.getState(id);
+        let result;
+        if (momentMatch) {
+          const job = debriefs.get(id);
+          const index = /^(\d+)-(0|[1-9]\d*)$/.exec(itemId);
+          const moment = index && job?.result?.moments[Number(index[2])];
+          if (!voiceConfig.enabled || !session?.ended || !job || !["ready", "partial"].includes(job.status) || !index || String(job.revision) !== index[1] || !moment || typeof moment.better_reply !== "string" || !moment.better_reply.trim()) { send(res, 404, { error: "not found" }); return; }
+          const revision = job.revision;
+          coachSpeech.prefetch(session, { id: itemId, speaker: "npc", npcId: "alex_coach", text: moment.better_reply });
+          result = await coachSpeech.audio(session, itemId);
+          if (job.revision !== revision || !["ready", "partial"].includes(job.status)) result = null;
+        } else {
+          const turn = convos.get(id)?.turns.find((candidate) => String(candidate.id) === itemId);
+          if (!session || session.ended || !turn || turn.speaker !== "npc") { send(res, 404, { error: "not found" }); return; }
+          result = await speech.audio(session, itemId);
+        }
         if (!result) { send(res, 404, { error: "not found" }); return; }
-        if (result.speech) { const body = JSON.stringify({ speech: result.speech }); res.writeHead(200, { "content-type": "application/json; charset=utf-8", "content-length": Buffer.byteLength(body), "cache-control": "no-store", ...(req.headers.origin ? { "access-control-allow-origin": req.headers.origin, vary: "Origin" } : {}) }); res.end(body); return; }
-        res.writeHead(200, { "content-type": result.mime, "content-length": result.audio.length, "cache-control": "no-store", ...(req.headers.origin ? { "access-control-allow-origin": req.headers.origin, vary: "Origin" } : {}) }); res.end(result.audio); return;
+        if (result.speech) { send(res, 200, { speech: result.speech }); return; }
+        res.writeHead(200, { "content-type": result.mime, "content-length": result.audio.length }); res.end(result.audio); return;
       }
       const debriefMatch = /^\/sessions\/([^/]+)\/debrief(\/retry)?$/.exec(path);
       if (debriefMatch && ((req.method === "GET" && !debriefMatch[2]) || (req.method === "POST" && debriefMatch[2]))) {
@@ -413,7 +424,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     }
   });
 
-  server.on("close", () => { clearTimeout(healthTimer); healthController.abort(); for (const id of convos.keys()) speech.clear(id); });
+  server.on("close", () => { health.close(); for (const id of convos.keys()) { speech.clear(id); coachSpeech.clear(id); } });
 
   return { server, manifestId: manifest.id };
 }

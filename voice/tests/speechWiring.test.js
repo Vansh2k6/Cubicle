@@ -7,7 +7,7 @@ import { createEndCoordinator } from "../../src/endCoordinator.js";
 
 const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8").replaceAll("\r\n", "\n");
 const between = (start, end) => source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
-const functions = between("function stopSpeech()", "function cancelVoice()") +
+const functions = between("function unlockSpeech()", "function stopSpeech()") + between("function stopSpeech()", "function cancelVoice()") +
   between("function closeConversation()", "function renderDialogue(") +
   between("function renderTextDialogue()", "async function sendTextTurn(") +
   between("async function completeTextSession()", "function openDebrief(");
@@ -25,7 +25,7 @@ function fixture() {
     state, speechPlayback: createSpeechPlayback({ fetchAudio: () => { fetches++; return new Promise((resolve) => { finishAudio = resolve; }); }, windowRef: { AudioContext: class {
       async resume() {} async decodeAudioData() { return {}; }
       createBufferSource() { return { connect() {}, disconnect() {}, stop() {}, start() { started++; } }; }
-    } } }), activeSpeechNpc: null, voiceBuildEnabled: true,
+    } } }), activeSpeechNpc: null, activeListenMoment: null, markListen() {}, voiceBuildEnabled: true,
     voiceController: { isEnabled: () => true, isAudioUnlocked: () => true }, voiceStatus: { enabled: true, stt: true },
     ending: createEndCoordinator(), office: { setSpeaking() {} }, cancelVoice() {},
     $: (id) => nodes[id] || null, people: { maya: { name: "Maya", color: "green", initials: "M", role: "Manager" } },
@@ -63,4 +63,27 @@ test("main delayed End stops queued speech, disables replay, and rejects replay 
   await f.context.playSpeech(f.line, f.thread, "maya", true); await new Promise(setImmediate); assert.equal(f.started(), 0); assert.equal(f.fetches(), 1);
   f.finishEnd(); await pending;
   assert.equal(f.context.ending.busy("s", "deadline"), false);
+});
+
+test("persisted opt-in Send unlocks actual playback for the automatic NPC response", async () => {
+  const f = fixture();
+  let resumes = 0, starts = 0;
+  f.context.speechPlayback = createSpeechPlayback({ fetchAudio: async () => ({ audio: new ArrayBuffer(4) }), windowRef: { AudioContext: class { async resume() { resumes++; } async decodeAudioData() { return {}; } createBufferSource() { return { connect() {}, disconnect() {}, start() { starts++; }, stop() {} }; } } } });
+  const input = { value: "confirmed typed draft", focus() {} }, form = {};
+  const original = f.context.$;
+  f.context.$ = (id) => id === "#text-form" ? form : id === "#text-input" ? input : original(id);
+  f.context.voiceController.mount = () => () => {};
+  f.context.newKey = () => "confirmed";
+  let sent;
+  f.context.sendTextTurn = (text) => { sent = text; };
+  f.context.renderTextDialogue(); assert.equal(resumes, 0);
+  form.onsubmit({ preventDefault() {} }); assert.equal(sent, input.value); assert.equal(resumes, 1);
+  assert.equal(f.context.speechPlayback.isUnlocked(), true);
+  await f.context.playSpeech(f.line, f.thread, "maya"); await new Promise(setImmediate); assert.equal(starts, 1);
+  for (const variant of ["muted", "voiceoff"]) {
+    const before = resumes;
+    if (variant === "muted") f.state.muted = true;
+    else { f.state.muted = false; f.context.voiceController.isEnabled = () => false; }
+    form.onsubmit({ preventDefault() {} }); assert.equal(resumes, before);
+  }
 });

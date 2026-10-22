@@ -63,7 +63,7 @@ function readAudio(req, signal, uploadTimeoutMs) {
   });
 }
 
-export function createSttHandler({ config, providers, getSession, uploadTimeoutMs = 8000 }) {
+export function createSttHandler({ config, providers, getSession, uploadTimeoutMs = 8000, health = null }) {
   const limiter = new VoiceRateLimiter();
   return async (req, res, path) => {
     if (path === "/voice/status") {
@@ -74,8 +74,10 @@ export function createSttHandler({ config, providers, getSession, uploadTimeoutM
         res.end(JSON.stringify({ error: "voice_unavailable" }));
         return true;
       }
-      const body = JSON.stringify({ enabled: !!config.enabled,
-        stt: !!config.enabled && config.sttChain.length > 0, tts_mode: "none" });
+      const ready = health ? await health.check() : { stt: !!config.enabled && config.sttChain.length > 0, tts: false };
+      const chain = config.ttsChain || [];
+      const body = JSON.stringify({ enabled: !!config.enabled, stt: ready.stt,
+        tts_mode: config.enabled && chain[0] === "local" && ready.tts ? "server" : config.enabled && chain.includes("browser") ? "browser" : "none" });
       const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store",
         "content-length": Buffer.byteLength(body) };
       if (origin) { headers["access-control-allow-origin"] = origin; headers.vary = "Origin"; }
@@ -127,10 +129,13 @@ export function createSttHandler({ config, providers, getSession, uploadTimeoutM
     const controller = new AbortController();
     const abort = () => controller.abort();
     res.on("close", abort);
+    let attempted = false;
     try {
       const audio = await readAudio(req, controller.signal, uploadTimeoutMs);
       if (!audio.length) throw new VoiceError("stt_empty");
       if (getSession(id) !== session || session.ended) { send(409, { error: "session ended" }); return true; }
+      if (health && !(await health.check()).stt) throw new VoiceError();
+      attempted = true;
       const result = await runTranscription(providers, { audio, mime, signal: controller.signal },
         { timeoutMs: config.sttTimeoutMs });
       if (getSession(id) !== session || session.ended) { send(409, { error: "session ended" }); return true; }
@@ -138,7 +143,7 @@ export function createSttHandler({ config, providers, getSession, uploadTimeoutM
     } catch (error) {
       if (error instanceof VoiceError && error.code === "audio_too_large") send(413, { error: "audio_too_large" });
       else if (error instanceof VoiceError && error.code === "stt_empty") send(422, { error: "stt_empty" });
-      else send(503, { error: "stt_unavailable" });
+      else { if (attempted && !controller.signal.aborted) health?.unavailable(); send(503, { error: "stt_unavailable" }); }
     } finally {
       res.off("close", abort);
       controller.abort();

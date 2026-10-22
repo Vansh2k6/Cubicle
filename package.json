@@ -19,7 +19,8 @@
     "llm:smoke": "node llm/smoke.mjs",
     "voice:sidecar": "node scripts/voice-sidecar.mjs",
     "voice:smoke": "node scripts/voice-smoke.mjs",
-    "voice:bench": "node scripts/voice-bench.mjs"
+    "voice:bench": "node scripts/voice-bench.mjs",
+    "voice:latency": "node scripts/voice-latency.mjs"
   },
   "keywords": [],
   "author": "",

@@ -40,8 +40,6 @@ export function createVoiceController({ transcribe, storage, navigatorRef, windo
   let timer = null;
   let countdown = null;
   let aborter = null;
-  let audioContext = null;
-  let audioUnlocked = false;
   let waitingForPermission = false;
 
   const stopTracks = () => {
@@ -161,9 +159,6 @@ export function createVoiceController({ transcribe, storage, navigatorRef, windo
   const toggle = () => {
     enabled = !enabled;
     try { if (store) store.setItem("cubicle-voice-enabled", String(enabled)); } catch {}
-    if (enabled && win && win.AudioContext) {
-      try { audioContext = audioContext || new win.AudioContext(); Promise.resolve(audioContext.resume()).then(() => { audioUnlocked = true; }).catch(() => {}); } catch {}
-    }
     if (!enabled) cancel();
     onVoiceChange?.(enabled);
     if (mounted) { mounted.toggle.setAttribute("aria-pressed", String(enabled)); mounted.toggle.textContent = enabled ? "Voice on" : "Voice off"; setRecording(false); setStatus(enabled ? "Hold the microphone to speak." : ""); }
@@ -199,5 +194,5 @@ export function createVoiceController({ transcribe, storage, navigatorRef, windo
       cancel(); mounted = null;
     };
   };
-  return { mount, cancel, isEnabled: () => enabled, isAudioUnlocked: () => audioUnlocked };
+  return { mount, cancel, toggle, isEnabled: () => enabled };
 }

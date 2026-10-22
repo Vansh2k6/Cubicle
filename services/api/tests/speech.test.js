@@ -94,10 +94,10 @@ test("delayed reachable health mismatch gates inference but never holds the text
   } finally { await f.close(); }
 });
 
-test("health ignoring abort is bounded and unavailable health permits runtime fallback", async () => {
+test("health ignoring abort is bounded and unavailable health returns browser fallback", async () => {
   let calls = 0;
   const f = await fixture({ health: () => new Promise(() => {}), async synthesize() { calls++; return wav(); } });
-  try { await sendTurn(f); const response = await fetch(audioUrl(f)); assert.equal(response.status, 200); assert.equal(calls, 1); } finally { await f.close(); }
+  try { await sendTurn(f); const response = await fetch(audioUrl(f)); assert.equal(response.status, 200); assert.equal((await response.json()).speech.mode, "browser"); assert.equal(calls, 0); } finally { await f.close(); }
 });
 
 test("end aborts pending audio immediately and late completion stays unreachable", async () => {

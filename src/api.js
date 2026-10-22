@@ -58,7 +58,7 @@ export async function getVoiceStatus() {
   return {
     enabled: data && data.enabled === true,
     stt: data && data.stt === true,
-    tts_mode: data && data.tts_mode === "none" ? "none" : "none",
+    tts_mode: ["server", "browser"].includes(data?.tts_mode) ? data.tts_mode : "none",
   };
 }
 
@@ -110,13 +110,16 @@ export async function transcribeAudio(sessionId, audio, { signal, timeoutMs = 18
   }
 }
 
-export async function getTurnAudio(sessionId, turnId, { signal, timeoutMs = 7000 } = {}) {
+export const getTurnAudio = (sessionId, turnId, options) => getAudio(`/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}/audio`, options);
+export const getDebriefAudio = (sessionId, momentId, options) => getAudio(`/sessions/${encodeURIComponent(sessionId)}/debrief/moments/${encodeURIComponent(momentId)}/audio`, options);
+async function getAudio(path, { signal, timeoutMs = 7000 } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const abort = () => controller.abort();
   signal?.addEventListener("abort", abort, { once: true });
+  if (signal?.aborted) controller.abort();
   try {
-    const response = await fetch(`${BASE}/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}/audio`, { signal: controller.signal });
+    const response = await fetch(BASE + path, { signal: controller.signal });
     if (!response.ok) throw new Error("audio_unavailable");
     if ((response.headers.get("content-type") || "").startsWith("audio/")) return { audio: await response.arrayBuffer(), mime: response.headers.get("content-type") };
     const data = await response.json().catch(() => ({}));

@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-22T11:15:07.710Z",
+  "status": "measured",
+  "runs": 20,
+  "llm": "offline-only",
+  "fixture": "one fixed synthetic English WAV, memory-only; synthetic editable-text confirmation",
+  "stt_model": "small.en",
+  "tts_engine": "piper",
+  "device": "cuda",
+  "compute_type": "float16",
+  "warm": true,
+  "hardware": {
+    "platform": "win32",
+    "cpu": "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics",
+    "logical_cpus": 16,
+    "memory_mb": 15631,
+    "gpu_model": "NOT SAMPLED; device above is sidecar-reported"
+  },
+  "stt_ms": {
+    "p50": 351,
+    "p95": 394
+  },
+  "text_ms": {
+    "p50": 3,
+    "p95": 5
+  },
+  "tts_first_byte_ms": {
+    "p50": 190,
+    "p95": 207
+  },
+  "tts_total_ms": {
+    "p50": 190,
+    "p95": 208
+  },
+  "speech_end_to_first_audio_ms": {
+    "p50": 546,
+    "p95": 590
+  },
+  "added_voice_ms": {
+    "p50": 543,
+    "p95": 587
+  },
+  "tts_measurement": "guarded API audio endpoint: request to first body byte and complete body; prefetch overlaps text response",
+  "scene_stutter": "NOT RUN: no scene frame-time sampler attached",
+  "limitations": "No microphone, physical playback, live LLM, or scene-load acceptance; cloud-primary decision remains pending D-35 gate."
+}

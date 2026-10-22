@@ -62,7 +62,7 @@ const icons = {
   Mic,
 };
 import { createOffice } from "./office.js";
-import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, getVoiceStatus, transcribeAudio, getTurnAudio, newKey } from "./api.js";
+import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, getVoiceStatus, transcribeAudio, getTurnAudio, getDebriefAudio, newKey } from "./api.js";
 import { DEFAULT_SLIDERS } from "../shared/settings.js";
 import { settingsPreview } from "./settingsPreview.js";
 import { PRESETS, presetName, presetSettings, presetsEnabled } from "../shared/presets.js";
@@ -79,31 +79,56 @@ let voiceMountCleanup = null;
 let voiceStatusPending = null;
 let speechPlayback = null;
 let activeSpeechNpc = null;
-function stopSpeech() { speechPlayback?.stop(); if (activeSpeechNpc) office.setSpeaking(activeSpeechNpc, false); activeSpeechNpc = null; }
+let voiceViewRefresh = null;
+let activeListenMoment = null;
+function markListen(speaking) {
+  document.querySelectorAll("[data-listen]").forEach((button) => {
+    const active = speaking && button.dataset.listen === activeListenMoment;
+    button.textContent = active ? "Listen · playing" : "Listen";
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+function unlockSpeech() { if (voiceBuildEnabled && !state.muted && voiceController?.isEnabled()) speechPlayback?.unlock().catch(() => {}); }
+function stopSpeech() { speechPlayback?.stop(); markListen(false); activeListenMoment = null; if (activeSpeechNpc) office.setSpeaking(activeSpeechNpc, false); activeSpeechNpc = null; }
 async function playSpeech(line, thread, npcId, explicit = false) {
   if (!speechPlayback || !voiceBuildEnabled || !line?.speech || state.muted || !voiceController?.isEnabled() || ending.busy(state.sessionId, state.scenario)) return;
   const current = () => state.textMode && state.text === thread && state.dialogue === npcId && !thread.over && state.sessionId === line.sessionId && !state.muted && !ending.busy(state.sessionId, state.scenario) && voiceController?.isEnabled();
-  speechPlayback.play({ sessionId: line.sessionId, speech: line.speech, text: line.text, current, muted: state.muted, explicit, unlocked: voiceController.isAudioUnlocked(), npcId });
+  speechPlayback.play({ sessionId: line.sessionId, speech: line.speech, text: line.text, current, muted: state.muted, explicit, unlocked: speechPlayback.isUnlocked(), npcId });
+}
+function playListen(sessionId, moment, current) {
+  if (!voiceBuildEnabled || !speechPlayback || state.muted || !voiceController?.isEnabled() || !moment?.moment_id || !current()) return;
+  activeListenMoment = moment.moment_id;
+  speechPlayback.play({ sessionId, speech: { available: true, mode: "server", turn_id: `moment:${moment.moment_id}` }, text: moment.better_reply,
+    current: () => current() && !state.muted && voiceController?.isEnabled(), muted: state.muted, explicit: true, npcId: "alex_coach" });
 }
 function cancelVoice() {
   if (voiceMountCleanup) voiceMountCleanup();
   voiceMountCleanup = null;
   if (voiceController) voiceController.cancel();
 }
-function initialiseVoice() {
-  if (!voiceBuildEnabled || voiceStatus || voiceStatusPending) return;
+function initialiseVoice(retry = false) {
+  if (!voiceBuildEnabled || (voiceStatus && !retry) || voiceStatusPending) return;
   voiceStatusPending = Promise.all([import("./voice.js"), getVoiceStatus()])
     .then(([module, status]) => {
       voiceStatus = status;
-      if (status.enabled && status.stt) { speechPlayback = module.createSpeechPlayback({ fetchAudio: getTurnAudio, onSpeaking: (speaking, id) => { activeSpeechNpc = speaking ? id : null; office.setSpeaking(id, speaking); }, onUnavailable: () => toast("Audio unavailable; the caption is still here.") }); voiceController = module.createVoiceController({ transcribe: transcribeAudio, onMicStart: stopSpeech, onVoiceChange: (enabled) => { if (!enabled) stopSpeech(); else { speechPlayback.unlock().catch(() => {}); if (state.muted) toast("Enable conversation sounds to hear replies."); } rerenderVoiceSafely(); } }); }
+      if (status.enabled && !voiceController) {
+        speechPlayback = module.createSpeechPlayback({
+          fetchAudio: (id, turnId, options) => turnId.startsWith("moment:") ? getDebriefAudio(id, turnId.slice(7), options) : getTurnAudio(id, turnId, options),
+          onSpeaking: (speaking, id) => { activeSpeechNpc = speaking ? id : null; office.setSpeaking(id, speaking); if (id === "alex_coach") markListen(speaking); },
+          onUnavailable: () => { toast("Audio unavailable; the caption is still here."); initialiseVoice(true); },
+        });
+        voiceController = module.createVoiceController({
+          transcribe: async (...args) => { try { return await transcribeAudio(...args); } catch (error) { initialiseVoice(true); throw error; } },
+          onMicStart: () => { stopSpeech(); unlockSpeech(); },
+          onVoiceChange: (enabled) => { if (!enabled) stopSpeech(); else { unlockSpeech(); if (state.muted) toast("Enable conversation sounds to hear replies."); } rerenderVoiceSafely(); },
+        });
+      }
       rerenderVoiceSafely();
-    })
-    .catch(() => {
-      voiceStatus = { enabled: false, stt: false, tts_mode: "none" };
-      rerenderVoiceSafely();
-    });
+    }).catch(() => { voiceStatus = { enabled: false, stt: false, tts_mode: "none" }; rerenderVoiceSafely(); })
+    .finally(() => { voiceStatusPending = null; });
 }
 function rerenderVoiceSafely() {
+  voiceViewRefresh?.();
   if (!state.textMode || !state.text || !state.dialogue) return;
   const old = $("#text-input");
   const draft = old && { value: old.value, start: old.selectionStart, end: old.selectionEnd, focused: document.activeElement === old };
@@ -553,6 +578,7 @@ function renderTextDialogue() {
     (state.sessionId && !t.over
       ? `<form class="text-form" id="text-form"><label for="text-input">Reply to ${escapeHtml(first)}</label>` +
         `<div class="text-row"><input id="text-input" name="text" type="text" maxlength="500" autocomplete="off" placeholder="Type your reply…" ${busy ? "disabled" : ""} aria-describedby="text-hint${voiceAvailable ? " voice-status" : ""}" />` +
+        (voiceBuildEnabled && voiceStatus && !voiceStatus.stt ? `<span class="voice-status">Voice unavailable — type instead.</span><button class="voice-toggle" id="voice-retry" type="button">Retry voice</button>` : "") +
         (voiceAvailable ? `<button class="voice-toggle" type="button" id="voice-toggle" aria-pressed="false">Voice off</button><button class="voice-mic icon-button" type="button" id="voice-mic" aria-label="Hold to record a voice reply" aria-pressed="false" ${busy ? "disabled" : ""}>${icon("mic")}</button>` : "") +
         `<button class="primary-button" type="submit" ${busy ? "disabled" : ""}>Send ${icon("arrow-right")}</button></div>` +
         `<small id="text-hint">Enter sends · Esc leaves this conversation${voiceAvailable ? " · Ctrl+Shift+Space records" : ""}</small>${voiceAvailable ? `<span id="voice-status" class="voice-status" role="status" aria-live="polite"></span>` : ""}</form>`
@@ -574,10 +600,13 @@ function renderTextDialogue() {
       const input = $("#text-input");
       const value = input ? input.value.trim() : "";
       if (!value || state.text.busy) return;
+      unlockSpeech();
       cancelVoice();
       sendTextTurn(value, newKey(), false);
     };
   }
+  const voiceRetry = $("#voice-retry");
+  if (voiceRetry) voiceRetry.onclick = () => initialiseVoice(true);
   const retryLoad = $("#text-retry-load");
   if (retryLoad) retryLoad.onclick = startTextSession;
   const retryTurn = $("#text-retry-turn");
@@ -757,14 +786,29 @@ function openDebrief(sessionId, historical = false) {
     button.disabled = true;
     if (hadFocus && current()) $(".modal-close").focus({ preventScroll: true });
   };
-  let latest = null;
+  let latest = null, latestPacket = null, feedbackRefreshing = false;
   const render = (packet) => {
     if (!current()) return;
     const focused = document.activeElement;
     const hadContentFocus = box.contains(focused);
     const focusedId = focused?.id;
+    latestPacket = packet;
     latest = packet.debrief || latest;
-    box.innerHTML = renderDebrief({ ...packet, debrief: latest });
+    box.innerHTML = renderDebrief({ ...packet, debrief: latest }, { listenEnabled: voiceBuildEnabled && !!voiceController && packet.status !== "pending" && !feedbackRefreshing, listenDisabled: state.muted || !voiceController?.isEnabled() });
+    if (voiceBuildEnabled) {
+      const controls = document.createElement("div"); controls.className = "debrief-actions";
+      controls.innerHTML = `${voiceController ? `<button class="voice-toggle" id="debrief-voice" aria-pressed="${voiceController.isEnabled()}">Voice ${voiceController.isEnabled() ? "on" : "off"}</button>` : ""}<button class="voice-toggle" id="debrief-sound" aria-pressed="${!state.muted}">Sounds ${state.muted ? "off" : "on"}</button>${!voiceStatus?.stt ? `<button class="voice-toggle" id="debrief-voice-retry">Voice unavailable — retry</button>` : ""}`;
+      box.prepend(controls);
+      const toggle = $("#debrief-voice"); if (toggle) toggle.onclick = () => voiceController.toggle();
+      $("#debrief-sound").onclick = () => $("#sound").onclick();
+      const retryVoice = $("#debrief-voice-retry"); if (retryVoice) retryVoice.onclick = () => initialiseVoice(true);
+      box.querySelectorAll("[data-listen]").forEach((button) => button.onclick = () => {
+        const moment = latest?.moments.find((m) => m.moment_id === button.dataset.listen);
+        if (!moment || state.muted || !voiceController?.isEnabled() || !current()) return;
+        const packetAtClick = latest;
+        playListen(sessionId, moment, () => current() && latest === packetAtClick && latestPacket?.status !== "pending" && !feedbackRefreshing);
+      });
+    }
     if (latest) {
       const attempt = summaryFromDebrief(sessionId, "deadline", latest);
       state.attempts = upsertAttempt({ attempts: state.attempts }, attempt).attempts;
@@ -781,8 +825,11 @@ function openDebrief(sessionId, historical = false) {
     if (check) check.onclick = () => { disableFeedbackControl(check); poll(); };
     const retry = $("#feedback-retry");
     if (retry) retry.onclick = async () => {
+      feedbackRefreshing = true; stopSpeech();
       disableFeedbackControl(retry); retry.textContent = "Requesting feedback…";
-      await recoverFeedbackRetry({ request: () => retryDebrief(sessionId), current, refresh: poll });
+      voiceViewRefresh?.();
+      try { await recoverFeedbackRetry({ request: () => retryDebrief(sessionId), current, refresh: poll }); }
+      finally { feedbackRefreshing = false; voiceViewRefresh?.(); }
     };
     if (hadContentFocus && current()) {
       const replacement = focusedId ? document.getElementById(focusedId) : null;
@@ -791,7 +838,9 @@ function openDebrief(sessionId, historical = false) {
     }
   };
   const poll = () => pollDebrief({ load, current, render });
+  voiceViewRefresh = () => { if (latestPacket && current()) render(latestPacket); };
   render({ status: "pending", debrief: null });
+  initialiseVoice();
   poll();
 }
 
@@ -939,6 +988,7 @@ function showProgress() {
   render();
 }
 function showModal(title, content) {
+  stopSpeech(); voiceViewRefresh = null;
   if (state.dialogue) closeConversation();
   if (document.fullscreenElement)
     document.fullscreenElement.append($("#modal-root"));
@@ -953,6 +1003,7 @@ function showModal(title, content) {
   $(".modal-close").focus({ preventScroll: true });
 }
 function closeModal() {
+  stopSpeech(); voiceViewRefresh = null;
   $("#modal-root").innerHTML = "";
   state.paused = false;
   $("#game-viewport").focus({ preventScroll: true });
@@ -998,7 +1049,7 @@ document.querySelectorAll("[data-person]").forEach(
 $("#sound").onclick = () => {
   state.muted = !state.muted;
   try { window.localStorage.setItem("cubicle-muted", String(state.muted)); } catch {}
-  if (state.muted) stopSpeech();
+  if (state.muted) stopSpeech(); else unlockSpeech();
   rerenderVoiceSafely();
   $("#sound").innerHTML = icon(state.muted ? "volume-x" : "volume-2");
   $("#sound").setAttribute(
