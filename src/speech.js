@@ -4,9 +4,10 @@ export function createSpeechPlayback({ fetchAudio, windowRef = typeof window ===
   const unlock = async () => { interacted = true; if (!windowRef.AudioContext) return null; context = context || new windowRef.AudioContext(); await context.resume(); return context; };
   const play = async ({ sessionId, speech, text, current, muted, explicit = false, unlocked = false, npcId }) => {
     stop(); if (!speech?.available || muted || !current() || !(explicit || unlocked || interacted)) return;
+    const rate = npcId === "sam" ? 1.1 : 1;
     const own = token; controller = new AbortController();
     const fail = () => { if (own === token) { stop(); onUnavailable(); } };
-    const browser = () => { try { const voice = windowRef.speechSynthesis?.getVoices?.().find((item) => item.localService && /^en/i.test(item.lang || "")); if (!voice || !windowRef.SpeechSynthesisUtterance || !current() || muted || own !== token) return; utterance = new windowRef.SpeechSynthesisUtterance(text); utterance.voice = voice; utterance.onend = utterance.onerror = () => { if (own === token) { onSpeaking(false, npcId); activeNpc = null; } }; activeNpc = npcId; onSpeaking(true, npcId); windowRef.speechSynthesis.speak(utterance); } catch { fail(); } };
+    const browser = () => { try { const voice = windowRef.speechSynthesis?.getVoices?.().find((item) => item.localService && /^en/i.test(item.lang || "")); if (!voice || !windowRef.SpeechSynthesisUtterance || !current() || muted || own !== token) return; utterance = new windowRef.SpeechSynthesisUtterance(text); utterance.voice = voice; utterance.rate = rate; utterance.onend = utterance.onerror = () => { if (own === token) { onSpeaking(false, npcId); activeNpc = null; } }; activeNpc = npcId; onSpeaking(true, npcId); windowRef.speechSynthesis.speak(utterance); } catch { fail(); } };
     if (speech.mode === "browser") { if (unlocked || explicit || interacted) browser(); return; }
     const ready = unlocked || explicit || interacted ? unlock().catch(() => null) : Promise.resolve(null);
     try {
@@ -15,7 +16,7 @@ export function createSpeechPlayback({ fetchAudio, windowRef = typeof window ===
       if (result.speech) { if (result.speech.mode === "browser" && (unlocked || explicit || interacted)) browser(); return; }
       const ac = await ready; if (!ac || !current() || muted || own !== token) return;
       const buffer = await ac.decodeAudioData(result.audio.slice(0)); if (!current() || muted || own !== token) return;
-      const ownSource = ac.createBufferSource(); source = ownSource; source.buffer = buffer; source.connect(ac.destination); source.onended = () => { if (own === token) { ownSource.disconnect(); source = null; onSpeaking(false, npcId); activeNpc = null; } }; activeNpc = npcId; onSpeaking(true, npcId); source.start();
+      const ownSource = ac.createBufferSource(); source = ownSource; source.buffer = buffer; source.playbackRate.value = rate; source.connect(ac.destination); source.onended = () => { if (own === token) { ownSource.disconnect(); source = null; onSpeaking(false, npcId); activeNpc = null; } }; activeNpc = npcId; onSpeaking(true, npcId); source.start();
     } catch { fail(); }
   };
   return { play, stop, unlock, isUnlocked: () => interacted };

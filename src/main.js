@@ -232,7 +232,7 @@ const people = {
     initials: "VS",
   },
   sam: {
-    name: "Prathamest Surwase",
+    name: "Prathamesh Surwase",
     role: "People & culture",
     color: "sage",
     initials: "PS",
@@ -1179,7 +1179,7 @@ $("#nav-progress").onclick = showProgress;
 $("#profile").onclick = () =>
   showModal(
     "Meet your work self.",
-    `<div class="large-avatar">SP</div><h3>Shubhankar Parsewar</h3><p>You’re a project coordinator at a small creative company. Snehal is your manager, Vansh is your teammate, and Prathamest looks after people & culture.</p><div class="reflection">Your mission: build confidence in the everyday conversations that make work better.</div>`,
+    `<div class="large-avatar">SP</div><h3>Shubhankar Parsewar</h3><p>You’re a project coordinator at a small creative company. Snehal is your manager, Vansh is your teammate, and Prathamesh looks after people & culture.</p><div class="reflection">Your mission: build confidence in the everyday conversations that make work better.</div>`,
   );
 document.querySelectorAll("[data-person]").forEach(
   (b) =>

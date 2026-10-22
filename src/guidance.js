@@ -33,6 +33,6 @@ export function projectGuidance({ goals = [], currentNpc = null, hint = "", ende
     question = "Ask Snehal about a workable next step, then recap what you agree.";
   }
 
-  if (!ended && currentNpc === "sam") question = "Ask Prathamest for advice on how to approach the conversation.";
+  if (!ended && currentNpc === "sam") question = "Ask Prathamesh for advice on how to approach the conversation.";
   return { heading, description, step, objective: description, question, hint: String(hint || "") };
 }

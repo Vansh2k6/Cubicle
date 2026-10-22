@@ -1,7 +1,7 @@
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const title = (value) => String(value || "").replaceAll("_", " ");
 const ownerName = (value) => title(value).replace(/\b\w/g, (letter) => letter.toUpperCase());
-const npcLabel = (value) => ({ maya: "Snehal Mane", jordan: "Vansh Singh", sam: "Prathamest Surwase" }[value] || ownerName(value));
+const npcLabel = (value) => ({ maya: "Snehal Mane", jordan: "Vansh Singh", sam: "Prathamesh Surwase" }[value] || ownerName(value));
 const displayNumber = (value) => value !== "" && value !== null && value !== undefined && Number.isFinite(Number(value)) ? String(Math.round(Number(value) * 10) / 10) : "N/A";
 const points = (value, cap) => `${displayNumber(value)} / ${displayNumber(cap)}`;
 const quote = (entry) => {

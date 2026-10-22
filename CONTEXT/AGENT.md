@@ -7,7 +7,7 @@ Last updated: 2026-10-18. If this file disagrees with the code, fix whichever is
 
 A practice space where a person walks around a 3D isometric office, talks (typing now, speaking later) to AI colleagues, and gets a fair, **evidence-backed** debrief afterwards. NPCs hold **hidden facts** that only come out when the user asks the right questions. The conversation is **improvised**, but the *decisions* (what is revealed, what is scored, what ends the scenario) are made by **plain code**, not by an LLM.
 
-Existing build (called "cubicle"): isometric office scene, player **Shubhankar Parsewar**, move with WASD, **E** to talk, ESC to close. NPCs: **Snehal Mane** (manager), **Vansh Singh** (teammate), **Prathamest Surwase** (People & culture). Scenarios: *Missed a project deadline*, *Forgot to reply to an email*, *Missed an important call*. SC-01 now uses typed API conversations with per-NPC threads and guarded responses; SC-02/03 retain scripted buttons. The scene is presentation; the planned engine must not depend on it.
+Existing build (called "cubicle"): isometric office scene, player **Shubhankar Parsewar**, move with WASD, **E** to talk, ESC to close. NPCs: **Snehal Mane** (manager), **Vansh Singh** (teammate), **Prathamesh Surwase** (People & culture). Scenarios: *Missed a project deadline*, *Forgot to reply to an email*, *Missed an important call*. SC-01 now uses typed API conversations with per-NPC threads and guarded responses; SC-02/03 retain scripted buttons. The scene is presentation; the planned engine must not depend on it.
 
 ## 2. Source-of-truth order
 

@@ -394,7 +394,7 @@ export function createOffice(container, hooks) {
     },
     sam: {
       ...character(-4.5, 4.55, "#87a48d", "#b17d49", "#efc79a", "#758176"),
-      name: "Prathamest",
+      name: "Prathamesh",
       role: "People & culture",
     },
   };

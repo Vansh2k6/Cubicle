@@ -20,6 +20,23 @@ test("browser fallback uses the caption only after an explicit interaction", asy
   assert.equal(said, 1);
 });
 
+test("Prathamesh plays at 1.1x while other NPCs stay at 1x in browser and local playback", async () => {
+  const utterances = [], sources = [];
+  const win = {
+    speechSynthesis: { getVoices: () => [{ localService: true, lang: "en" }], speak: (utterance) => utterances.push(utterance), cancel() {} },
+    SpeechSynthesisUtterance: class { constructor(text) { this.text = text; } },
+    AudioContext: class { async resume() {} async decodeAudioData() { return {}; } createBufferSource() { const source = { playbackRate: { value: 1 }, connect() {}, disconnect() {}, stop() {}, start() {} }; sources.push(source); return source; } },
+  };
+  const playback = createSpeechPlayback({ windowRef: win, fetchAudio: async () => ({ audio: new ArrayBuffer(4) }) });
+  const line = { sessionId: "s", text: "caption", current: () => true, muted: false, explicit: true };
+  await playback.play({ ...line, speech: { available: true, turn_id: "1", mode: "browser" }, npcId: "sam" });
+  await playback.play({ ...line, speech: { available: true, turn_id: "2", mode: "browser" }, npcId: "maya" });
+  await playback.play({ ...line, speech: { available: true, turn_id: "3", mode: "server" }, npcId: "sam" });
+  await playback.play({ ...line, speech: { available: true, turn_id: "4", mode: "server" }, npcId: "maya" });
+  assert.deepEqual(utterances.map((utterance) => utterance.rate), [1.1, 1]);
+  assert.deepEqual(sources.map((source) => source.playbackRate.value), [1.1, 1]);
+});
+
 test("a stopped playback cannot start after decode", async () => {
   let resolveDecode, played = 0;
   const win = { AudioContext: class { async resume() {} decodeAudioData() { return new Promise((resolve) => { resolveDecode = resolve; }); } createBufferSource() { return { connect() {}, start() { played++; }, stop() {} }; } }, speechSynthesis: { cancel() {} } };
@@ -56,7 +73,7 @@ test("explicit replay resumes during activation before its delayed fetch", async
   const playback = createSpeechPlayback({ fetchAudio: () => new Promise((done) => { resolve = done; }), windowRef: { AudioContext: class {
     resume() { assert.equal(activated, true); resumes++; return Promise.resolve(); }
     async decodeAudioData() { return {}; }
-    createBufferSource() { return { connect() {}, disconnect() {}, stop() {}, start() { starts++; } }; }
+    createBufferSource() { return { playbackRate: { value: 1 }, connect() {}, disconnect() {}, stop() {}, start() { starts++; } }; }
   } } });
   const pending = playback.play(serverLine);
   assert.equal(resumes, 1); activated = false;
@@ -70,7 +87,7 @@ for (const kind of ["browser", "source"]) test(`throwing ${kind} clears its high
     SpeechSynthesisUtterance: class {}, speechSynthesis: { getVoices: () => [{ localService: true, lang: "en" }], speak() { throw Error("failed"); }, cancel() { released++; } },
   } : { AudioContext: class {
     async resume() {} async decodeAudioData() { return {}; }
-    createBufferSource() { return { connect() {}, disconnect() { released++; }, stop() {}, start() { throw Error("failed"); } }; }
+    createBufferSource() { return { playbackRate: { value: 1 }, connect() {}, disconnect() { released++; }, stop() {}, start() { throw Error("failed"); } }; }
   } };
   const playback = createSpeechPlayback({ windowRef: win, fetchAudio: async () => ({ audio: new ArrayBuffer(4) }), onSpeaking: (value, id) => states.push([value, id]), onUnavailable: () => unavailable++ });
   await playback.play({ ...serverLine, speech: { ...serverLine.speech, mode: kind === "browser" ? "browser" : "server" } });

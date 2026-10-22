@@ -14,7 +14,7 @@ test("public goal states lead through Snehal, Vansh, Snehal, then reflection", (
 
 test("hints stay optional, useful, and limited to public state", () => {
   const sam = projectGuidance({ goals: goals(["G1"]), currentNpc: "sam", hint: "Ask for advice." });
-  assert.match(sam.question, /Prathamest/);
+  assert.match(sam.question, /Prathamesh/);
   assert.equal(sam.hint, "Ask for advice.");
   assert.match(projectGuidance({ goals: goals(["G1"]) }).question, /Vansh/);
 });

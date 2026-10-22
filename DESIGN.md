@@ -4,7 +4,7 @@
 **Mode:** Operate — the visitor completes a task (a practice conversation). Scanability, consistency with the scripted panel, and native form expectations outrank expression.
 **Method:** Impeccable narrow refinement of the incumbent implementation (v4.1.1; owning playbooks `harden.md` + `operate.md`, floor `craft-floor.md`). Preserve the ivory interface, the office viewport, and keyboard-only operation. No quick-reply chips (D-12 unconfirmed — left out).
 
-**Current cast:** Shubhankar Parsewar (player), Snehal Mane (manager), Vansh Singh (teammate), and Prathamest Surwase (People & culture). Historical design notes retain their original names where they describe past work.
+**Current cast:** Shubhankar Parsewar (player), Snehal Mane (manager), Vansh Singh (teammate), and Prathamesh Surwase (People & culture). Historical design notes retain their original names where they describe past work.
 
 ## What changed and what did not
 
@@ -136,6 +136,8 @@ When both client and server voice flags are enabled, the existing graphite-and-g
 ## S1-V3 NPC speech extension (Operate)
 
 Committed NPC transcript bubbles remain the caption. When conversation sounds and Voice are both enabled, an NPC bubble with a server speech descriptor gains a 44px Replay control. Mute or Voice off disables playback immediately without hiding captions; a failed or unavailable audio fetch leaves the text alone. No new panel, color system, or motion language is introduced.
+
+Prathamesh playback uses 1.1× rate in both browser and local client playback; every other NPC remains at 1.0×.
 
 ## S1-U1 immersive entry (Operate)
 

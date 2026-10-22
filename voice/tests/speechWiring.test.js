@@ -24,7 +24,7 @@ function fixture() {
   const context = {
     state, speechPlayback: createSpeechPlayback({ fetchAudio: () => { fetches++; return new Promise((resolve) => { finishAudio = resolve; }); }, windowRef: { AudioContext: class {
       async resume() {} async decodeAudioData() { return {}; }
-      createBufferSource() { return { connect() {}, disconnect() {}, stop() {}, start() { started++; } }; }
+      createBufferSource() { return { playbackRate: { value: 1 }, connect() {}, disconnect() {}, stop() {}, start() { started++; } }; }
     } } }), activeSpeechNpc: null, activeListenMoment: null, markListen() {}, voiceBuildEnabled: true,
     voiceController: { isEnabled: () => true, isAudioUnlocked: () => true }, voiceStatus: { enabled: true, stt: true },
     ending: createEndCoordinator(), office: { setSpeaking() {} }, cancelVoice() {},
@@ -68,7 +68,7 @@ test("main delayed End stops queued speech, disables replay, and rejects replay 
 test("persisted opt-in Send unlocks actual playback for the automatic NPC response", async () => {
   const f = fixture();
   let resumes = 0, starts = 0;
-  f.context.speechPlayback = createSpeechPlayback({ fetchAudio: async () => ({ audio: new ArrayBuffer(4) }), windowRef: { AudioContext: class { async resume() { resumes++; } async decodeAudioData() { return {}; } createBufferSource() { return { connect() {}, disconnect() {}, start() { starts++; }, stop() {} }; } } } });
+  f.context.speechPlayback = createSpeechPlayback({ fetchAudio: async () => ({ audio: new ArrayBuffer(4) }), windowRef: { AudioContext: class { async resume() { resumes++; } async decodeAudioData() { return {}; } createBufferSource() { return { playbackRate: { value: 1 }, connect() {}, disconnect() {}, start() { starts++; }, stop() {} }; } } } });
   const input = { value: "confirmed typed draft", focus() {} }, form = {};
   const original = f.context.$;
   f.context.$ = (id) => id === "#text-form" ? form : id === "#text-input" ? input : original(id);
