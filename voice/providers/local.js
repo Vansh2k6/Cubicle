@@ -53,6 +53,13 @@ export function createLocalVoiceProvider({ url, token, fetchFn = globalThis.fetc
 
   return Object.freeze({
     name: "local",
+    async health({ signal } = {}) {
+      try {
+        const response = await fetchFn(parsed.origin + "/health", { method: "GET", redirect: "error", signal, headers: { "x-voice-token": token } });
+        const data = JSON.parse((await readBounded(response, 16384)).toString("utf8"));
+        return response.ok && Array.isArray(data?.voices) ? data.voices.filter((voice) => typeof voice === "string") : null;
+      } catch { return null; }
+    },
     async transcribe({ audio, mime, signal }) {
       if (!Buffer.isBuffer(audio) || !audio.length || audio.length > MAX_AUDIO_BYTES) throw new VoiceError();
       const result = await request("/stt", { body: audio, mime, signal }, 16384);

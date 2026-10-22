@@ -26,6 +26,7 @@ import { createScoreRecord } from "../../scoring/score.js";
 import { loadVoiceConfig } from "../../voice/config.js";
 import { createSttHandler } from "../../voice/http.js";
 import { createLocalVoiceProvider } from "../../voice/providers/local.js";
+import { createSpeechService } from "../../voice/speech.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SPEC = JSON.parse(readFileSync(join(root, "scenarios", "missed_deadline.json"), "utf8"));
@@ -36,6 +37,10 @@ const SCENARIO_ALIASES = { deadline: "missed_deadline", missed_deadline: "missed
 const TURN_TIMEOUT_MS = 15000;
 const MAX_TEXT = 2000;
 const MAX_BODY = 1 << 20;
+function localOrigin(origin) {
+  if (origin === undefined) return true;
+  try { const value = new URL(origin); return value.origin === origin && value.protocol === "http:" && ["localhost", "127.0.0.1"].includes(value.hostname); } catch { return false; }
+}
 
 const selectedProvider = providerName();
 const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
@@ -125,6 +130,17 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     ? voiceConfig.sttChain.map(() => createLocalVoiceProvider({ url: voiceConfig.localUrl, token: voiceConfig.localToken })) : []);
   const handleVoice = createSttHandler({ config: voiceConfig, providers: sttProviders,
     getSession: (id) => store.getState(id), uploadTimeoutMs: voiceUploadTimeoutMs });
+  const healthController = new AbortController();
+  let healthTimer;
+  const localReady = voiceConfig.enabled && voiceConfig.ttsChain?.includes("local") && typeof sttProviders[0]?.health === "function"
+    ? Promise.race([
+      Promise.resolve().then(() => sttProviders[0].health({ signal: healthController.signal }))
+        .then((voices) => !Array.isArray(voices) || Object.values(voiceConfig.voiceMap || {}).every((voice) => voices.includes(voice))).catch(() => true),
+      new Promise((resolve) => { healthTimer = setTimeout(() => { healthController.abort(); resolve(true); }, 500); }),
+      new Promise((resolve) => healthController.signal.addEventListener("abort", () => resolve(true), { once: true })),
+    ]).finally(() => { clearTimeout(healthTimer); healthController.abort(); }) : Promise.resolve(true);
+  const speech = createSpeechService({ config: voiceConfig, providers: sttProviders, localReady,
+    log: (entry) => console.info(JSON.stringify(entry)) });
   function beginDebrief(session, retry = false) {
     let job = debriefs.get(session.id);
     if (job && (!retry || job.status === "pending" || job.retryUsed || job.status === "ready")) return job;
@@ -148,7 +164,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     const text = JSON.stringify(body);
     res.writeHead(status, {
       "content-type": "application/json; charset=utf-8",
-      "access-control-allow-origin": "*",
+      ...(res.audioPolicy || { "access-control-allow-origin": "*" }),
       "access-control-allow-methods": "GET,POST,OPTIONS",
       "access-control-allow-headers": "content-type",
     });
@@ -186,10 +202,18 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     try { url = new URL(req.url || "/", "http://localhost"); }
     catch { send(res, 400, { error: "invalid request path" }); return; }
     const path = url.pathname.replace(/\/+$/, "") || "/";
+    const isAudio = path.includes("/audio");
+    if (isAudio) {
+      res.audioPolicy = { "cache-control": "no-store", vary: "Origin",
+        ...(localOrigin(req.headers.origin) && req.headers.origin ? { "access-control-allow-origin": req.headers.origin } : {}) };
+      for (const [key, value] of Object.entries(res.audioPolicy)) res.setHeader(key, value);
+    }
     if (await handleVoice(req, res, path)) return;
+    const audioPath = /^\/sessions\/[^/]+\/turns\/[^/]+\/audio$/.test(path);
     if (req.method === "OPTIONS") {
+      if (isAudio && !localOrigin(req.headers.origin)) { res.writeHead(403).end(); return; }
       res.writeHead(204, {
-        "access-control-allow-origin": "*",
+        ...(isAudio ? res.audioPolicy : { "access-control-allow-origin": "*" }),
         "access-control-allow-methods": "GET,POST,OPTIONS",
         "access-control-allow-headers": "content-type",
       });
@@ -197,6 +221,20 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
       return;
     }
     try {
+      const audioMatch = /^\/sessions\/([^/]+)\/turns\/([^/]+)\/audio$/.exec(path);
+      if (audioMatch || path.includes("/audio")) {
+        if (!audioMatch || req.method !== "GET" || url.search) { send(res, 404, { error: "not found" }); return; }
+        if (!localOrigin(req.headers.origin)) { send(res, 403, { error: "voice_unavailable" }); return; }
+        let id, turnId;
+        try { id = decodeURIComponent(audioMatch[1]); turnId = decodeURIComponent(audioMatch[2]); } catch { send(res, 404, { error: "not found" }); return; }
+        const session = store.getState(id), convo = convos.get(id);
+        const turn = convo?.turns.find((candidate) => String(candidate.id) === turnId);
+        if (!session || session.ended || !turn || turn.speaker !== "npc") { send(res, 404, { error: "not found" }); return; }
+        const result = await speech.audio(session, turnId);
+        if (!result) { send(res, 404, { error: "not found" }); return; }
+        if (result.speech) { const body = JSON.stringify({ speech: result.speech }); res.writeHead(200, { "content-type": "application/json; charset=utf-8", "content-length": Buffer.byteLength(body), "cache-control": "no-store", ...(req.headers.origin ? { "access-control-allow-origin": req.headers.origin, vary: "Origin" } : {}) }); res.end(body); return; }
+        res.writeHead(200, { "content-type": result.mime, "content-length": result.audio.length, "cache-control": "no-store", ...(req.headers.origin ? { "access-control-allow-origin": req.headers.origin, vary: "Origin" } : {}) }); res.end(result.audio); return;
+      }
       const debriefMatch = /^\/sessions\/([^/]+)\/debrief(\/retry)?$/.exec(path);
       if (debriefMatch && ((req.method === "GET" && !debriefMatch[2]) || (req.method === "POST" && debriefMatch[2]))) {
         const session = store.getState(decodeURIComponent(debriefMatch[1]));
@@ -257,6 +295,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         if (!session) { send(res, 404, { error: "unknown session" }); return; }
         if (inflight.has(id)) { send(res, 409, { error: "wait for the current turn", retryable: true }); return; }
         engine.endSession(session);
+        speech.clear(session.id);
         beginDebrief(session);
         send(res, 200, { ended: true, end_reason: session.endReason, public_state: { ...initialPublic(session), ended: true } });
         return;
@@ -321,7 +360,13 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           );
           if (out.usedFallback) warnNpcFallback(npcId, out.trace);
           const pub = publicResponse(out);
-          if (debug) pub._debug = debugOf(out);
+
+          // TTS is strictly after the guarded row and public response exist.
+          const npcTurn = convo.turns[convo.turns.length - 1];
+          if (!out.ended && npcTurn?.speaker === "npc") {
+            try { pub.speech = speech.prefetch(session, npcTurn); } catch { /* text turn remains authoritative */ }
+          }
+          if (debug) pub._debug = { ...debugOf(out), tts_provider: pub.speech.mode === "server" ? "local" : pub.speech.mode, tts_latency_ms: null };
           return pub;
         })();
         if (ck) inflight.set(ck, attempt);
@@ -329,7 +374,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         try {
           const bodyOut = await attempt;
           inflight.delete(sessionId);
-          if (bodyOut.ended) beginDebrief(session);
+          if (bodyOut.ended) { speech.clear(session.id); beginDebrief(session); }
           if (ck) {
             idem.set(ck, bodyOut);
             inflight.delete(ck);
@@ -367,6 +412,8 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
       send(res, 500, { error: "internal error" });
     }
   });
+
+  server.on("close", () => { clearTimeout(healthTimer); healthController.abort(); for (const id of convos.keys()) speech.clear(id); });
 
   return { server, manifestId: manifest.id };
 }

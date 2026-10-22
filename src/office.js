@@ -17,7 +17,7 @@ export function createOffice(container, hooks) {
     const l = document.querySelector("#loading");
     l.innerHTML =
       "This office needs WebGL. Please enable hardware acceleration or open it in a modern browser.";
-    return { reset() {}, highlight() {}, setKey() {} };
+    return { reset() {}, highlight() {}, setSpeaking() {}, setKey() {} };
   }
   // CSS-pixel rendering avoids fullscreen/scaled-display GPU cost.
   renderer.setPixelRatio(1);
@@ -641,6 +641,9 @@ export function createOffice(container, hooks) {
         p.label.classList.toggle("highlight", key === id),
       );
       setTimeout(() => npcs[id].label.classList.remove("highlight"), 7000);
+    },
+    setSpeaking(id, speaking) {
+      npcs[id]?.label.classList.toggle("speaking", !!speaking);
     },
     setKey(key, pressed) {
       if (pressed) {

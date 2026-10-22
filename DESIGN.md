@@ -130,3 +130,7 @@ The earlier ivory-and-purple interface record above is historical. The active in
 ## S1-V2 voice extension (Operate)
 
 When both client and server voice flags are enabled, the existing graphite-and-green composer gains a compact Voice on/off control and a 44px microphone control. Voice stays off until the visitor explicitly enables it; recording is hold-to-talk with keyboard equivalents, an inline live status, and a 30-second cap. A transcript returns only as an editable draft in the existing input, then uses the unchanged typed Send path. Typed input remains available through unsupported, denied, cancelled, empty, and failed recording states. At narrow phone widths, the voice composer places the input on its own row and keeps the 44px controls together below it.
+
+## S1-V3 NPC speech extension (Operate)
+
+Committed NPC transcript bubbles remain the caption. When conversation sounds and Voice are both enabled, an NPC bubble with a server speech descriptor gains a 44px Replay control. Mute or Voice off disables playback immediately without hiding captions; a failed or unavailable audio fetch leaves the text alone. No new panel, color system, or motion language is introduced.

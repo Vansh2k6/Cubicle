@@ -234,7 +234,7 @@ test("public-state allowlist holds for every npc", async () => {
   for (const [npc, text, key] of lines) {
     const r = await turn(base, sid, npc, text, key);
     assert.equal(r.status, 200);
-    assert.deepEqual(Object.keys(r.data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id"].sort());
+    assert.deepEqual(Object.keys(r.data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id", "speech"].sort());
     assert.deepEqual(
       Object.keys(r.data.public_state).sort(),
       ["ended", "goals", "mood_label", "next_hint", "npc_availability"].sort(),

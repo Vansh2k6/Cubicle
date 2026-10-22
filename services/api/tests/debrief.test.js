@@ -59,7 +59,7 @@ test("automatic max-turn ending starts one debrief without changing the turn all
   const path = await create(base); let response;
   for (let i = 0; i < 20; i++) response = await request(base, path + "/turn", { npc_id: "jordan", text: "Hello.", idempotencyKey: `greet-${i}` });
   assert.equal(response.body.ended, true);
-  assert.deepEqual(Object.keys(response.body).sort(), ["npc_reply", "public_state", "ended", "end_reason", "turn_id"].sort());
+  assert.deepEqual(Object.keys(response.body).sort(), ["npc_reply", "public_state", "ended", "end_reason", "turn_id", "speech"].sort());
   await ready(base, path); await request(base, path + "/end", {});
   assert.equal(calls, 1);
 });

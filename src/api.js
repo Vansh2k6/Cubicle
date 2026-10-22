@@ -110,6 +110,20 @@ export async function transcribeAudio(sessionId, audio, { signal, timeoutMs = 18
   }
 }
 
+export async function getTurnAudio(sessionId, turnId, { signal, timeoutMs = 7000 } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const abort = () => controller.abort();
+  signal?.addEventListener("abort", abort, { once: true });
+  try {
+    const response = await fetch(`${BASE}/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}/audio`, { signal: controller.signal });
+    if (!response.ok) throw new Error("audio_unavailable");
+    if ((response.headers.get("content-type") || "").startsWith("audio/")) return { audio: await response.arrayBuffer(), mime: response.headers.get("content-type") };
+    const data = await response.json().catch(() => ({}));
+    return { speech: data.speech || { available: false, turn_id: "", mode: "none" } };
+  } finally { clearTimeout(timer); signal?.removeEventListener("abort", abort); }
+}
+
 export const newKey = () =>
   window.crypto && window.crypto.randomUUID
     ? window.crypto.randomUUID()

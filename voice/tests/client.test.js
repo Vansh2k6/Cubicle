@@ -190,3 +190,17 @@ test("audio helper distinguishes pre/caller abort, timeout, and public STT error
     }
   } finally { globalThis.fetch = previousFetch; }
 });
+
+test("production mic start stops playback before requesting microphone permission", async () => {
+  const order = []; let resolveAudio, starts = 0;
+  const { createSpeechPlayback } = await import("../../src/speech.js");
+  const playback = createSpeechPlayback({ fetchAudio: () => new Promise((resolve) => { resolveAudio = resolve; }), windowRef: { AudioContext: class { async resume() {} async decodeAudioData() { return {}; } createBufferSource() { return { connect() {}, start() { starts++; } }; } } } });
+  const pending = playback.play({ sessionId: "s", speech: { available: true, turn_id: "2", mode: "server" }, current: () => true, explicit: true });
+  const win = Object.assign(new Target(), { isSecureContext: true, MediaRecorder: Recorder });
+  const voice = createVoiceController({ onMicStart() { order.push("stop"); playback.stop(); },
+    navigatorRef: { mediaDevices: { async getUserMedia() { order.push("permission"); return { getTracks: () => [{ stop() {} }] }; } } },
+    windowRef: win, documentRef: new Target(), storage: { getItem: () => "true" }, transcribe: async () => ({ text: "draft" }) });
+  const mic = new Target(); const cleanup = voice.mount({ toggle: new Target(), mic, status: new Target(), input: new Input("kept draft"), sessionId: "s", current: () => true });
+  mic.dispatch("pointerdown"); assert.deepEqual(order, ["stop", "permission"]);
+  resolveAudio({ audio: new ArrayBuffer(4) }); await pending; assert.equal(starts, 0); cleanup();
+});
