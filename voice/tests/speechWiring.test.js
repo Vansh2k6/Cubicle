@@ -20,7 +20,7 @@ function fixture() {
   for (const id of ["#dialogue-layer", "#game-viewport", "#talk-prompt", "#close-dialogue", "#sound"]) nodes[id] = node();
   const line = { sessionId: "s", speech: { available: true, turn_id: "2", mode: "server" }, who: "npc", name: "Maya", text: "Displayed caption" };
   const thread = { over: false, busy: false, transcript: [line] };
-  const state = { sessionId: "s", scenario: "deadline", textMode: true, text: thread, dialogue: "maya", muted: false, complete: {} };
+  const state = { entry: "office", sessionId: "s", scenario: "deadline", textMode: true, text: thread, dialogue: "maya", muted: false, complete: {} };
   const context = {
     state, speechPlayback: createSpeechPlayback({ fetchAudio: () => { fetches++; return new Promise((resolve) => { finishAudio = resolve; }); }, windowRef: { AudioContext: class {
       async resume() {} async decodeAudioData() { return {}; }
@@ -85,5 +85,13 @@ test("persisted opt-in Send unlocks actual playback for the automatic NPC respon
     if (variant === "muted") f.state.muted = true;
     else { f.state.muted = false; f.context.voiceController.isEnabled = () => false; }
     form.onsubmit({ preventDefault() {} }); assert.equal(resumes, before);
+  }
+});
+
+test("selection, briefing and loading cannot fetch or unlock NPC speech", async () => {
+  for (const entry of ["selection", "briefing", "loading", "error"]) {
+    const f = fixture(); f.state.entry = entry;
+    f.context.unlockSpeech(); await f.context.playSpeech(f.line, f.thread, "maya", true);
+    assert.equal(f.fetches(), 0); assert.equal(f.context.speechPlayback.isUnlocked(), false);
   }
 });

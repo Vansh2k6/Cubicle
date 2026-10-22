@@ -134,3 +134,11 @@ When both client and server voice flags are enabled, the existing graphite-and-g
 ## S1-V3 NPC speech extension (Operate)
 
 Committed NPC transcript bubbles remain the caption. When conversation sounds and Voice are both enabled, an NPC bubble with a server speech descriptor gains a 44px Replay control. Mute or Voice off disables playback immediately without hiding captions; a failed or unavailable audio fetch leaves the text alone. No new panel, color system, or motion language is introduced.
+
+## S1-U1 immersive entry (Operate)
+
+The green-and-graphite workspace now begins with three centered scenario choices. Selecting one opens a short public briefing for Alex with a situation and objective; Back returns to the choices and Start your day loads the existing office. The office scene is deferred until that explicit action, while saved local progress and sound preference remain available across a fresh load.
+
+Once inside, the office occupies the full viewport. Menu, sounds, Help, fullscreen and Practice float over the scene; a closed Next step disclosure keeps guidance on demand. Practice reuses the established modal for public briefing, colleague markers, progress, restart and read-only settings. Editable settings remain in the existing first-conversation and retry setup flow. Menu uses a native confirmation dialog so cancelling keeps the current conversation, focus and voice state intact. Confirming ends only the local practice and returns to selection; it does not make a server End/debrief request. The conversation, caption and debrief surfaces retain their established behavior and presentation.
+
+The entry, briefing, loading, error and office states reuse the same white surface, graphite text, deep-green action and compact-radius vocabulary. The loading overlay stays over the final-size viewport until the first successful render. It then fades for 450 ms; reduced motion enters immediately. Failed construction or rendering disposes scene resources and offers Retry and Back. Scene visibility pauses simulation work while the office is hidden; the office retains its existing DPR and movement treatment.

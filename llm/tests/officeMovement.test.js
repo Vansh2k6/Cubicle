@@ -6,7 +6,7 @@ import { runInNewContext } from "node:vm";
 const source = readFileSync(new URL("../../src/office.js", import.meta.url), "utf8");
 const stepSource = source.slice(source.indexOf("  function step(dt) {"), source.indexOf("  let ready = false;"));
 const frameStart = source.indexOf("  function frame(now) {");
-const frameSource = source.slice(frameStart, source.indexOf("\n  requestAnimationFrame(frame);", frameStart));
+const frameSource = source.slice(frameStart, source.indexOf("\n  frameId = requestAnimationFrame(frame);", frameStart));
 const visibilityStart = source.indexOf('  document.addEventListener("visibilitychange"');
 const visibilitySource = source.slice(visibilityStart, source.indexOf("  const raycaster", visibilityStart));
 const resetStart = source.indexOf("    reset() {");
@@ -26,7 +26,7 @@ function motionContext({ paused = false, reducedMotion = false } = {}) {
     player: { root: { position, rotation: { y: 0 } }, legs: [limb(), limb()], arms: [limb(), limb()], body: { position: {} } },
     allowed: () => true, reducedMotion, npcs: {}, nearRing: { position: {} }, playerRing: { position: {} },
     document: { hidden: false, querySelector: () => ({ setAttribute: (key, value) => { map[key] = value; } }) },
-    requestAnimationFrame() {}, renderer: { render() {} }, scene: {}, camera: {}, width: 1, height: 1,
+    disposed: false, frameId: null, events: { signal: undefined }, dispose() { this.disposed = true; }, requestAnimationFrame() {}, renderer: { render() {} }, scene: {}, camera: {}, width: 1, height: 1,
     entries: {}, projection: vector(), ready: false, accumulator: 0, last: 0, map, nearCalls,
   };
   context.entries.player = { root: context.player.root, label: { style: {} } };
@@ -83,4 +83,54 @@ test("reduced motion, pause, visibility, and reset keep the displayed heading co
   assert.equal(context.player.root.rotation.y, -0.65);
   assert.equal(context.targetYaw, -0.65);
   assert.equal(context.keys.size, 0);
+});
+
+test("hidden scene frames clear movement and timing without simulating or rendering", () => {
+  const context = motionContext(); let renders = 0, ready = 0;
+  context.renderer.render = () => { renders++; }; context.hooks.onReady = () => { ready++; };
+  context.hooks.isVisible = () => false; context.keys.add("w"); context.target = { x: 1, z: 2 }; context.accumulator = 3;
+  runFrame(context, 5000);
+  assert.equal(renders, 0); assert.equal(ready, 0); assert.equal(context.keys.size, 0); assert.equal(context.target, null); assert.equal(context.accumulator, 0); assert.equal(context.last, 5000);
+});
+
+test("onReady follows only a successful nonzero render; failure disposes and reports once", () => {
+  const context = motionContext(); let renders = 0, ready = 0, failures = 0, disposed = 0;
+  context.hooks.onReady = () => { ready++; }; context.hooks.onError = () => { failures++; };
+  context.renderer.render = () => { renders++; }; context.dispose = () => { disposed++; context.disposed = true; };
+  context.width = 0; runFrame(context); assert.equal(renders, 0); assert.equal(ready, 0);
+  context.width = 100; context.runFrame(20); assert.equal(renders, 1); assert.equal(ready, 1);
+  context.runFrame(30); assert.equal(ready, 1);
+  context.renderer.render = () => { throw Error("lost context"); }; context.runFrame(40);
+  assert.equal(disposed, 1); assert.equal(failures, 1); context.runFrame(50); assert.equal(failures, 1);
+});
+
+test("hidden and paused offices ignore E and walking key presses", () => {
+  const start = source.indexOf('  window.addEventListener("keydown"');
+  const code = source.slice(start, source.indexOf('  window.addEventListener("keyup"', start));
+  for (const visible of [true, false]) for (const paused of [true, false]) {
+    let keydown, talks = 0;
+    const context = { window: { addEventListener(_, handler) { keydown = handler; } }, events: { signal: undefined },
+      isInput: () => false, document: { hidden: false }, hooks: { isPaused: () => paused, isVisible: () => visible, onTalk() { talks++; } }, keys: new Set(), target: null };
+    runInNewContext(code, context);
+    keydown({ key: "e", preventDefault() {} }); keydown({ key: "w", preventDefault() {} });
+    assert.equal(talks, visible && !paused ? 1 : 0); assert.equal(context.keys.size, visible && !paused ? 1 : 0);
+  }
+});
+
+test("scene disposal cancels its loop, listeners, observer, DOM and GPU resources idempotently", () => {
+  const start = source.indexOf('  function dispose()');
+  const code = source.slice(start, source.indexOf('  try {', start));
+  const calls = []; const mark = value => () => calls.push(value);
+  const context = { disposed: false, frameId: 7, cancelAnimationFrame: mark("frame"), events: { abort: mark("events") }, observer: { disconnect: mark("observer") },
+    ownedLabels: [{ remove: mark("label") }], scene: { traverse(fn) { fn({ geometry: { dispose: mark("geometry") }, material: { dispose: mark("material") }, shadow: { map: { dispose: mark("shadow") } } }); } },
+    renderer: { dispose: mark("renderer"), domElement: { remove: mark("canvas") } } };
+  runInNewContext(code, context); context.dispose(); context.dispose();
+  assert.deepEqual(calls, ["frame", "events", "observer", "label", "geometry", "material", "shadow", "renderer", "canvas"]);
+});
+
+test("WebGL constructor failure throws instead of returning a fake successful office", () => {
+  const code = source.slice(source.indexOf('export function createOffice'), source.indexOf('  const events')).replace('export function', 'function') + '\n}';
+  const context = { THREE: { Scene: class {}, Color: class {}, OrthographicCamera: class { position = { set() {} }; lookAt() {} }, WebGLRenderer: class { constructor() { throw Error("No WebGL"); } } } };
+  runInNewContext(code, context);
+  assert.throws(() => context.createOffice({}, {}), /needs WebGL/);
 });

@@ -27,7 +27,7 @@ function fixture({ enabled = false, muted = true, flag = true } = {}) {
   }
   for (const id of ["#modal-root", ".modal", ".modal-close", "#game-viewport", "#sound"]) nodes[id] = new Node();
   const context = {
-    state: { sessionId: "s", scenario: "deadline", threads: {}, textMode: false, muted, attempts: [] }, voiceBuildEnabled: flag, activeSpeechNpc: null, voiceViewRefresh: null, activeListenMoment: null,
+    state: { entry: "office", sessionId: "s", scenario: "deadline", threads: {}, textMode: false, muted, attempts: [] }, voiceBuildEnabled: flag, activeSpeechNpc: null, voiceViewRefresh: null, activeListenMoment: null,
     voiceStatus: { enabled: true, stt: true },
     speechPlayback: createSpeechPlayback({ onSpeaking: (speaking, id) => { if (id === "alex_coach") context.markListen(speaking); }, fetchAudio: () => { fetches++; return new Promise((resolve) => { finish = resolve; }); }, windowRef: { AudioContext: class { async resume() { resumes++; } async decodeAudioData() { return {}; } createBufferSource() { return { connect() {}, disconnect() {}, stop() {}, start() { spoken.push(moment.better_reply); } }; } } } }),
     $: (id) => nodes[id] || null, document: { activeElement: null, createElement: () => new Node(), getElementById: (id) => nodes["#" + id], querySelectorAll: () => nodes["#debrief-content"]?.listeners || [] }, window: { localStorage: { setItem() {} } },

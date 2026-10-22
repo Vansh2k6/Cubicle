@@ -61,7 +61,6 @@ const icons = {
   Circle,
   Mic,
 };
-import { createOffice } from "./office.js";
 import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, getVoiceStatus, transcribeAudio, getTurnAudio, getDebriefAudio, newKey } from "./api.js";
 import { DEFAULT_SLIDERS } from "../shared/settings.js";
 import { settingsPreview } from "./settingsPreview.js";
@@ -88,18 +87,18 @@ function markListen(speaking) {
     button.setAttribute("aria-pressed", String(active));
   });
 }
-function unlockSpeech() { if (voiceBuildEnabled && !state.muted && voiceController?.isEnabled()) speechPlayback?.unlock().catch(() => {}); }
-function stopSpeech() { speechPlayback?.stop(); markListen(false); activeListenMoment = null; if (activeSpeechNpc) office.setSpeaking(activeSpeechNpc, false); activeSpeechNpc = null; }
+function unlockSpeech() { if (state.entry === "office" && !document.hidden && voiceBuildEnabled && !state.muted && voiceController?.isEnabled()) speechPlayback?.unlock().catch(() => {}); }
+function stopSpeech() { speechPlayback?.stop(); markListen(false); activeListenMoment = null; if (activeSpeechNpc) office?.setSpeaking(activeSpeechNpc, false); activeSpeechNpc = null; }
 async function playSpeech(line, thread, npcId, explicit = false) {
-  if (!speechPlayback || !voiceBuildEnabled || !line?.speech || state.muted || !voiceController?.isEnabled() || ending.busy(state.sessionId, state.scenario)) return;
-  const current = () => state.textMode && state.text === thread && state.dialogue === npcId && !thread.over && state.sessionId === line.sessionId && !state.muted && !ending.busy(state.sessionId, state.scenario) && voiceController?.isEnabled();
+  if (state.entry !== "office" || document.hidden || !speechPlayback || !voiceBuildEnabled || !line?.speech || state.muted || !voiceController?.isEnabled() || ending.busy(state.sessionId, state.scenario)) return;
+  const current = () => state.entry === "office" && !document.hidden && state.textMode && state.text === thread && state.dialogue === npcId && !thread.over && state.sessionId === line.sessionId && !state.muted && !ending.busy(state.sessionId, state.scenario) && voiceController?.isEnabled();
   speechPlayback.play({ sessionId: line.sessionId, speech: line.speech, text: line.text, current, muted: state.muted, explicit, unlocked: speechPlayback.isUnlocked(), npcId });
 }
 function playListen(sessionId, moment, current) {
-  if (!voiceBuildEnabled || !speechPlayback || state.muted || !voiceController?.isEnabled() || !moment?.moment_id || !current()) return;
+  if (state.entry !== "office" || document.hidden || !voiceBuildEnabled || !speechPlayback || state.muted || !voiceController?.isEnabled() || !moment?.moment_id || !current()) return;
   activeListenMoment = moment.moment_id;
   speechPlayback.play({ sessionId, speech: { available: true, mode: "server", turn_id: `moment:${moment.moment_id}` }, text: moment.better_reply,
-    current: () => current() && !state.muted && voiceController?.isEnabled(), muted: state.muted, explicit: true, npcId: "alex_coach" });
+    current: () => state.entry === "office" && !document.hidden && current() && !state.muted && voiceController?.isEnabled(), muted: state.muted, explicit: true, npcId: "alex_coach" });
 }
 function cancelVoice() {
   if (voiceMountCleanup) voiceMountCleanup();
@@ -114,7 +113,7 @@ function initialiseVoice(retry = false) {
       if (status.enabled && !voiceController) {
         speechPlayback = module.createSpeechPlayback({
           fetchAudio: (id, turnId, options) => turnId.startsWith("moment:") ? getDebriefAudio(id, turnId.slice(7), options) : getTurnAudio(id, turnId, options),
-          onSpeaking: (speaking, id) => { activeSpeechNpc = speaking ? id : null; office.setSpeaking(id, speaking); if (id === "alex_coach") markListen(speaking); },
+          onSpeaking: (speaking, id) => { activeSpeechNpc = speaking ? id : null; office?.setSpeaking(id, speaking); if (id === "alex_coach") markListen(speaking); },
           onUnavailable: () => { toast("Audio unavailable; the caption is still here."); initialiseVoice(true); },
         });
         voiceController = module.createVoiceController({
@@ -241,6 +240,7 @@ const people = {
 };
 const saved = readProgress(() => window.localStorage, Object.keys(scenarios));
 let state = {
+  entry: "selection",
   scenario: "deadline",
   near: null,
   dialogue: null,
@@ -314,6 +314,41 @@ function updateScenario() {
 function updateProgress() {
   $("#progress-count").textContent = new Set([...Object.keys(state.complete), ...state.attempts.map((a) => a.scenario)]).size;
 }
+function renderEntry() {
+  $("#scenario-cards").innerHTML = Object.entries(scenarios).map(([id, s]) => `<button class="scenario-card" type="button" data-entry-scenario="${id}"><span>${escapeHtml(s.tag)}</span><strong>${escapeHtml(s.title)}</strong><small>${escapeHtml(s.goal)}</small></button>`).join("");
+  document.querySelectorAll("[data-entry-scenario]").forEach((button) => button.onclick = () => showBriefing(button.dataset.entryScenario));
+}
+function showBriefing(id) {
+  if (state.entry !== "selection" || !scenarios[id]) return;
+  state.entry = "briefing";
+  state.scenario = id;
+  $("#scenario").value = id;
+  const s = scenarios[id], briefing = $("#scenario-briefing");
+  briefing.hidden = false;
+  briefing.innerHTML = `<h2>${escapeHtml(s.title)}</h2><p>${escapeHtml(s.description)}</p><dl><div><dt>Your role</dt><dd>Alex, an employee</dd></div><div><dt>Your objective</dt><dd>${escapeHtml(s.goal)}</dd></div></dl><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="entry-start" type="button">Start your day ${icon("arrow-right")}</button></div>`;
+  $("#scenario-cards").hidden = true;
+  $("#briefing-back").onclick = showSelection;
+  $("#entry-start").onclick = () => { updateScenario(); startOffice().catch(() => {}); };
+  refreshIcons();
+}
+function showSelection() {
+  officeGeneration++;
+  officeCancel?.(); officeCancel = null;
+  if (state.entry === "loading") { office?.dispose(); office = null; }
+  officeStart = null;
+  clearTimeout(entryFade);
+  document.body.classList.remove("office-mounted", "office-entering");
+  $("#entry-screen").classList.remove("entry-leaving");
+  state.entry = "selection";
+  $(".game-card").inert = true;
+  document.body.classList.remove("office-active");
+  $("#entry-screen").hidden = false;
+  $("#entry-loading").hidden = true;
+  $("#entry-error").hidden = true;
+  $("#scenario-briefing").hidden = true;
+  $("#scenario-cards").hidden = false;
+  renderEntry();
+}
 function persistProgress() {
   if (!saveProgress(() => window.localStorage, { complete: state.complete, attempts: state.attempts }, Object.keys(scenarios))) toast("Progress is available for this visit; browser storage is unavailable.");
 }
@@ -326,7 +361,12 @@ function toast(message) {
     3200,
   );
 }
-let office = createOffice($("#game-viewport"), {
+let office = null;
+let officeStart = null;
+let officeGeneration = 0;
+let entryFade;
+let officeCancel = null;
+function officeHooks() { return {
   onNear(id) {
     state.near = id;
     // P3.1 walk-away close: proximity stays live while the text panel is
@@ -348,13 +388,84 @@ let office = createOffice($("#game-viewport"), {
   },
   // Text panels do not freeze the scene (P3.1 walk-away close needs live
   // proximity). Typing is safe: the scene ignores key events from inputs.
-  isPaused: () => state.paused || (state.dialogue && !state.textMode),
+  isPaused: () => state.entry !== "office" || document.body.classList.contains("office-entering") || $("#end-practice-dialog").open || state.paused || (state.dialogue && !state.textMode),
   onReady() {
-    $("#loading").remove();
+    $("#loading")?.remove();
   },
-});
+  isVisible: () => state.entry === "office" || state.entry === "loading",
+}; }
+function enterOffice() {
+  state.entry = "office";
+  document.body.classList.add("office-active", "office-entering");
+  $("#entry-screen").classList.add("entry-leaving");
+  const finish = () => {
+    $("#entry-screen").hidden = true;
+    $("#entry-screen").classList.remove("entry-leaving");
+    document.body.classList.remove("office-entering");
+    $(".game-card").inert = false;
+    $("#game-viewport").focus({ preventScroll: true });
+  };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) finish();
+  else entryFade = setTimeout(finish, 450);
+}
+function officeFailure() {
+  cancelVoice(); stopSpeech();
+  office?.dispose(); office = null; officeStart = null;
+  state.entry = "error";
+  $(".game-card").inert = true;
+  document.body.classList.remove("office-active", "office-mounted", "office-entering");
+  clearTimeout(entryFade);
+  $("#entry-screen").classList.remove("entry-leaving");
+  $("#entry-screen").hidden = false;
+  $("#entry-loading").hidden = true;
+  $("#entry-error").hidden = false;
+  $("#entry-error").innerHTML = '<p>We could not prepare the office. Check graphics support, then try again.</p><button class="primary-button" id="entry-retry" type="button">Retry</button><button class="secondary-button" id="entry-back" type="button">Back</button>';
+  $("#entry-retry").onclick = () => startOffice().catch(() => {});
+  $("#entry-back").onclick = showSelection;
+  $("#entry-retry").focus({ preventScroll: true });
+}
+function startOffice() {
+  if (officeStart) return officeStart;
+  if (!["briefing", "error"].includes(state.entry)) return Promise.resolve(office);
+  const generation = ++officeGeneration;
+  state.entry = "loading";
+  document.body.classList.add("office-mounted");
+  $("#scenario-briefing").hidden = true;
+  $("#scenario-cards").hidden = true;
+  $("#entry-error").hidden = true;
+  $("#entry-loading").hidden = false;
+  if (office) { enterOffice(); return Promise.resolve(office); }
+  let instance;
+  officeStart = import("./office.js").then(({ createOffice }) => {
+    if (generation !== officeGeneration) return null;
+    return new Promise((resolve, reject) => {
+      officeCancel = () => reject(new Error("Office entry cancelled"));
+      instance = createOffice($("#game-viewport"), { ...officeHooks(),
+        onReady() {
+          if (generation !== officeGeneration) { instance?.dispose(); resolve(null); return; }
+          $("#loading")?.remove();
+          resolve(instance);
+        },
+        onError(error) {
+          if (generation === officeGeneration && state.entry === "loading") reject(error);
+          else if (instance === office && state.entry === "office") officeFailure();
+        },
+      });
+      office = instance;
+    });
+  }).then((result) => {
+    if (generation === officeGeneration && result) enterOffice();
+    else instance?.dispose();
+    return result;
+  }).catch((error) => {
+    instance?.dispose();
+    if (generation === officeGeneration) officeFailure();
+    throw error;
+  }).finally(() => { if (generation === officeGeneration) { officeStart = null; officeCancel = null; } });
+  return officeStart;
+}
 function chime() {
-  if (state.muted) return;
+  if (state.entry !== "office" || document.hidden || state.muted) return;
   try {
     const ac = window.audioContext || new AudioContext();
     window.audioContext = ac;
@@ -374,7 +485,7 @@ function chime() {
 window.addEventListener("blur", stopSpeech);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") stopSpeech(); });
 function openConversation() {
-  if (!state.near || state.paused) return;
+  if (state.entry !== "office" || $("#end-practice-dialog").open || !state.near || state.paused) return;
   // E near another NPC while a text thread is open switches threads on the
   // same session (P3.1 interact{npc_id}); the previous thread keeps its
   // history and any in-flight turn.
@@ -637,7 +748,7 @@ function renderTextDialogue() {
     voiceMountCleanup = voiceController.mount({
       toggle: $("#voice-toggle"), mic: $("#voice-mic"), status: $("#voice-status"), input,
       sessionId: state.sessionId,
-      current: () => state.textMode && state.text === t && state.dialogue === npcId && state.sessionId != null && !t.busy && !t.over && !ending.busy(state.sessionId, state.scenario),
+      current: () => state.entry === "office" && !document.hidden && state.textMode && state.text === t && state.dialogue === npcId && state.sessionId != null && !t.busy && !t.over && !ending.busy(state.sessionId, state.scenario),
     });
   }
   if (input && !t.busy) input.focus({ preventScroll: true });
@@ -655,7 +766,7 @@ async function sendTextTurn(text, key, isRetry) {
   const npcId = state.dialogue;
   const sessionId = state.sessionId;
   const current = captureRun(state);
-  if (!thread || !npcId || thread.busy || state.sessionId == null || thread.over || ending.busy(state.sessionId, state.scenario)) return;
+  if (state.entry !== "office" || !thread || !npcId || thread.busy || state.sessionId == null || thread.over || ending.busy(state.sessionId, state.scenario)) return;
   // The user line is appended exactly once: retries resend the same key and
   // must not duplicate the transcript or double-apply engine state.
   if (!isRetry) thread.transcript.push({ who: "user", name: "You", text });
@@ -865,7 +976,7 @@ function completeScenario() {
     state.scenario = keys[(keys.indexOf(state.scenario) + 1) % keys.length];
     $("#scenario").value = state.scenario;
     closeModal();
-    office.reset();
+    office?.reset();
     updateScenario();
   };
   refreshIcons();
@@ -883,7 +994,7 @@ function resetTextRun(scenarioId = state.scenario) {
   state.round = 0;
   state.score = 0;
   state.appliedSettings = null;
-  office.reset();
+  office?.reset();
   updateScenario();
 }
 function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null) {
@@ -1011,7 +1122,7 @@ function closeModal() {
 function showGuide() {
   showModal(
     "Make yourself at home.",
-    `<p>Practice everyday work conversations at your own pace.</p><ol class="guide-list"><li><strong>Pick a moment.</strong><span>Choose a workplace scenario from the sidebar.</span></li><li><strong>Explore the office.</strong><span>Use WASD or arrow keys. You can also click an open spot on the floor, or use the touch controls.</span></li><li><strong>Start a conversation.</strong><span>Get close to a colleague and press E, or click the talk prompt. Choose a reply and see how the conversation unfolds.</span></li></ol><div class="reflection">Press Escape to leave a conversation. Restart any time—this is your space to practice.</div>`,
+    `<p>Practice everyday work conversations at your own pace.</p><ol class="guide-list"><li><strong>Pick a moment.</strong><span>Choose a workplace scenario from the menu.</span></li><li><strong>Explore the office.</strong><span>Use WASD or arrow keys. You can also click an open spot on the floor, or use the touch controls.</span></li><li><strong>Start a conversation.</strong><span>Get close to a colleague and press E, or click the talk prompt. Choose a reply and see how the conversation unfolds.</span></li></ol><div class="reflection">Press Escape to leave a conversation. Restart any time—this is your space to practice.</div>`,
   );
 }
 $("#scenario").onchange = (e) => {
@@ -1024,6 +1135,40 @@ $("#restart").onclick = () => {
   toast("A fresh start. Take it at your own pace.");
 };
 $("#talk-prompt").onclick = openConversation;
+let menuFocus = null;
+$("#office-menu").onclick = () => {
+  if (state.entry !== "office") return;
+  const dialog = $("#end-practice-dialog");
+  menuFocus = document.activeElement;
+  dialog.returnValue = "cancel";
+  dialog.showModal();
+  dialog.querySelector("button[value=cancel]").focus();
+};
+$("#end-practice-dialog").addEventListener("close", () => {
+  const dialog = $("#end-practice-dialog");
+  if (dialog.returnValue !== "confirm") {
+    if (menuFocus?.isConnected) menuFocus.focus({ preventScroll: true });
+    return;
+  }
+  cancelVoice(); stopSpeech();
+  closeModal();
+  resetTextRun();
+  showSelection();
+  $("#entry-title").focus({ preventScroll: true });
+});
+$("#office-context").onclick = () => {
+  const s = scenarios[state.scenario];
+  showModal("Your practice", `<h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.description)}</p><p>${escapeHtml(s.goal)}</p><button class="secondary-button" id="context-progress">My progress</button><button class="secondary-button" id="context-settings">Conversation settings</button><button class="secondary-button" id="context-restart">Restart scenario</button><div id="context-people"></div>`);
+  $("#context-progress").onclick = showProgress;
+  $("#context-settings").onclick = () => {
+    const settings = state.appliedSettings || DEFAULT_SLIDERS;
+    showModal("Conversation settings", `<p>${escapeHtml(settingsPreview(settings))}</p><dl>${Object.entries(settings).map(([name, value]) => `<dt>${escapeHtml(name)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl><p>Choose your settings when you start your first conversation. Settings stay fixed for that attempt.</p>`);
+  };
+  $("#context-restart").onclick = () => { closeModal(); resetTextRun(); };
+  const peopleBox = $("#context-people");
+  peopleBox.innerHTML = Object.entries(people).map(([id, p]) => `<button class="person" data-context-person="${id}"><strong>${p.name}</strong><small>${p.role}</small></button>`).join("");
+  peopleBox.querySelectorAll("[data-context-person]").forEach((button) => button.onclick = () => { closeModal(); office?.highlight(button.dataset.contextPerson); });
+};
 $("#help").onclick = showGuide;
 $("#nav-guide").onclick = showGuide;
 $("#nav-office").onclick = () => {
@@ -1039,7 +1184,7 @@ $("#profile").onclick = () =>
 document.querySelectorAll("[data-person]").forEach(
   (b) =>
     (b.onclick = () => {
-      office.highlight(b.dataset.person);
+      office?.highlight(b.dataset.person);
       toast(
         `Find ${people[b.dataset.person].name.split(" ")[0]} by the highlighted marker. Walk over to chat.`,
       );
@@ -1070,7 +1215,7 @@ refreshIcons();
 $("#fullscreen").onclick = async () => {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
-    else await $(".game-card").requestFullscreen();
+    else await document.documentElement.requestFullscreen();
   } catch {
     toast("Fullscreen is unavailable in this browser.");
   }
@@ -1079,12 +1224,14 @@ document.querySelectorAll("[data-move]").forEach((b) => {
   b.onpointerdown = (e) => {
     e.preventDefault();
     b.setPointerCapture(e.pointerId);
-    office.setKey(b.dataset.move, true);
+    if (state.entry === "office" && !$("#end-practice-dialog").open) office?.setKey(b.dataset.move, true);
   };
   b.onpointerup = b.onpointercancel = () =>
-    office.setKey(b.dataset.move, false);
+    office?.setKey(b.dataset.move, false);
 });
 window.addEventListener("keydown", (e) => {
+  if ($("#end-practice-dialog").open) return;
+  if (state.entry !== "office") return;
   if (e.key === "Escape") {
     if ($("#modal-root").children.length) closeModal();
     else if (state.dialogue) closeConversation();
@@ -1120,3 +1267,4 @@ document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement) $("#app").append($("#modal-root"));
 });
 updateScenario();
+showSelection();
