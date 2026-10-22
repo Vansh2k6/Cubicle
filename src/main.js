@@ -147,7 +147,7 @@ const scenarios = {
       "The project was due yesterday. Your manager is waiting for an update. Time to have that conversation.",
     goal: "Own the delay and agree on a realistic next step.",
     opening:
-      "Hey Alex, I noticed the project wasn’t submitted yesterday. Can you walk me through what happened?",
+      "Hey Shubhankar, I noticed the project wasn’t submitted yesterday. Can you walk me through what happened?",
     choices: [
       [
         "I underestimated the final review. I should have flagged the delay sooner.",
@@ -173,7 +173,7 @@ const scenarios = {
       "An important email slipped through the cracks. Your manager needs an answer before the team can move forward.",
     goal: "Acknowledge the oversight and close the loop.",
     opening:
-      "Hi Alex. I sent you an email about the client proposal two days ago. I haven’t heard back. Did you get a chance to see it?",
+      "Hi Shubhankar. I sent you an email about the client proposal two days ago. I haven’t heard back. Did you get a chance to see it?",
     choices: [
       [
         "I missed it, and I’m sorry for holding things up. Let me prioritize it now.",
@@ -199,7 +199,7 @@ const scenarios = {
       "You missed a scheduled check-in with your manager. Reconnect, understand what you missed, and reset expectations.",
     goal: "Apologize, catch up, and arrange a new check-in.",
     opening:
-      "Hey Alex, we missed you on the project check-in this morning. Is everything okay?",
+      "Hey Shubhankar, we missed you on the project check-in this morning. Is everything okay?",
     choices: [
       [
         "I’m sorry I missed it. I lost track of time and should have let you know.",
@@ -220,22 +220,22 @@ const scenarios = {
 };
 const people = {
   maya: {
-    name: "Maya Chen",
+    name: "Snehal Mane",
     role: "Your manager",
     color: "purple",
-    initials: "MC",
+    initials: "SM",
   },
   jordan: {
-    name: "Jordan Lee",
+    name: "Vansh Singh",
     role: "Your teammate",
     color: "peach",
-    initials: "JL",
+    initials: "VS",
   },
   sam: {
-    name: "Sam Taylor",
+    name: "Prathamest Surwase",
     role: "People & culture",
     color: "sage",
-    initials: "ST",
+    initials: "PS",
   },
 };
 const saved = readProgress(() => window.localStorage, Object.keys(scenarios));
@@ -303,7 +303,7 @@ function updateScenario() {
   $("#objective-text").textContent = s.goal;
   if (state.scenario === "deadline") updatePublicGuidance();
   else {
-    $("#next-heading").textContent = "Say hello to Maya";
+    $("#next-heading").textContent = "Say hello to Snehal";
     $("#next-description").innerHTML =
       "Walk up to your manager and press <kbd>E</kbd> to start the conversation.";
     $(".step-number").innerHTML = "01 <span>/ 03</span>";
@@ -325,7 +325,7 @@ function showBriefing(id) {
   $("#scenario").value = id;
   const s = scenarios[id], briefing = $("#scenario-briefing");
   briefing.hidden = false;
-  briefing.innerHTML = `<h2>${escapeHtml(s.title)}</h2><p>${escapeHtml(s.description)}</p><dl><div><dt>Your role</dt><dd>Alex, an employee</dd></div><div><dt>Your objective</dt><dd>${escapeHtml(s.goal)}</dd></div></dl><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="entry-start" type="button">Start your day ${icon("arrow-right")}</button></div>`;
+  briefing.innerHTML = `<h2>${escapeHtml(s.title)}</h2><p>${escapeHtml(s.description)}</p><dl><div><dt>Your role</dt><dd>Shubhankar, an employee</dd></div><div><dt>Your objective</dt><dd>${escapeHtml(s.goal)}</dd></div></dl><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="entry-start" type="button">Start your day ${icon("arrow-right")}</button></div>`;
   $("#scenario-cards").hidden = true;
   $("#briefing-back").onclick = showSelection;
   $("#entry-start").onclick = () => { updateScenario(); startOffice().catch(() => {}); };
@@ -531,8 +531,8 @@ function renderDialogue(feedback = "") {
   } else {
     line =
       state.dialogue === "jordan"
-        ? `Hey Alex! ${state.scenario === "deadline" ? "I’ve been there with a late project. Be honest with Maya, then bring a realistic plan. You don’t have to have it all figured out." : state.scenario === "email" ? "A quick, clear reply goes a long way. Tell Maya when you can follow up, then make a little space in your day for your inbox." : "Check the meeting notes before you reconnect. It helps to arrive with a few specific questions."}`
-        : "Hi Alex! A reminder: tricky conversations get easier with practice. Take a breath, listen carefully, and focus on what you can do next. You’ve got this.";
+        ? `Hey Shubhankar! ${state.scenario === "deadline" ? "I’ve been there with a late project. Be honest with Snehal, then bring a realistic plan. You don’t have to have it all figured out." : state.scenario === "email" ? "A quick, clear reply goes a long way. Tell Snehal when you can follow up, then make a little space in your day for your inbox." : "Check the meeting notes before you reconnect. It helps to arrive with a few specific questions."}`
+        : "Hi Shubhankar! A reminder: tricky conversations get easier with practice. Take a breath, listen carefully, and focus on what you can do next. You’ve got this.";
     choices = null;
   }
   $("#dialogue-layer").innerHTML =
@@ -969,7 +969,7 @@ function completeScenario() {
   $(".step-number").innerHTML = "03 <span>/ 03</span>";
   showModal(
     "A small step worth celebrating.",
-    `<div class="completion-symbol">${icon("check")}</div><p>You practiced <strong>${scenarios[state.scenario].short.toLowerCase()}</strong> and made a clear plan with Maya.</p><div class="reflection"><strong>Take this into your next conversation</strong><p>Own what happened. Recognize the impact. Offer a specific next step.</p></div><button id="try-next" class="primary-button">Try another scenario ${icon("arrow-right")}</button>`,
+    `<div class="completion-symbol">${icon("check")}</div><p>You practiced <strong>${scenarios[state.scenario].short.toLowerCase()}</strong> and made a clear plan with Snehal.</p><div class="reflection"><strong>Take this into your next conversation</strong><p>Own what happened. Recognize the impact. Offer a specific next step.</p></div><button id="try-next" class="primary-button">Try another scenario ${icon("arrow-right")}</button>`,
   );
   $("#try-next").onclick = () => {
     const keys = Object.keys(scenarios);
@@ -1020,7 +1020,7 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, r
       renderTextDialogue();
       return;
     }
-    toast("Could not start a fresh conversation. Find Maya and retry.");
+    toast("Could not start a fresh conversation. Find Snehal and retry.");
   });
 }
 function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
@@ -1051,7 +1051,7 @@ function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
         $("#talk-prompt").classList.add("hidden");
       }
       startRetrySession(draft, resumeNpc);
-      toast(resumeNpc ? "Settings fixed. Preparing your conversation…" : "Settings fixed for this attempt. Find Maya to begin.");
+      toast(resumeNpc ? "Settings fixed. Preparing your conversation…" : "Settings fixed for this attempt. Find Snehal to begin.");
     };
   };
   getScenario("deadline").then(render, () => {
@@ -1066,13 +1066,13 @@ function restartTextRun(withSettings, scenarioId = state.scenario, settings = st
   closeModal();
   resetTextRun(scenarioId);
   if (scenarioId !== "deadline") {
-    toast("Fresh scenario ready. Find Maya to begin again.");
+    toast("Fresh scenario ready. Find Snehal to begin again.");
     return;
   }
   if (!withSettings) {
     state.appliedSettings = { ...previous };
     startRetrySession(previous);
-    toast("Preparing a fresh conversation. Find Maya to begin again.");
+    toast("Preparing a fresh conversation. Find Snehal to begin again.");
     return;
   }
   openSettings(previous);
@@ -1128,7 +1128,7 @@ function showGuide() {
 $("#scenario").onchange = (e) => {
   state.scenario = e.target.value;
   resetTextRun();
-  toast("New scenario, fresh start. Find Maya to begin.");
+  toast("New scenario, fresh start. Find Snehal to begin.");
 };
 $("#restart").onclick = () => {
   resetTextRun();
@@ -1179,7 +1179,7 @@ $("#nav-progress").onclick = showProgress;
 $("#profile").onclick = () =>
   showModal(
     "Meet your work self.",
-    `<div class="large-avatar">A</div><h3>Alex Morgan</h3><p>You’re a project coordinator at a small creative company. Maya is your manager, Jordan is your teammate, and Sam looks after people & culture.</p><div class="reflection">Your mission: build confidence in the everyday conversations that make work better.</div>`,
+    `<div class="large-avatar">SP</div><h3>Shubhankar Parsewar</h3><p>You’re a project coordinator at a small creative company. Snehal is your manager, Vansh is your teammate, and Prathamest looks after people & culture.</p><div class="reflection">Your mission: build confidence in the everyday conversations that make work better.</div>`,
   );
 document.querySelectorAll("[data-person]").forEach(
   (b) =>

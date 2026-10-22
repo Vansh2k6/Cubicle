@@ -4,6 +4,8 @@
 **Mode:** Operate — the visitor completes a task (a practice conversation). Scanability, consistency with the scripted panel, and native form expectations outrank expression.
 **Method:** Impeccable narrow refinement of the incumbent implementation (v4.1.1; owning playbooks `harden.md` + `operate.md`, floor `craft-floor.md`). Preserve the ivory interface, the office viewport, and keyboard-only operation. No quick-reply chips (D-12 unconfirmed — left out).
 
+**Current cast:** Shubhankar Parsewar (player), Snehal Mane (manager), Vansh Singh (teammate), and Prathamest Surwase (People & culture). Historical design notes retain their original names where they describe past work.
+
 ## What changed and what did not
 
 - SC-01 ("Missed a project deadline") conversations — with Maya, Jordan, or Sam — now render a transcript + text input that calls `POST /sessions/{id}/turn` for the NPC the player is near. E opens it; ESC closes it.

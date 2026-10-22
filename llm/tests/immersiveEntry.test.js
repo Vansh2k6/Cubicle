@@ -45,7 +45,7 @@ for (const id of ['deadline', 'email', 'call']) test(`production selection brief
   const f = fixture(); f.context.renderEntry();
   assert.equal((f.get('#scenario-cards').innerHTML.match(/data-entry-scenario=/g) || []).length, 3);
   f.context.showBriefing(id); assert.equal(f.state.entry, 'briefing'); assert.equal(f.state.scenario, id);
-  assert.match(f.get('#scenario-briefing').innerHTML, /Alex, an employee/);
+  assert.match(f.get('#scenario-briefing').innerHTML, /Shubhankar, an employee/);
   assert.equal(f.counts.loads, 0); f.get('#briefing-back').onclick(); assert.equal(f.state.entry, 'selection');
 });
 test('Start defers one import and one scene, waits for successful onReady, then fades for 450 ms', async () => {

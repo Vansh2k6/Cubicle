@@ -25,15 +25,18 @@ function factById(scenario, factId) {
   return (scenario.facts || []).find((f) => f && f.id === factId) || null;
 }
 
-function canonLines(publicCanon) {
+function canonLines(publicCanon, scenario) {
   if (!publicCanon || typeof publicCanon !== "object") return ["(no verified context)"];
+  const nameFor = (id, fallback) => (scenario.npcs || []).find((npc) => npc.id === id)?.name || fallback;
+  const manager = nameFor("maya", "the manager");
+  const player = scenario.player?.name || "the user";
   const out = [];
   if (publicCanon.project_status) out.push(`- Project status: ${publicCanon.project_status}.`);
   if (typeof publicCanon.original_due_day === "number") {
     out.push(`- The project was due ${Math.abs(publicCanon.original_due_day)} day(s) ago.`);
   }
-  if (publicCanon.maya_manages_project) out.push("- Maya manages the project.");
-  if (publicCanon.alex_responsible_for_update) out.push("- Alex (the user) is responsible for the update.");
+  if (publicCanon.maya_manages_project) out.push(`- ${manager} manages the project.`);
+  if (publicCanon.alex_responsible_for_update) out.push(`- ${player} (the user) is responsible for the update.`);
   return out.length > 0 ? out : ["(no verified context)"];
 }
 
@@ -97,7 +100,7 @@ export function buildNpcPrompt(opts = {}) {
     toneText ? `Tone: ${toneText}` : "Tone: neutral and professional.",
     "",
     "Verified project context (you may use this):",
-    ...canonLines(scenario.canon && scenario.canon.public),
+    ...canonLines(scenario.canon && scenario.canon.public, scenario),
     "",
     "Your disclosed facts (only these — nothing else private):",
     ...(revealedLines.length > 0 ? revealedLines : ["- (none yet)"]),

@@ -18,9 +18,9 @@ const F2_KEYS = ["reusable", "module", "afternoon"];
 const F3_KEYS = ["heads-up", "headsup", "same-day", "same day"];
 
 const HINT = {
-  maya: "Talk to Maya about the missed deadline.",
-  jordan: "Check in with Jordan about what's left.",
-  plan: "Go back to Maya and agree a plan.",
+  maya: "Talk to Snehal about the missed deadline.",
+  jordan: "Check in with Vansh about what's left.",
+  plan: "Go back to Snehal and agree a plan.",
   done: "Nice work — wrap up and reflect on the conversation.",
 };
 

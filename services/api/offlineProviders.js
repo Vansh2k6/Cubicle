@@ -23,7 +23,7 @@ export function rulesToEvents(text) {
   const t = String(text || "");
   const events = [];
   const push = (type, params) => events.push({ type, params: params || {} });
-  if (/\bjordan\b/i.test(t) && /\b(module|remaining work)\b/i.test(t)) {
+  if (/\b(jordan|vansh)\b/i.test(t) && /\b(module|remaining work)\b/i.test(t)) {
     if (/\bhalf\b/i.test(t)) push("relayed_fact", { fact_id: "F2", accurate: true });
     else if (/all the remaining work|entire remaining work|no module|nothing built/i.test(t)) push("relayed_fact", { fact_id: "F2", accurate: false });
   }
@@ -60,7 +60,7 @@ export function rulesToEvents(text) {
   if (has(/sorry|apolog/i, t)) {
     push("apologized");
   }
-  if (has(/accepts?\s+(your|the)?\s*help|let'?s pair|pair with (you|jordan)|sounds good[^.]*pair/i, t)) {
+  if (has(/accepts?\s+(your|the|jordan'?s|vansh(?:\s+singh)?'?s)?\s*help|let'?s pair|pair with (you|jordan|vansh(?:\s+singh)?)|sounds good[^.]*pair/i, t)) {
     push("confirmed_next_steps", { help_accepted: true });
   }
   if (has(/recap|to summarize|let me summarize/i, t)) {

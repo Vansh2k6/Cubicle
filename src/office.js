@@ -384,17 +384,17 @@ export function createOffice(container, hooks) {
         "#5d5969",
         true,
       ),
-      name: "Maya",
+      name: "Snehal",
       role: "Your manager",
     },
     jordan: {
       ...character(4.65, -1.6, "#c79463", "#3c332d", "#ba805c", "#626d62"),
-      name: "Jordan",
+      name: "Vansh",
       role: "Your teammate",
     },
     sam: {
       ...character(-4.5, 4.55, "#87a48d", "#b17d49", "#efc79a", "#758176"),
-      name: "Sam",
+      name: "Prathamest",
       role: "People & culture",
     },
   };

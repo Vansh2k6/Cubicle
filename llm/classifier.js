@@ -86,8 +86,8 @@ const AMBIGUOUS_MARKERS = [
   "whenever",
 ];
 
-// Explicit acceptance of Jordan's offered help (R-14 prompt; code enforces strictly).
-const EXPLICIT_ACCEPT = /accepts?\s+(your|jordan'?s|the)?\s*help|yes[^.]*help|let'?s\s+pair|pair\s+with\s+(you|jordan)|sounds\s+good[^.]*pair/i;
+// Explicit acceptance of Vansh's offered help; Jordan remains a legacy alias.
+const EXPLICIT_ACCEPT = /accepts?\s+(your|jordan'?s|vansh(?:\s+singh)?'?s|the)?\s*help|yes[^.]*help|let'?s\s+pair|pair\s+with\s+(you|jordan|vansh(?:\s+singh)?)|sounds\s+good[^.]*pair/i;
 
 let cachedPrompt = null;
 export function getClassifierPrompt() {

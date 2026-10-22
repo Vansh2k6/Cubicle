@@ -55,9 +55,9 @@ export function nextHintFor(goals) {
   const g = goals || {};
   const done = (id) => !!(g[id] && g[id].status === "done");
   if (done("G3")) return "Nice work — wrap up and reflect on the conversation.";
-  if (done("G1") && done("G2")) return "Go back to Maya and agree a plan.";
-  if (done("G1")) return "Check in with Jordan about what's left.";
-  return "Talk to Maya about the missed deadline.";
+  if (done("G1") && done("G2")) return "Go back to Snehal and agree a plan.";
+  if (done("G1")) return "Check in with Vansh about what's left.";
+  return "Talk to Snehal about the missed deadline.";
 }
 
 // Visible-goal projection with G3-style dependency locks computed

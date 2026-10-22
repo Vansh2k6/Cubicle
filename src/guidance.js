@@ -6,8 +6,8 @@ export function projectGuidance({ goals = [], currentNpc = null, hint = "", ende
   const g1 = complete(goals, "G1");
   const g2 = complete(goals, "G2");
   const g3 = complete(goals, "G3");
-  let heading = "Start with Maya";
-  let description = "Own the delay and share an honest status with Maya.";
+  let heading = "Start with Snehal";
+  let description = "Own the delay and share an honest status with Snehal.";
   let step = "01";
   let question = "Try naming the delay and sharing the status you can confirm.";
 
@@ -22,17 +22,17 @@ export function projectGuidance({ goals = [], currentNpc = null, hint = "", ende
     step = "03";
     question = "Summarize what you agreed, then finish practice when you are ready.";
   } else if (g1 && !g2) {
-    heading = "Check in with Jordan";
-    description = "Ask Jordan what work remains and where support could help.";
+    heading = "Check in with Vansh";
+    description = "Ask Vansh what work remains and where support could help.";
     step = "02";
-    question = "Ask Jordan what remains and where a teammate could help.";
+    question = "Ask Vansh what remains and where a teammate could help.";
   } else if (g1 && g2) {
-    heading = "Return to Maya";
-    description = "Agree a next step with Maya, then recap it together.";
+    heading = "Return to Snehal";
+    description = "Agree a next step with Snehal, then recap it together.";
     step = "03";
-    question = "Ask Maya about a workable next step, then recap what you agree.";
+    question = "Ask Snehal about a workable next step, then recap what you agree.";
   }
 
-  if (!ended && currentNpc === "sam") question = "Ask Sam for advice on how to approach the conversation.";
+  if (!ended && currentNpc === "sam") question = "Ask Prathamest for advice on how to approach the conversation.";
   return { heading, description, step, objective: description, question, hint: String(hint || "") };
 }

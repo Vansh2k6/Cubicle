@@ -6,6 +6,7 @@ import { classifyTurn, buildClassifierInput, getClassifierPrompt, TAXONOMY } fro
 import { loadConfig } from "../config.js";
 import { cannedClassifier, FakeProvider } from "../fakeProvider.js";
 import { createSession, applyTurn } from "../../engine/engine.js";
+import { rulesToEvents } from "../../services/api/offlineProviders.js";
 
 const scenario = JSON.parse(readFileSync(new URL("../../scenarios/missed_deadline.json", import.meta.url), "utf8"));
 const ownershipCases = JSON.parse(readFileSync(new URL("../../evals/cases/ownership-status.json", import.meta.url), "utf8")).cases;
@@ -92,6 +93,15 @@ test("help_accepted kept only on explicit wording", async () => {
   const no = new FakeProvider([mk()]);
   const outNo = await classifyTurn(deps(no), input("I will send you an update tomorrow."));
   assert.equal(outNo.events[0].params.help_accepted, false);
+});
+
+test("Vansh first/full-name help acceptance works while Jordan remains a legacy alias", async () => {
+  for (const words of ["I accept Vansh's help.", "I accept Vansh Singh's help.", "Let's pair with Vansh.", "Let's pair with Vansh Singh.", "I accept Jordan's help."]) {
+    const fake = new FakeProvider([cannedClassifier([{ type: "confirmed_next_steps", params: { help_accepted: true } }])]);
+    const classified = await classifyTurn(deps(fake), input(words));
+    assert.equal(classified.events[0].params.help_accepted, true, words);
+    assert.ok(rulesToEvents(words).some((event) => event.type === "confirmed_next_steps" && event.params.help_accepted), words);
+  }
 });
 
 test("classifier runs at temperature 0 and reports attempts", async () => {
