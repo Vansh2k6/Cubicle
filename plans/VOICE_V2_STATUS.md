@@ -8,6 +8,8 @@ V1's ignored environment/models can serve this checkout over loopback with the s
 
 The human also requested smoother direction changes. Displayed heading now eases along the shortest turn while movement direction responds immediately; original positions, speed, collisions, proximity and controls are unchanged. Reduced-motion preference, pause, reset and visibility behavior are preserved. Root reproduced the original single-frame 180-degree flip and verified the final multi-frame turn in the browser. This bounded scene correction is isolated to the voice branch; the friend's primary checkout is untouched.
 
+For a fullscreen performance report, Chrome on the user's display improved with the probe's DPR-1 setting, so the office now renders at one device pixel per CSS pixel. The baseline fullscreen and DPR-1 windowed runs were not comparable enough to establish an FPS cause, and the probe identified Microsoft Basic Render Driver rather than the expected discrete GPU. Hardware acceleration remains an operator check; this change does not alter physics, motion, shadows, or adaptive rendering.
+
 The user specifically requested one real Groq timing check and permitted private `.env` loading. Exactly two HTTP calls succeeded (classifier and NPC), with no fallback: local STT 307ms, guarded text turn 1333ms, TTS first byte 453ms; combined first audio byte 2093ms. This is one synthetic sample, not percentile or microphone acceptance. The metadata-only report contains no key, transcript or audio. No further live calls are authorized without another specific request.
 
 See `voice-sidecar/README.md` for opt-in setup and controls. No live provider is enabled by these committed defaults.

@@ -19,7 +19,8 @@ export function createOffice(container, hooks) {
       "This office needs WebGL. Please enable hardware acceleration or open it in a modern browser.";
     return { reset() {}, highlight() {}, setKey() {} };
   }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // CSS-pixel rendering avoids fullscreen/scaled-display GPU cost.
+  renderer.setPixelRatio(1);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setClearColor("#e9eee7");
