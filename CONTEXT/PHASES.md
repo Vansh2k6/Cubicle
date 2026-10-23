@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P7 acceptance pending. Implementation through S1-14 hardening is present: built-only loopback demo, offline gate and operator/exit plan. Fresh checks: 217 offline tests, 35 API tests, build/bundle scan; built-browser reset/debrief/progress checks. Live acceptance and tuning remain deferred under D-28; do not start Stage 2 or claim demo readiness. Presets are opt-in; voice is not shipped.
+**Current phase:** S1-P7 acceptance pending. Implementation through S1-14 hardening is present: built-only loopback demo, offline gate and operator/exit plan. Fresh checks: 217 offline tests, 35 API tests, build/bundle scan; built-browser reset/debrief/progress checks. Live acceptance and tuning remain deferred under D-28; do not start Stage 2 or claim demo readiness. Presets are opt-in; voice is not shipped. D-37 narrowly authorises the scenario-foundation documentation and its sequential shared-runtime work; it does not waive these acceptance criteria or advance the phase.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
