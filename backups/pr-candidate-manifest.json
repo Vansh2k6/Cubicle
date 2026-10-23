@@ -1,0 +1,186 @@
+{
+  "base": "b1605bbaa1d763abe7766b2772cf5089b5e15494",
+  "head": "0bc4e4b1f1a594b64cf5f8b983f49a821d8cb446",
+  "files": [
+    {
+      "path": "CONTEXT/ARCHITECTURE.md",
+      "sha256": "b47f5671d38b0a6716172dfb5e6794f70ce571f608cec8fc318731731ae3a5c8",
+      "bytes": 52271
+    },
+    {
+      "path": "CONTEXT/IMPROVEMENTS.md",
+      "sha256": "e914ab61b2336d9d93f1f16d2623c1fe100738ed1b81ba057748940f50f73854",
+      "bytes": 9552
+    },
+    {
+      "path": "DESIGN.md",
+      "sha256": "26074568cf5bc3aa311b1ba78adb772f01e861d0dd05ff43a5c7d173ba903ace",
+      "bytes": 16326
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-18-ui-simplification-plan.md",
+      "sha256": "822cc5c7737bfb42da28092845431f695669bcf08c004ef2f8af340c05b58b6b",
+      "bytes": 2730
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-18-taste-ui-design.md",
+      "sha256": "57f966bf17d33753f4364e5e931f679a07e4bfa6aa8c987aafabb53adef2c7e8",
+      "bytes": 1990
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-18-ui-simplification-spec.md",
+      "sha256": "82555b972b550f1a80eb9414e862c299903a8e359f2f8453dca9d4557d96867f",
+      "bytes": 2731
+    },
+    {
+      "path": "evals/cases/ownership-status.json",
+      "sha256": "822d358a86c0dd12c22c9b10979db7ed5ee87eb596f7ce247b2fba9644ed2fb1",
+      "bytes": 1882
+    },
+    {
+      "path": "evals/reports/bundle-scan-2026-10-18.json",
+      "sha256": "cea7ab32cf59f2d2559ccb75e245f93b03406897a507a19d0fb92ee2bf87494f",
+      "bytes": 357
+    },
+    {
+      "path": "index.html",
+      "sha256": "59eac76174aa543766ea9759b64c771566fae47adc7004a9db7fba37d692309b",
+      "bytes": 11687
+    },
+    {
+      "path": "llm/classifier.js",
+      "sha256": "d2cdf63768ccfcc054d0492713d83ce933025327382bb2d14b0ca9bcba974e21",
+      "bytes": 6658
+    },
+    {
+      "path": "llm/config.js",
+      "sha256": "d8c346cc33d34edd2cad3458eca0c6ba81bef6f88c8ac964ac7d99c3a70f9dbe",
+      "bytes": 3215
+    },
+    {
+      "path": "llm/gateway.js",
+      "sha256": "6df5f70dbf4bdc1dbbd54ee0881b3cffd80087010884cb5f45b5680daed41701",
+      "bytes": 7400
+    },
+    {
+      "path": "llm/npc.js",
+      "sha256": "f08ac66b6b29849be4b7e0a96cba2d0986dbd119dd8d110aa42547c8ac45d873",
+      "bytes": 2537
+    },
+    {
+      "path": "llm/pipeline.js",
+      "sha256": "bbac29caa47cd4d490a3e532b60b82d8e87f3120c33798e98106e093456f063c",
+      "bytes": 15804
+    },
+    {
+      "path": "llm/prompts/classifier/v2.md",
+      "sha256": "bf5e05f94006287917bd177396ccf49526cee00090d5f267ccf7a69528930f9a",
+      "bytes": 4041
+    },
+    {
+      "path": "llm/providers/groq.js",
+      "sha256": "bf2b53fc8c778baa75a20abf971bf54e400f5509c6f5dd12e668461ca328d589",
+      "bytes": 6774
+    },
+    {
+      "path": "llm/tests/classifier.test.js",
+      "sha256": "6c53a0c275bf0490683bc9b9b56dc18caa89919b9f39f6cf5ffccc4c311751a5",
+      "bytes": 6032
+    },
+    {
+      "path": "llm/tests/endCoordinator.test.js",
+      "sha256": "d44afc2cc857c377ef5a058e9e066b2b4e3c266993fb9f044f346da52754225e",
+      "bytes": 12136
+    },
+    {
+      "path": "llm/tests/gateway.test.js",
+      "sha256": "44a05632c7e03eab49db5c8b72645cf162299fda6bf1d7b58e1f9fe38a072077",
+      "bytes": 4627
+    },
+    {
+      "path": "llm/tests/groq.test.js",
+      "sha256": "7e9980d16c8693da26a7f68cdcf44bd99b16673c4059edf1c71670d52ac7782e",
+      "bytes": 11572
+    },
+    {
+      "path": "llm/tests/guidance.test.js",
+      "sha256": "55b56f5d193492dca3759929cc2af3220adee26e811b677689a80d41d0f7640a",
+      "bytes": 2399
+    },
+    {
+      "path": "llm/tests/pipeline.test.js",
+      "sha256": "3a6efafd0cb8a60ff4a2c91677706d66cac486048ed72e3701711aea2cc03f57",
+      "bytes": 13987
+    },
+    {
+      "path": "llm/tests/progress.test.js",
+      "sha256": "05707187c453ffd3db983156e69ea3bc5acb7ec478e12fd8ab24becdab2d751d",
+      "bytes": 5165
+    },
+    {
+      "path": "plans/2026-10-18-taste-ui-plan.md",
+      "sha256": "c855d2769f1e937716f2819f897e52dfbe6561f379cb662cb3eddbc6da5ee6a9",
+      "bytes": 442
+    },
+    {
+      "path": "presentation/taste-ui-2026-10-18/debrief-desktop-offline.jpg",
+      "sha256": "58a139e1cc5bdf33790660d607d69ddbc07d1ee7bfcae7fe0eaf5fff91fe6257",
+      "bytes": 56961
+    },
+    {
+      "path": "presentation/taste-ui-2026-10-18/office-desktop.jpg",
+      "sha256": "eee6d3ad6b38e4d24737f8575b0b39a55c74af51f7ad1f28438d0b18b883abb9",
+      "bytes": 32273
+    },
+    {
+      "path": "presentation/ui-simplified-2026-10-18/office-desktop.jpg",
+      "sha256": "996bdefcda1c9330fe2fcdc71ce600f6dc53b26fbf3ec6a7e3a4f13091b36c08",
+      "bytes": 68056
+    },
+    {
+      "path": "scoring/tests/debrief.test.js",
+      "sha256": "bf98723d1d2d889e333a5f8005945e22e190ea3b9289befd3acabeb71598ade0",
+      "bytes": 11352
+    },
+    {
+      "path": "services/api/server.js",
+      "sha256": "6a18b40102ad24377f1a3e25e76081c164fdee1241a28d73913e033b2f670707",
+      "bytes": 17267
+    },
+    {
+      "path": "services/api/tests/api.test.js",
+      "sha256": "e1d63f8e31f4cf8ace15b26dd71d8e45deb63d08b55c9e1a255d6d11abde52d7",
+      "bytes": 9156
+    },
+    {
+      "path": "src/debrief.js",
+      "sha256": "34e49ec469d0637d6e3d1d3d8c31aefe2f5d4821d13c9a608ffd1110ba35e32b",
+      "bytes": 7910
+    },
+    {
+      "path": "src/guidance.css",
+      "sha256": "01d26b159f9b80b5f0cabbb3778269754936e573d8eff88ee4c3251c1692e2f1",
+      "bytes": 757
+    },
+    {
+      "path": "src/guidance.js",
+      "sha256": "d64209f6c7a4397f03184f3a0a6b2898e339585acc9a78ac1b45c71f76e647eb",
+      "bytes": 1771
+    },
+    {
+      "path": "src/main.js",
+      "sha256": "64cc7b77adb39baac424250b96a83fd2d1e63854fed4d5b7719b4d51b3bfdb72",
+      "bytes": 44801
+    },
+    {
+      "path": "src/progress.js",
+      "sha256": "c5e3da127765a33130744a4db1671e6470563dbd499e88fe57f65a5b872e7300",
+      "bytes": 4725
+    },
+    {
+      "path": "src/style.css",
+      "sha256": "37d7661ac6cae14514b2409c1b837ec424df333b3e45b4ea1ac0694edd7e82e9",
+      "bytes": 53042
+    }
+  ]
+}
