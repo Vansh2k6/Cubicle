@@ -6,7 +6,7 @@
 // CURRENT MOVE (reveal acts use the store's authorised reveal lines; the
 // pipeline's leak/canon guards still apply before delivery).
 
-import { fetch as fetchFallback, defaultStore } from "../../replies/fallbackStore.js";
+import { fetch as fetchFallback, defaultStore, createStore } from "../../replies/fallbackStore.js";
 import { neutralFor } from "../../llm/pipeline.js";
 
 const SCENARIO_ID = "missed_deadline";
@@ -88,6 +88,16 @@ export function classifyProviderFor(inputText) {
   return async () => ({ text: JSON.stringify({ events: rulesToEvents(inputText) }) });
 }
 
+export function createOfflineProviders(pkg, { locale = "en" } = {}) {
+  if (!pkg || pkg.spec?.id !== SCENARIO_ID || pkg.policy?.id !== "sc01-legacy" || pkg.policy?.version !== 1 || locale !== "en") throw new Error("unsupported offline scenario package");
+  const store = createStore(pkg.replies?.entries, { scenario: pkg.spec.id, locale, contentHash: pkg.identity?.contentHash });
+  return {
+    store,
+    classifyProviderFor,
+    npcProvider: async ({ system } = {}) => offlineNpc({ system }, store, pkg.spec.id, locale),
+  };
+}
+
 function parseAct(system) {
   const m = /CURRENT MOVE:\s*([A-Za-z_]+(?::[A-Za-z0-9_]+)?)/.exec(String(system || ""));
   return m ? m[1] : "react_freely";
@@ -98,7 +108,7 @@ function parseNpc(system) {
   return m ? m[1] : null;
 }
 
-export async function npcFn({ system } = {}) {
+async function offlineNpc({ system } = {}, selectedStore = store, scenario = SCENARIO_ID, locale = "en") {
   const act = parseAct(system);
   if (String(system).includes("engine authorizes acceptance")) return { text: "That plan works for me." };
   if (String(system).includes("engine authorizes closing")) return { text: "We have a plan." };
@@ -108,9 +118,11 @@ export async function npcFn({ system } = {}) {
   const npc = parseNpc(system) || "maya";
   const baseAct = act.startsWith("reveal_fact:") ? act : act.split(":")[0];
   const line = fetchFallback(
-    { scenario: SCENARIO_ID, npc, act: baseAct, state: { mood: 50 }, locale: "en" },
-    store,
+    { scenario, npc, act: baseAct, state: { mood: 50 }, locale }, selectedStore,
   );
   if (line) return { text: line.text };
   return { text: neutralFor(npc) };
 }
+
+// Explicit SC-01 compatibility wrapper for existing tests and scripted tooling.
+export async function npcFn(args = {}) { return offlineNpc(args); }

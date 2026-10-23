@@ -13,8 +13,8 @@ export function bandOf(mood) {
   return "hostile";
 }
 
-export function createStore(entries) {
-  return { entries: Array.isArray(entries) ? entries.slice() : [] };
+export function createStore(entries, scope = { scenario: "missed_deadline", locale: "en" }) {
+  return Object.freeze({ entries: Object.freeze(Array.isArray(entries) ? entries.slice() : []), scope: Object.freeze({ scenario: scope.scenario, locale: scope.locale, contentHash: typeof scope.contentHash === "string" ? scope.contentHash : "" }) });
 }
 
 export function defaultStore() {
@@ -37,8 +37,8 @@ function predicatesMatch(entry, state) {
 // Tiny rotation memory: last served variant per (scenario, locale, npc, act).
 const lastServed = new Map();
 
-export function memoryKey(scenario, locale, npc, act) {
-  return `${scenario}:${locale}:${npc}:${act}`;
+export function memoryKey(scenario, locale, npc, act, namespace = "") {
+  return `${namespace}:${scenario}:${locale}:${npc}:${act}`;
 }
 
 // fetch({scenario, npc, act, state, locale, usedIds}, store?)
@@ -47,6 +47,8 @@ export function fetch(query = {}, store = null) {
   const {
     scenario, npc, act, state = {}, locale = "en", usedIds = [],
   } = query;
+  const scope = store?.scope || { scenario: "missed_deadline", locale: "en", contentHash: "" };
+  if (scenario !== scope.scenario || locale !== scope.locale) return null;
   const entries = store ? store.entries : storeData.entries;
   const candidates = entries.filter(
     (e) => e.npc === npc && e.act === act && predicatesMatch(e, state)
@@ -55,7 +57,7 @@ export function fetch(query = {}, store = null) {
   const entry = candidates[0];
   const variants = entry.variants || [];
   if (variants.length === 0) return null;
-  const key = memoryKey(scenario, locale, npc, act);
+  const key = memoryKey(scenario, locale, npc, act, store?.scope?.contentHash || "");
   const banned = new Set(usedIds);
   if (lastServed.has(key)) banned.add(lastServed.get(key));
   const fresh = variants.filter((v) => !banned.has(v.id));
