@@ -4,7 +4,7 @@ import { createVoiceController } from "../../src/voice.js";
 import { runTranscription } from "../provider.js";
 import { createSpeechService } from "../speech.js";
 import { DEFAULTS } from "../config.js";
-import { scenario, runBot } from "../../evals/scriptedBot.mjs";
+import { scenario, runBot, languageRuntime } from "../../evals/scriptedBot.mjs";
 import { smart, trap } from "../../evals/scriptedPaths.mjs";
 import { scoreSession } from "../../scoring/score.js";
 import { assembleDebrief } from "../../scoring/debrief.js";
@@ -48,6 +48,6 @@ for (const [name, steps, expected] of [["smart", smart, 60], ["trap", trap, 7]])
   const cacheSession = { id: "synthetic", ended: false };
   for (const turn of voice.convo.turns.filter((t) => t.speaker === "npc")) { speech.prefetch(cacheSession, turn); await speech.audio(cacheSession, String(turn.id)); }
   assert.deepEqual(calls, voice.convo.turns.filter((t) => t.speaker === "npc").map((t) => t.text)); speech.clear(cacheSession.id);
-  endSession(voice.session); const feedback = await assembleDebrief({ record: voice, scenario });
+  endSession(voice.session); const feedback = await assembleDebrief({ record: voice, scenario, runtime: languageRuntime });
   assert.ok(!JSON.stringify({ transcript: voice.convo, feedback }).includes(rawDraft));
 });

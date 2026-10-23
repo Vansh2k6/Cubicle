@@ -68,6 +68,7 @@ import { PRESETS, presetName, presetSettings, presetsEnabled } from "../shared/p
 import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
 import { createEndCoordinator, captureRun } from "./endCoordinator.js";
 import { compareAttempts, displayAttemptMetric, displayAttemptScore, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
+import {publicCast} from "../shared/presentation.js";
 import { projectGuidance } from "./guidance.js";
 import "./guidance.css";
 const ending = createEndCoordinator();
@@ -268,7 +269,9 @@ const $ = (s) => document.querySelector(s);
 const refreshIcons = () => createIcons({ icons });
 function currentGuidance() {
   return projectGuidance({
+    scenarioId: state.scenarioMetadata?.id || (state.scenario === "deadline" ? "missed_deadline" : state.scenario),
     goals: state.sharedGoals,
+    ...(state.scenarioMetadata ? {npcs: state.scenarioMetadata.npcs} : {}),
     currentNpc: state.dialogue,
     hint: state.sharedHint,
     ended: state.endReason != null,
@@ -321,6 +324,7 @@ function renderEntry() {
 function showBriefing(id) {
   if (state.entry !== "selection" || !scenarios[id]) return;
   state.entry = "briefing";
+  state.scenarioMetadata = null;
   state.scenario = id;
   $("#scenario").value = id;
   const s = scenarios[id], briefing = $("#scenario-briefing");
@@ -617,6 +621,7 @@ function startTextSession() {
       if (!current()) return;
       state.startingSession = false;
       state.sessionId = data.session_id;
+    state.scenarioMetadata = data.scenario ? {...data.scenario, npcs: publicCast(data.scenario.npcs, Object.fromEntries(data.scenario.npcs.map((npc) => [npc.id, npc])))} : null;
       state.sharedGoals = (data.public_state && data.public_state.goals) || [];
       state.sharedHint = (data.public_state && data.public_state.next_hint) || "";
       state.appliedSettings = data.settings || state.appliedSettings;
@@ -973,6 +978,7 @@ function completeScenario() {
   );
   $("#try-next").onclick = () => {
     const keys = Object.keys(scenarios);
+    state.scenarioMetadata = null;
     state.scenario = keys[(keys.indexOf(state.scenario) + 1) % keys.length];
     $("#scenario").value = state.scenario;
     closeModal();
@@ -983,6 +989,7 @@ function completeScenario() {
 }
 function resetTextRun(scenarioId = state.scenario) {
   closeConversation();
+  state.scenarioMetadata = null;
   state.scenario = scenarioId;
   $("#scenario").value = scenarioId;
   state.sessionId = null;
@@ -1006,6 +1013,7 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, r
   createSession("deadline", sliders).then((data) => {
     if (!current() || state.threads !== threads || state.sessionId) return;
     state.sessionId = data.session_id;
+    state.scenarioMetadata = data.scenario ? {...data.scenario, npcs: publicCast(data.scenario.npcs, Object.fromEntries(data.scenario.npcs.map((npc) => [npc.id, npc])))} : null;
     state.sharedGoals = data.public_state?.goals || [];
     state.sharedHint = data.public_state?.next_hint || "";
     state.appliedSettings = data.settings || sliders;
@@ -1126,6 +1134,7 @@ function showGuide() {
   );
 }
 $("#scenario").onchange = (e) => {
+  state.scenarioMetadata = null;
   state.scenario = e.target.value;
   resetTextRun();
   toast("New scenario, fresh start. Find Snehal to begin.");

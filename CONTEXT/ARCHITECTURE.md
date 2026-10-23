@@ -508,3 +508,7 @@ Sessions bind exact package references and serializable identity `{schema, conte
 ### SF-02 engine/evidence subset (accepted offline 2026-10-24)
 
 The API/pipeline passes the pinned package runtime explicitly to core; existing direct SC-01 callers use a bounded compatibility adapter. Core validation retains reference and declared-pressure eligibility checks and transaction rollback; hooks remain readonly. Goal proof and delivered outcomes are captured for modern scoring, which uses the captured scenario, normalized profile and package identity; bounded known legacy records remain supported. SC-01 values, story, scoring version2, smart/trap 60/7, penalties, bands and relationship population are unchanged. Language-policy migration and the private proof/integration package remain SF-03/SF-04 work, so this does not complete the target contract or any demo gate.
+
+### SF-03 language/metadata subset (accepted offline 2026-10-24)
+
+The modern runtime now binds public-canon, commitment-normalization and canon-check hooks before providers, while core leak/ownership checks still protect another actor's facts even if user-known. Date aliases/multi-date clarification, bounded F2 supported spans, historical coaching, session-pinned debrief/retry, stale metadata clearing and public guidance are package-bound. Public presentation is limited to the existing maya/jordan/sam anchor IDs and approved voice IDs. No locale, scenario, voice-cast, phone or UI redesign is introduced. Private-proof scanning and final integration remain SF-04 work.

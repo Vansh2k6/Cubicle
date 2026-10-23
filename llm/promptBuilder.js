@@ -1,3 +1,6 @@
+import {readFileSync} from "node:fs";
+const BOUNDARY = readFileSync(new URL("./prompts/npc/v4-boundary.md", import.meta.url), "utf8");
+import {resolveLanguage, publicLanguageInput} from "./languageContext.js";
 // llm/promptBuilder.js — Pure NPC prompt composer (R-01/R-04).
 // Includes: persona, tone text, public canon, THIS npc's revealed facts, and ONLY
 // the engine-authorised pendingReveal when act is exactly `reveal_fact:<factId>`
@@ -23,21 +26,6 @@ const ACT_INSTRUCTIONS = {
 
 function factById(scenario, factId) {
   return (scenario.facts || []).find((f) => f && f.id === factId) || null;
-}
-
-function canonLines(publicCanon, scenario) {
-  if (!publicCanon || typeof publicCanon !== "object") return ["(no verified context)"];
-  const nameFor = (id, fallback) => (scenario.npcs || []).find((npc) => npc.id === id)?.name || fallback;
-  const manager = nameFor("maya", "the manager");
-  const player = scenario.player?.name || "the user";
-  const out = [];
-  if (publicCanon.project_status) out.push(`- Project status: ${publicCanon.project_status}.`);
-  if (typeof publicCanon.original_due_day === "number") {
-    out.push(`- The project was due ${Math.abs(publicCanon.original_due_day)} day(s) ago.`);
-  }
-  if (publicCanon.maya_manages_project) out.push(`- ${manager} manages the project.`);
-  if (publicCanon.alex_responsible_for_update) out.push(`- ${player} (the user) is responsible for the update.`);
-  return out.length > 0 ? out : ["(no verified context)"];
 }
 
 // buildNpcPrompt({scenario, npcId, act, revealedFacts[], pendingReveal|null,
@@ -94,13 +82,17 @@ export function buildNpcPrompt(opts = {}) {
     throw badInput(`reveal act ${act} has no authorised pendingReveal`);
   }
 
+  const language = resolveLanguage(scenario, opts.runtime, opts.locale || "en");
+  const canon = language.publicCanonLines(publicLanguageInput(scenario, npcId));
+  if (!Array.isArray(canon) || canon.some((line) => typeof line !== "string")) throw badInput("invalid public canon projection");
   const system = [
+    BOUNDARY,
     `You are ${npc.name} (${npc.id}), ${npc.role}. ${npc.persona}`,
     `Public context: ${npc.public_context}`,
     toneText ? `Tone: ${toneText}` : "Tone: neutral and professional.",
     "",
     "Verified project context (you may use this):",
-    ...canonLines(scenario.canon && scenario.canon.public, scenario),
+    ...canon,
     "",
     "Your disclosed facts (only these — nothing else private):",
     ...(revealedLines.length > 0 ? revealedLines : ["- (none yet)"]),

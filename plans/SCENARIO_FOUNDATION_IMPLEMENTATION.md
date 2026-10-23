@@ -12,7 +12,7 @@ Each registered package is an immutable authored value:
 
 ```js
 {
-  spec, replies, scoringProfile,
+  spec, replies, scoringProfile, presentation,
   policy: {
     id, version,
     rules,
@@ -21,6 +21,8 @@ Each registered package is an immutable authored value:
   }
 }
 ```
+
+`presentation` is a private actor-ID binding map: `actorId -> {sceneAnchor, voiceId}`. `publicCast` separately selects approved `id`, `name`, and `role` from public NPC fields and emits only those three fields plus the binding's `sceneAnchor` and `voiceId`. No private canon, facts, prompts, policy, scoring profile, or package identity is public presentation data.
 
 `policy.rules` is private, serializable authored data: for SC-01 it pins actor bindings, the assistance binding, and `pressureSchedules` for date pressure on turn 4, or turn 3 at assertiveness 70, plus the callback gap of 3 turns. It is content-hashed and identity-pinned with the package; runtime functions are excluded from both the hash and session JSON. This is an authored bounded rules record, not a general DSL.
 

@@ -94,7 +94,7 @@ test("HTTP catalogue and detail expose only allowed public fields and reject unk
       assert.deepEqual(items, [detail]);
       assert.deepEqual(Object.keys(detail).sort(), ["id", "title", "briefing", "difficulty", "duration_min", "goals", "npcs"].filter((key) => pkg.spec[key] !== undefined || ["goals", "npcs"].includes(key)).sort());
       for (const goal of detail.goals) assert.deepEqual(Object.keys(goal).sort(), ["id", "label", "requires"]);
-      for (const npc of detail.npcs) assert.deepEqual(Object.keys(npc).sort(), ["id", "name", "role"]);
+      for (const npc of detail.npcs) assert.deepEqual(Object.keys(npc).sort(), ["id", "name", "role", "sceneAnchor", "voiceId"].sort());
       const text = JSON.stringify(detail).toLowerCase();
       for (const key of banned) assert.equal(text.includes(`"${key.toLowerCase()}"`), false, key);
       for (const secret of secrets) assert.equal(text.includes(secret.toLowerCase()), false, secret);
@@ -159,14 +159,15 @@ test("fallback stores are scope-bound and never rotate across package hashes", (
 test("session context retains the bound immutable package", async () => {
   let current = defaultRegistry.getScenario("deadline");
   const registry = { getScenario: () => current, listScenarios: () => defaultRegistry.listScenarios() };
-  let captured = null;
-  const app = createServer({ registry, debriefAssembler: async ({ record }) => { captured = record; return { status: "partial", moments: [], breakdown: [], deterministic: { points: 0 }, judged: { points: 0 } }; } });
+  let captured = null; const capturedRuntimes = [];
+  const app = createServer({ registry, debriefAssembler: async ({ record, runtime }) => { captured = record; capturedRuntimes.push(runtime); return { status: "partial", moments: [], breakdown: [], deterministic: { points: 0 }, judged: { points: 0 } }; } });
   await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
   try {
     const base = `http://127.0.0.1:${app.server.address().port}`;
     const response = await globalThis.fetch(base + "/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenario_id: "deadline" }) });
     const body = await response.json();
     assert.equal(response.status, 200, JSON.stringify(body));
+    assert.deepEqual(body.scenario, JSON.parse(JSON.stringify(publicScenario(current))));
     const pkg = defaultRegistry.getScenario("deadline");
     current = null;
     assert.equal(app.resolveSessionContext("unknown"), null);
@@ -177,6 +178,10 @@ test("session context retains the bound immutable package", async () => {
     await globalThis.fetch(base + path + "/end", { method: "POST" });
     for (let i = 0; i < 20 && !captured; i++) await new Promise((resolve) => setTimeout(resolve, 2));
     assert.deepEqual(captured.session.identity, pkg.identity);
+    const pinned = app.resolveSessionContext(body.session_id).runtime;
+    assert.equal(capturedRuntimes[0], pinned);
+    assert.equal(pinned.language, pkg.policy.language);
+    assert.equal(pinned.spec, pkg.spec);
     const serialized = JSON.parse(JSON.stringify(captured.session));
     assert.deepEqual(serialized, captured.session);
     assert.deepEqual(Object.keys(serialized.identity).sort(), ["scenarioId", "contentVersion", "schemaVersion", "policyId", "policyVersion", "scoringVersion", "contentHash"].sort());
@@ -192,5 +197,8 @@ test("session context retains the bound immutable package", async () => {
     checkSession(captured.session);
     const retry = await globalThis.fetch(base + path + "/debrief/retry", { method: "POST" });
     assert.equal(retry.status, 202);
+    for (let i = 0; i < 20 && capturedRuntimes.length < 2; i++) await new Promise((resolve) => setTimeout(resolve, 2));
+    assert.equal(capturedRuntimes.length, 2);
+    assert.equal(capturedRuntimes[1], pinned);
   } finally { await new Promise((resolve) => app.server.close(resolve)); }
 });

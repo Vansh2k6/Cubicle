@@ -6,7 +6,7 @@ import { judgeSession, DIMENSIONS } from "../judge.js";
 import { coachSession } from "../coach.js";
 import { endSession } from "../../engine/engine.js";
 import { FakeProvider } from "../../llm/fakeProvider.js";
-import { runBot, scenario } from "../../evals/scriptedBot.mjs";
+import { runBot, scenario, languageRuntime } from "../../evals/scriptedBot.mjs";
 import { smart, trap, ev } from "../../evals/scriptedPaths.mjs";
 import { createScenarioRegistry, defaultRegistry } from "../../services/api/scenarioRegistry.js";
 const fixtures = JSON.parse(readFileSync(new URL("../../evals/fixtures/s1-07-synthetic-sessions.json", import.meta.url), "utf8")).paths;
@@ -68,7 +68,7 @@ test("judge malformed/outage/personal labels fall back without fabricated eviden
 });
 test("coach uses only historical transcript and regenerates secret replies once then authored fallback", async () => {
   let calls = 0;
-  const result = await coachSession({ record: fixtures.trap, scenario, manifest, provider: async (args) => {
+  const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, manifest, provider: async (args) => {
     calls++; const input = JSON.parse(args.messages[0].content);
     assert.equal(input.transcript.length, 1); assert.deepEqual(input.user_known, []);
     assert.equal(input.original_user_turn.id, 1);
@@ -84,7 +84,7 @@ test("coach supports valid output and rejects fabricated quotes and personal lab
   for (const modify of [(d) => d, (d) => { d.quote = "fabricated quote"; }, (d) => { d.what_happened = "You are incompetent."; }]) {
     const data = coached(); modify(data);
     const fake = new FakeProvider([{ json: data }, { json: data }]);
-    const result = await coachSession({ record: fixtures.trap, scenario, provider: fake.fn(), manifest });
+    const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, provider: fake.fn(), manifest });
     assert.ok(result.moments.length >= 1); assert.ok(fake.callCount <= 2);
     assert.equal(result.moments[0].manifestId, manifest.id);
     assert.ok(!/incompetent/.test(JSON.stringify(result)));
@@ -93,7 +93,7 @@ test("coach supports valid output and rejects fabricated quotes and personal lab
 test("coach fallback for empty transcript is a general starter without invented quote", async () => {
   const record = await runBot([]);
   const fake = new FakeProvider([]);
-  const result = await coachSession({ record: finish(record), scenario, provider: fake.fn(), manifest });
+  const result = await coachSession({ runtime: languageRuntime, record: finish(record), scenario, provider: fake.fn(), manifest });
   assert.equal(fake.callCount, 0); assert.equal(result.moments[0].general, true);
   assert.equal(result.moments[0].quote, null); assert.equal(result.moments[0].turn_id, null);
   assert.ok(result.moments[0].better_reply.length > 0);
@@ -103,7 +103,7 @@ test("coach excludes F1 revealed in the NPC response to the exact flagged user t
   const record = await runBot([["maya", "What is the impact? I suggest we discuss this constructively.", [ev("asked_impact"), ev("pushed_back_constructively")]]], { sliders: { forthcomingness: 100 } });
   assert.ok(record.session.user_known.includes("F1"));
   let calls = 0;
-  const result = await coachSession({ record: finish(record), scenario, manifest, provider: async (args) => {
+  const result = await coachSession({ runtime: languageRuntime, record: finish(record), scenario, manifest, provider: async (args) => {
     calls++; const input = JSON.parse(args.messages[0].content);
     assert.deepEqual(input.user_known, []);
     assert.ok(input.transcript.every((t) => t.speaker === "user"));
@@ -121,7 +121,7 @@ test("coach prior snapshot knowledge is included but future transcript is exclud
     ["jordan", "FUTURE USER LINE", []],
   ], { sliders: { forthcomingness: 100 } });
   let inspected = false;
-  const result = await coachSession({ record: finish(record), scenario, manifest, provider: async (args) => {
+  const result = await coachSession({ runtime: languageRuntime, record: finish(record), scenario, manifest, provider: async (args) => {
     inspected = true; const input = JSON.parse(args.messages[0].content);
     assert.ok(input.user_known.some((f) => f.id === "F1"));
     assert.ok(!args.messages[0].content.includes("FUTURE USER LINE"));
@@ -131,14 +131,14 @@ test("coach prior snapshot knowledge is included but future transcript is exclud
 });
 test("schema failure and unsafe regeneration share coach's two-call budget", async () => {
   let calls = 0;
-  const result = await coachSession({ record: fixtures.trap, scenario, manifest, provider: async () => {
+  const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, manifest, provider: async () => {
     calls++; if (calls === 1) return { text: "not JSON" };
     const data = coached(); data.better_reply = scenario.facts[0].content.en;
     return { text: JSON.stringify(data) };
   } });
   assert.equal(calls, 2); assert.equal(result.moments[0].source, "fallback");
   const terminal = new FakeProvider([{ timeout: true }, { timeout: true }]);
-  const fallback = await coachSession({ record: fixtures.trap, scenario, manifest, provider: terminal.fn() });
+  const fallback = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, manifest, provider: terminal.fn() });
   assert.equal(terminal.callCount, 2); assert.equal(fallback.moments[0].source, "fallback");
 });
 test("all-null judge is zero and unknown turn quotes never award points", async () => {
@@ -148,22 +148,22 @@ test("all-null judge is zero and unknown turn quotes never award points", async 
     assert.equal(result.points, 0);
   }
 });
-test("judge and coach prompt versions are v2 in role configuration", async () => {
+test("judge v2 and coach v3 provenance stays explicit", async () => {
   const { loadConfig } = await import("../../llm/config.js");
-  assert.equal(loadConfig({}).judge.promptVersion, "v2"); assert.equal(loadConfig({}).coach.promptVersion, "v2");
+  assert.equal(loadConfig({}).judge.promptVersion, "v2"); assert.equal(loadConfig({}).coach.promptVersion, "v3");
 });
 
 test("coach chooses matching owner question and guards authored fallbacks", async () => {
   const sam = await runBot([["sam", "Hello.", []]]);
   const failed = new FakeProvider([{ malformed: true }, { malformed: true }]);
-  const samResult = await coachSession({ record: finish(sam), scenario, provider: failed.fn(), manifest });
+  const samResult = await coachSession({ runtime: languageRuntime, record: finish(sam), scenario, provider: failed.fn(), manifest });
   assert.equal(samResult.moments[0].better_reply, scenario.facts.find((f) => f.id === "F3").unlock_question.en);
   const altered = structuredClone(scenario);
   altered.facts.find((f) => f.id === "F3").unlock_question.en = "The client cutoff is Friday.";
   const pkg = createScenarioRegistry([{ ...defaultRegistry.getScenario("missed_deadline"), spec: altered }]).getScenario("missed_deadline");
   const alteredRecord = structuredClone(finish(sam));
   alteredRecord.scenario = pkg.spec; alteredRecord.identity = alteredRecord.session.identity = pkg.identity;
-  const guarded = await coachSession({ record: alteredRecord, scenario: pkg.spec, provider: new FakeProvider([{ malformed: true }, { malformed: true }]).fn(), manifest });
+  const guarded = await coachSession({ runtime: languageRuntime, record: alteredRecord, scenario: pkg.spec, runtime: {...languageRuntime, spec: pkg.spec, identity: pkg.identity}, provider: new FakeProvider([{ malformed: true }, { malformed: true }]).fn(), manifest });
   assert.ok(!/cutoff|friday/i.test(guarded.moments[0].better_reply));
 });
 
@@ -172,7 +172,7 @@ test("judge/coach schema v2, strict output shape and terminal failure provenance
   assert.equal(loadConfig({}).judge.schemaVersion, 2); assert.equal(loadConfig({}).coach.schemaVersion, 2);
   const invalid = coached(); invalid.extra = "unexpected";
   const fake = new FakeProvider([{ json: invalid }, { json: invalid }]);
-  const result = await coachSession({ record: fixtures.trap, scenario, provider: fake.fn(), manifest });
+  const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, provider: fake.fn(), manifest });
   assert.equal(fake.callCount, 2); assert.equal(result.moments[0].source, "fallback");
   let calls = 0;
   const terminal = await judgeSession({ record: fixtures.trap, scenario, manifest, provider: async () => {
@@ -186,7 +186,7 @@ test("active session feedback is pending with zero provider calls", async () => 
   const record = await runBot(trap);
   const fake = new FakeProvider([{ json: judged() }]);
   const judge = await judgeSession({ record, scenario, provider: fake.fn(), manifest });
-  const coach = await coachSession({ record, scenario, provider: fake.fn(), manifest });
+  const coach = await coachSession({ runtime: languageRuntime, record, scenario, provider: fake.fn(), manifest });
   assert.equal(fake.callCount, 0);
   assert.equal(judge.status, "pending"); assert.equal(judge.points, 0);
   assert.equal(coach.status, "pending"); assert.deepEqual(coach.moments, []);
@@ -196,13 +196,13 @@ test("coach rejects unsupported material dates/resources/scope with shared retry
   for (const invented of ["The deadline is tomorrow.", "We have three extra engineers available.", "We can reduce scope."]) {
     const data = coached(); data.better_reply = invented;
     const fake = new FakeProvider([{ json: data }, { json: data }]);
-    const result = await coachSession({ record: fixtures.trap, scenario, provider: fake.fn(), manifest });
+    const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, provider: fake.fn(), manifest });
     assert.equal(fake.callCount, 2); assert.equal(result.moments[0].source, "fallback");
     assert.notEqual(result.moments[0].better_reply, invented);
   }
   const changed = structuredClone(scenario);
   changed.facts[0].unlock_question.en = "We have three extra engineers available.";
-  const result = await coachSession({ record: fixtures.trap, scenario: changed, provider: new FakeProvider([{ malformed: true }, { malformed: true }]).fn(), manifest });
+  const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario: changed, runtime: {...languageRuntime, spec: changed}, provider: new FakeProvider([{ malformed: true }, { malformed: true }]).fn(), manifest });
   assert.ok(!/extra engineers/i.test(result.moments[0].better_reply));
 });
 test("coach canon guard preserves ordinary clarification and prior known facts", async () => {
@@ -218,12 +218,12 @@ test("blank coaching fields and non-sentences fall back to usable questions", as
   for (const field of ["what_went_well", "what_happened", "why_it_matters", "better_reply"]) {
     const data = coached(); data[field] = " \n\t ";
     const fake = new FakeProvider([{ json: data }, { json: data }]);
-    const result = await coachSession({ record: fixtures.trap, scenario, provider: fake.fn(), manifest });
+    const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, provider: fake.fn(), manifest });
     assert.equal(fake.callCount, 2); assert.equal(result.moments[0].source, "fallback");
     assert.ok(result.moments[0].better_reply.trim().endsWith("?"));
   }
   const data = coached(); data.better_reply = "... !!! ???";
-  const result = await coachSession({ record: fixtures.trap, scenario, provider: new FakeProvider([{ json: data }, { json: data }]).fn(), manifest });
+  const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, provider: new FakeProvider([{ json: data }, { json: data }]).fn(), manifest });
   assert.equal(result.moments[0].source, "fallback");
 });
 test("judge rejects whitespace explanations and normalizes curly personal labels", async () => {
@@ -235,7 +235,7 @@ test("judge rejects whitespace explanations and normalizes curly personal labels
   const judge = await judgeSession({ record: fixtures.smart, scenario, provider: new FakeProvider([{ json: insult }]).fn(), manifest });
   assert.equal(judge.dimensions[0].status, "insufficient");
   const coach = coached(); coach.what_happened = "You’re lazy.";
-  const result = await coachSession({ record: fixtures.trap, scenario, provider: new FakeProvider([{ json: coach }, { json: coach }]).fn(), manifest });
+  const result = await coachSession({ runtime: languageRuntime, record: fixtures.trap, scenario, provider: new FakeProvider([{ json: coach }, { json: coach }]).fn(), manifest });
   assert.equal(result.moments[0].source, "fallback");
 });
 
@@ -257,6 +257,6 @@ test("known F1 cannot mask later invented dates in separate or mixed sentences",
   const data = coached(record.convo.turns[2].text, 3);
   data.better_reply = "The cutoff is Friday. The actual deadline is tomorrow.";
   const fake = new FakeProvider([{ json: data }, { json: data }]);
-  const result = await coachSession({ record, scenario, provider: fake.fn(), manifest });
+  const result = await coachSession({ runtime: languageRuntime, record, scenario, provider: fake.fn(), manifest });
   assert.equal(fake.callCount, 2); assert.equal(result.moments[0].source, "fallback");
 });

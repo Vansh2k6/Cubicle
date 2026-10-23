@@ -1,3 +1,5 @@
+import {resolveLanguage} from "./languageContext.js";
+import {sc01Language} from "./sc01Language.js";
 // llm/classifier.js — LLM event classifier front-end (code-side post-validation).
 // The LLM interprets utterances; it NEVER judges realism/acceptance (no min/cutoff
 // logic here). Engine-derived `overpromised` is rejected as output. ESM, stdlib only.
@@ -66,26 +68,6 @@ export const CLASSIFIER_SCHEMA = {
   },
 };
 
-// Explicit day words, day-0 anchored (SC-01 clock; D-27: Friday is the day-3 label).
-const EXPLICIT_DAY = [
-  { re: /\btomorrow\b/i, day: 1, word: "tomorrow" },
-  { re: /\bthursday\b/i, day: 2, word: "Thursday" },
-  { re: /\bfriday\b/i, day: 3, word: "Friday" },
-];
-
-// Ambiguous/intraday markers: clarification need, never a rounded deadline (D-25).
-const AMBIGUOUS_MARKERS = [
-  "next week",
-  "end of day",
-  "eod",
-  "couple of days",
-  "few days",
-  "soon",
-  "asap",
-  "shortly",
-  "whenever",
-];
-
 // Explicit acceptance of Vansh's offered help; Jordan remains a legacy alias.
 const EXPLICIT_ACCEPT = /accepts?\s+(your|jordan'?s|vansh(?:\s+singh)?'?s|the)?\s*help|yes[^.]*help|let'?s\s+pair|pair\s+with\s+(you|jordan|vansh(?:\s+singh)?)|sounds\s+good[^.]*pair/i;
 
@@ -93,7 +75,7 @@ let cachedPrompt = null;
 export function getClassifierPrompt() {
   if (!cachedPrompt) {
     const dir = dirname(fileURLToPath(import.meta.url));
-    cachedPrompt = readFileSync(join(dir, "prompts", "classifier", "v2.md"), "utf8");
+    cachedPrompt = readFileSync(join(dir, "prompts", "classifier", "v3.md"), "utf8");
   }
   return cachedPrompt;
 }
@@ -108,34 +90,14 @@ export function buildClassifierInput({ text, lastTurns, userKnown, clock } = {})
   };
 }
 
-function findExplicitDay(text) {
-  for (const d of EXPLICIT_DAY) {
-    if (d.re.test(text)) return d;
-  }
-  return null;
-}
-
-function findAmbiguous(text) {
-  const lower = text.toLowerCase();
-  for (const m of AMBIGUOUS_MARKERS) {
-    if (lower.includes(m)) return m;
-  }
-  return null;
-}
-
-function coerceDay(raw) {
-  if (typeof raw === "number" && Number.isInteger(raw) && raw >= 0) return raw;
-  if (typeof raw === "string" && raw.trim() !== "") {
-    const n = Number(raw.trim());
-    if (Number.isInteger(n) && n >= 0) return n;
-  }
-  return null;
-}
-
 // classifyTurn({provider, manifestId, system?, timeoutMs?}, input)
 // -> {events, clarify, manifestId, attempts, dropped[]}.
 export async function classifyTurn(deps, input) {
   const { provider, manifestId = null } = deps || {};
+  const language = deps?.scenario ? resolveLanguage(deps.scenario, deps.runtime, deps.locale || "en") : deps?.runtime !== undefined ? null : sc01Language;
+  if (!language) throw new Error("classifier language context required");
+  const date = language.normalizeCommitment({text: input.text, clock: input.clock, publicDateLabels: {}});
+  if (!date || !(date.day === null || Number.isInteger(date.day) && date.day >= 0) || !(date.clarification === null || typeof date.clarification === "string")) throw new Error("invalid commitment interpretation");
   const system = (deps && deps.system) || getClassifierPrompt();
   const timeoutMs = (deps && deps.timeoutMs) || 1500;
   const payload = {
@@ -175,21 +137,14 @@ export async function classifyTurn(deps, input) {
       ? { ...ev.params }
       : {};
     if (type === "committed_deadline") {
-      let day = coerceDay(params.day);
-      const explicit = findExplicitDay(input.text);
-      const ambiguous = findAmbiguous(input.text);
-      if (ambiguous) {
-        clarify.push({ reason: "ambiguous_date", detail: ambiguous });
-        dropped.push({ type, reason: "ambiguous_date" });
+      if (date.day === null) {
+        clarify.push({reason: "ambiguous_date", detail: date.clarification || input.text.slice(0, 120)});
+        dropped.push({type, reason: date.clarification === "missing_day" ? "missing_day" : "ambiguous_date"});
         continue;
       }
-      if (day === null && explicit) day = explicit.day; // code-side date table
-      if (day === null) {
-        clarify.push({ reason: "ambiguous_date", detail: input.text.slice(0, 120) });
-        dropped.push({ type, reason: "missing_day" });
-        continue;
-      }
-      params.day = day;
+      delete params.days;
+      delete params.target_day;
+      params.day = date.day;
     }
     if (type === "confirmed_next_steps" && params.help_accepted) {
       if (!EXPLICIT_ACCEPT.test(input.text)) params.help_accepted = false;
@@ -197,10 +152,7 @@ export async function classifyTurn(deps, input) {
     events.push({ type, params });
   }
 
-  // Text-level ambiguous markers always need clarification, even with no event.
-  if (findAmbiguous(input.text) && !clarify.some((c) => c.reason === "ambiguous_date")) {
-    clarify.push({ reason: "ambiguous_date", detail: findAmbiguous(input.text) });
-  }
+  if (date.clarification && date.clarification !== "missing_day" && !clarify.some((entry) => entry.reason === "ambiguous_date")) clarify.push({reason: "ambiguous_date", detail: date.clarification});
 
   for (const c of Array.isArray(data.clarify) ? data.clarify : []) {
     if (c && typeof c.reason === "string") {

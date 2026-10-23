@@ -2,10 +2,24 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { scoreSession, createScoreRecord } from "../score.js";
-import { scenario, scoringProfile, runBot } from "../../evals/scriptedBot.mjs";
+import { scenario, scoringProfile, runBot, languageRuntime } from "../../evals/scriptedBot.mjs";
+import * as engine from "../../engine/engine.js";
 import { smart, trap, ev } from "../../evals/scriptedPaths.mjs";
 const fixtures = JSON.parse(readFileSync(new URL("../../evals/fixtures/s1-07-synthetic-sessions.json", import.meta.url), "utf8")).paths;
 const clone = (x) => structuredClone(x);
+// These authored event-list cases exercise core source allocation, independently of language interpretation.
+function coreRecord(steps) {
+  const session = engine.createSession(scenario, {runtime: languageRuntime, seed: 7});
+  session.identity = languageRuntime.identity;
+  const convo = {seq: 0, turns: []};
+  for (const [npcId, text, events] of steps) {
+    convo.turns.push({id: ++convo.seq, speaker: "user", npcId, text});
+    const {act} = engine.applyTurn(session, npcId, events, {runtime: languageRuntime, text});
+    convo.turns.push({id: ++convo.seq, speaker: "npc", npcId, text: "I hear you.", act});
+    engine.commitDelivery(session, session.turn, {runtime: languageRuntime, delivered: true});
+  }
+  return createScoreRecord(session, convo, scenario, scoringProfile);
+}
 test("hand-derived smart 60 and trap 7; rubric pending25", () => {
   for (const [name, expected] of [["smart", [30, 15, 15, 0, 60]], ["trap", [0, 0, 7, 0, 7]]]) {
     const result = scoreSession(fixtures[name], scenario);
@@ -187,7 +201,7 @@ test("G3 evidence references the delivered active recap rather than an ignored e
   assert.equal(g3.evidence[0].user_turn_id, 11);
 });
 test("multiple commitments in one user turn bind distinct historical fault sources", async () => {
-  const record = await runBot([["maya", "I will deliver tomorrow. I revise that to Friday.", [ev("committed_deadline", { day: 1 }), ev("committed_deadline", { day: 3 })]]]);
+  const record = coreRecord([["maya", "I will deliver tomorrow. I revise that to Friday.", [ev("committed_deadline", { day: 1 }), ev("committed_deadline", { day: 3 })]]]);
   assert.notEqual(record.session.commitments[0].source_id, record.session.commitments[1].source_id);
   assert.equal(scoreSession(record, scenario).metrics.integrity.points, 7);
   for (const c of record.session.commitments) delete c.source_id;
@@ -218,14 +232,14 @@ test("per-goal and per-fact weights require a matching scoring contract version"
 });
 
 test("current and legacy provenance mirrors engine conflicting day-alias precedence", async () => {
-  const record = await runBot([["maya", "I will deliver tomorrow.", [ev("committed_deadline", { days: 1, day: 3 })]]]);
+  const record = coreRecord([["maya", "I will deliver tomorrow.", [ev("committed_deadline", { days: 1, day: 3 })]]]);
   assert.equal(record.session.commitments[0].target_day, 1);
   assert.equal(scoreSession(record, scenario).metrics.integrity.points, 7);
   delete record.session.commitments[0].source_id;
   assert.equal(scoreSession(record, scenario).metrics.integrity.points, 7);
 });
 test("denial chooses latest creation when multiple promises share one engine turn", async () => {
-  const record = await runBot([
+  const record = coreRecord([
     ["maya", "I will deliver tomorrow. I revise that to Friday.", [ev("committed_deadline", { day: 1 }), ev("committed_deadline", { day: 3 })]],
     ["maya", "I never promised a delivery date.", []],
   ]);

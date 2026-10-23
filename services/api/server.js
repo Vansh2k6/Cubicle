@@ -40,10 +40,10 @@ function localOrigin(origin) {
 const selectedProvider = providerName();
 const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
 const manifest = createManifest(liveProvider ? loadConfig() : {
-  classifier: { model: "offline-stub:rules-v1", promptVersion: "v2", schemaVersion: 1 },
-  npc: { model: "offline-stub:store-v1", promptVersion: "v3", schemaVersion: 1 },
+  classifier: { model: "offline-stub:rules-v1", promptVersion: "v3", schemaVersion: 1 },
+  npc: { model: "offline-stub:store-v1", promptVersion: "v4", schemaVersion: 1 },
   judge: { model: "offline-unavailable:judge", promptVersion: "v2", schemaVersion: 2 },
-  coach: { model: "authored-fallback:coach", promptVersion: "v2", schemaVersion: 2 },
+  coach: { model: "authored-fallback:coach", promptVersion: "v3", schemaVersion: 2 },
 });
 
 function moodLabel(mood) {
@@ -66,7 +66,7 @@ function initialPublic(session, spec) {
   return {
     mood_label: moodLabel(session.npcs.maya ? session.npcs.maya.mood : 50),
     goals: publicGoals(session, spec),
-    next_hint: nextHintFor(session.goals),
+    next_hint: nextHintFor(session.goals, {id: spec.id, npcs: spec.npcs, goals: publicGoals(session, spec)}),
     npc_availability: availability(session),
     ended: false,
   };
@@ -142,10 +142,10 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     const previous = job.result || null;
     job.status = "pending"; job.result = previous;
     debriefs.set(session.id, job);
-    job.promise = Promise.resolve().then(() => debriefAssembler({ record: structuredClone(job.record), providers: feedbackProviders, manifest, previous }))
+    job.promise = Promise.resolve().then(() => debriefAssembler({ record: structuredClone(job.record), providers: feedbackProviders, manifest, previous, runtime: context.runtime }))
       .then((result) => { job.result = result; job.status = result.status; })
       .catch(async () => {
-        try { job.result = await assembleDebrief({ record: structuredClone(job.record), providers: {}, manifest, previous }); job.status = "partial"; }
+        try { job.result = await assembleDebrief({ record: structuredClone(job.record), providers: {}, manifest, previous, runtime: context.runtime }); job.status = "partial"; }
         catch { job.status = "error"; }
       });
     return job;
@@ -282,7 +282,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         if (!sliders.ok) { send(res, 400, { error: "sliders must be integer values from 0 to 100", retryable: false }); return; }
         const offline = createOfflineProviders(pkg);
         if (!offline?.store || typeof offline.npcProvider !== "function" || typeof offline.classifyProviderFor !== "function") { send(res, 400, { error: "unsupported scenario_id" }); return; }
-        const runtime = Object.freeze({ scenarioId: pkg.spec.id, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules });
+        const runtime = Object.freeze({ scenarioId: pkg.spec.id, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules, language: pkg.policy.language, identity: pkg.identity, spec: pkg.spec });
         const context = Object.freeze({ pkg, runtime, store: offline.store, npcProvider: npcProvider || liveProvider || offline.npcProvider, classifyProviderFor: offline.classifyProviderFor });
         const session = store.create(pkg.spec, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value, runtime });
         session.identity = pkg.identity;
@@ -291,6 +291,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         send(res, 200, {
           session_id: session.id,
           briefing: pkg.spec.briefing.en,
+          scenario: publicScenario(pkg),
           settings: sliders.value, difficulty: difficultyFor(sliders.value),
           public_state: initialPublic(session, pkg.spec),
           manifest: debug ? manifest.id : undefined,

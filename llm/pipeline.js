@@ -1,3 +1,5 @@
+import {sc01NextHint} from "../shared/sc01Guidance.js";
+import {resolveLanguage} from "./languageContext.js";
 // llm/pipeline.js — Guarded turn pipeline (ARCHITECTURE.md §5, P2b).
 // runTurn: append user turn -> classify -> engine.applyTurn -> generate ->
 // guards (leak + canon, at most ONE shared regeneration) -> append guarded
@@ -51,13 +53,11 @@ function factById(scenario, factId) {
 
 // Next-step hint driven by PUBLIC goal state only (P3.2 / FR-25). No sealed
 // data, no act internals: the mapping is a pure function of goal statuses.
-export function nextHintFor(goals) {
-  const g = goals || {};
-  const done = (id) => !!(g[id] && g[id].status === "done");
-  if (done("G3")) return "Nice work — wrap up and reflect on the conversation.";
-  if (done("G1") && done("G2")) return "Go back to Snehal and agree a plan.";
-  if (done("G1")) return "Check in with Vansh about what's left.";
-  return "Talk to Snehal about the missed deadline.";
+export function nextHintFor(goals, metadata = {id: "missed_deadline"}) {
+  if (metadata.id === "missed_deadline") return sc01NextHint(goals, metadata.npcs);
+  const visible = Array.isArray(metadata.goals) ? metadata.goals : [];
+  const pending = visible.find((goal) => (goals[goal.id]?.status || goal.status) !== "done" && !goal.locked);
+  return pending?.label || "Check the visible goals before choosing a next step.";
 }
 
 // Visible-goal projection with G3-style dependency locks computed
@@ -72,16 +72,14 @@ export function projectGoals(scenario, session) {
   });
 }
 
-function hintFor(session, act) {
+function hintFor(session, act, scenario) {
   // A completed checklist keeps its wrap-up hint even though the session
   // ended on goals_complete; other endings (walkout, max turns) report that
   // the conversation has ended.
-  if (session.goals && session.goals.G3 && session.goals.G3.status === "done") {
-    return "Nice work — wrap up and reflect on the conversation.";
-  }
+  if (scenario.id === "missed_deadline" && (scenario.goals || []).filter((goal) => goal.visible).every((goal) => session.goals?.[goal.id]?.status === "done")) return sc01NextHint(session.goals, scenario.npcs);
   if (session.ended) return "The conversation has ended.";
   void act;
-  return nextHintFor(session.goals);
+  return nextHintFor(session.goals, {id: scenario.id, npcs: scenario.npcs, goals: projectGoals(scenario, session)});
 }
 
 export function createConversation() {
@@ -106,8 +104,8 @@ function revealedTextsForNpc(session, scenario, npcId) {
   return out;
 }
 
-function activeCommitmentFor(session) {
-  const act = (session.commitments || []).filter((c) => c.status === "active").pop();
+function activeCommitmentFor(session, npcId) {
+  const act = (session.commitments || []).filter((c) => c.status === "active" && c.npc_id === npcId).pop();
   return act || null;
 }
 
@@ -140,6 +138,9 @@ export async function runTurn(opts = {}) {
     throw new Error("runTurn: engine.applyTurn/commitDelivery required");
   }
 
+  if (session.identity && opts.runtime === undefined) throw new Error("bound language runtime required");
+  resolveLanguage(scenario, opts.runtime, session.locale || "en");
+  if (opts.runtime && JSON.stringify(opts.runtime.identity) !== JSON.stringify(session.identity)) throw new Error("session language identity mismatch");
   const trace = { turn: null, events: [], act: null, guardEvents: [], regen: false, delivered: false, replySource: null, npcFailure: null, npcHttpStatus: undefined };
 
   // 1. Append user turn.
@@ -155,7 +156,7 @@ export async function runTurn(opts = {}) {
   });
   const tCls0 = Date.now();
   const cls = await classifyTurn(
-    { provider: providers.classify, manifestId, timeoutMs: 1500 },
+    { provider: providers.classify, manifestId, timeoutMs: 1500, scenario, runtime: opts.runtime, locale: session.locale || "en" },
     clsInput,
   );
   stages.classifyMs = Date.now() - tCls0;
@@ -193,12 +194,13 @@ export async function runTurn(opts = {}) {
     commitments: (session.commitments || []).filter((c) => c.npc_id === npcId),
     revealedIds: (session.user_known || []).filter((id) => factById(scenario, id)?.owner === npcId),
     authorised,
-    activeCommitment: activeCommitmentFor(session),
+    activeCommitment: activeCommitmentFor(session, npcId),
     clockDay: (session.clock && session.clock.day) || 0,
     bounds: boundsFor(session),
+    runtime: opts.runtime,
   });
   const prompt = buildNpcPrompt({
-    scenario,
+    scenario, runtime: opts.runtime, locale: session.locale || "en",
     npcId,
     act,
     revealedFacts: (session.user_known || []).filter((fid) => {
@@ -211,7 +213,7 @@ export async function runTurn(opts = {}) {
     toneText: toneText(session.customisation?.[npcId]),
   });
   if (act === "callback_commitment") {
-    const c = activeCommitmentFor(session);
+    const c = activeCommitmentFor(session, npcId);
     prompt.system += c?.unrealistic
       ? "\n" + MOVE_PROMPTS.callbackChallenge : "\n" + MOVE_PROMPTS.callbackAcknowledge;
   }
@@ -296,7 +298,9 @@ export async function runTurn(opts = {}) {
       const neutral = neutralFor(npcId);
       const v = guardTimed(() => checkReply(neutral, { ...guardCtx(), authorised: null }));
       trace.guardEvents.push({ stage: "fallback:neutral", ok: v.ok, codes: v.failures.map((f) => f.code + (f.factId ? ":" + f.factId : "")) });
-      gen = { text: v.ok ? neutral : "Let's keep going.", source: "fallback", trimmed: false, manifestId };
+      const safeText = v.ok ? neutral : "Let's keep going.";
+      if (!v.ok && !guardTimed(() => checkReply(safeText, {...guardCtx(), authorised: null})).ok) throw new Error("no guarded fallback available");
+      gen = { text: safeText, source: "fallback", trimmed: false, manifestId };
       fallbackAct = "fallback_clarify";
     }
     usedFallback = true;
@@ -322,7 +326,7 @@ export async function runTurn(opts = {}) {
   const publicState = {
     mood_label: moodLabel(npcState.mood),
     goals: projectGoals(scenario, session),
-    next_hint: hintFor(session, act),
+    next_hint: hintFor(session, act, scenario),
     npc_availability: Object.fromEntries(
       Object.keys(session.npcs || {}).map((id) => [id, !(session.ended && (session.npcs[id] || {}).last_act === "walkout")]),
     ),

@@ -191,9 +191,9 @@ test("setup-load retry preserves the approached colleague through loading and cr
   assert.equal(renders, 2);
 });
 
-test("production config and server manifest use NPC v3 tone", async () => {
+test("production config and server manifest use NPC v4 public boundary", async () => {
   const { loadConfig } = await import("../config.js");
-  assert.equal(loadConfig({}).npc.promptVersion, "v3");
+  assert.equal(loadConfig({}).npc.promptVersion, "v4");
   const source = readFileSync(new URL("../../services/api/server.js", import.meta.url), "utf8");
-  assert.ok(source.includes('npc: { model: "offline-stub:store-v1", promptVersion: "v3"'));
+  assert.ok(source.includes('npc: { model: "offline-stub:store-v1", promptVersion: "v4"'));
 });

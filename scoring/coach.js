@@ -1,31 +1,35 @@
+import {resolveLanguage, checkLanguageCanon} from "../llm/languageContext.js";
 import { readFileSync } from "node:fs";
 import { complete } from "../llm/gateway.js";
 import { createManifest } from "../llm/manifest.js";
 import { loadConfig } from "../llm/config.js";
-import { echoCorpus, keywordHitsForFact, semanticHitForFact, canonCheck } from "../llm/guards.js";
+import { echoCorpus, keywordHitsForFact, semanticHitForFact } from "../llm/guards.js";
 import { scoreSession } from "./score.js";
 import { validateQuote, personalLabel, normalizeQuote } from "./quotes.js";
-const prompt = readFileSync(new URL("../llm/prompts/coach/v2.md", import.meta.url), "utf8");
+const prompt = readFileSync(new URL("../llm/prompts/coach/v3.md", import.meta.url), "utf8");
 const text = { type: "string", minLength: 1 };
 export const COACH_SCHEMA = { type: "object", additionalProperties: false,
   required: ["turn_id", "quote", "what_went_well", "what_happened", "why_it_matters", "better_reply"],
   properties: { turn_id: { type: ["integer", "string"] }, quote: text, what_went_well: text, what_happened: text, why_it_matters: text, better_reply: text } };
 export function safeHistoricalText(value, scenario, known, history = {}) {
   if (typeof value !== "string" || !value.trim()) return false;
+  let language;
+  try { language = resolveLanguage(scenario, history.runtime, history.locale || "en"); } catch { return false; }
   const corpus = echoCorpus(); // A guessed secret in user words never authorizes a coaching answer.
   let canonText = normalizeQuote(value);
   // Exact already-delivered fact spans are verified; surrounding new claims still pass the canon guard.
   const knownTexts = scenario.facts.filter((f) => known.includes(f.id)).map((f) => f.content.en);
   for (const content of knownTexts) canonText = canonText.split(normalizeQuote(content)).join(" ");
-  const permitted = echoCorpus({ userSaid: history.userSaid || [], revealedTexts: knownTexts, commitments: history.commitments || [] });
-  const canon = canonCheck(canonText, { scenario, corpus: permitted, clockDay: scenario.clock.day,
-    authorisedFactId: known.includes("F1") ? "F1" : null });
+  const canon = checkLanguageCanon(language, {text: canonText, act: "", permittedCanon: {public: scenario.canon?.public || {}, facts: scenario.facts.filter((fact) => known.includes(fact.id)).map((fact) => ({id: fact.id, content: fact.content.en})), userSaid: history.userSaid || [], commitments: (history.commitments || []).map(({original_words, what, target_day}) => ({original_words, what, target_day}))}, authorisedFact: null, activeCommitment: null, clock: {day: scenario.clock.day}, bounds: null});
   // The canon guard treats any scope mention as material; these neutral inquiries assert no scope change.
   const neutralScopeQuestion = /^(?:what is the scope|can we clarify the scope|could you clarify the scope)\?$/.test(canonText);
   return canon.every((failure) => failure.code === "canon_invented_scope" && neutralScopeQuestion) && !personalLabel(value) && scenario.facts.filter((f) => !known.includes(f.id)).every((f) =>
     keywordHitsForFact(value, scenario, f.id, corpus, "en").length === 0 && !semanticHitForFact(value, scenario, f.id, corpus).hit);
 }
-export async function coachSession({ record, scenario = record.scenario, provider, manifest = createManifest(loadConfig()) }) {
+export async function coachSession({ record, scenario = record.scenario, provider, runtime = undefined, manifest = createManifest(loadConfig()) }) {
+  if (record.session.engine_policy && runtime === undefined) throw new Error("bound language runtime required");
+  resolveLanguage(scenario, runtime, record.session.locale || "en");
+  if (record.session.engine_policy && runtime && JSON.stringify(runtime.identity) !== JSON.stringify(record.session.identity)) throw new Error("coach language identity mismatch");
   const deterministic = scoreSession(record, scenario);
   if (!record.session.ended) return { status: "pending", moments: [], manifestId: manifest.id, attempts: 0, source: "unavailable" };
   const turns = record.convo?.turns || [];
@@ -40,7 +44,7 @@ export async function coachSession({ record, scenario = record.scenario, provide
   const before = (record.session.snapshots || []).filter((s) => s.turn < flag.turn_id).sort((a, b) => b.turn - a.turn)[0];
   const known = before?.user_known || [];
   const transcript = turns.slice(0, index + 1).map(({ id, speaker, npcId, text }) => ({ id, speaker, npcId, text }));
-  const history = { userSaid: transcript.filter((t) => t.speaker === "user").map((t) => t.text), commitments: before?.commitments || [] };
+  const history = { runtime, locale: record.session.locale || "en", userSaid: transcript.filter((t) => t.speaker === "user").map((t) => t.text), commitments: before?.commitments || [] };
   const preferred = scenario.facts.find((f) => f.id === flag.fact_id && !known.includes(f.id)) ||
     scenario.facts.find((f) => f.owner === original.npcId && !known.includes(f.id));
   const authored = preferred?.unlock_question?.en;

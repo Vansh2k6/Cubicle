@@ -15,13 +15,14 @@ import { execSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {privateLanguageNeedles} from "./private-language-needles.mjs";
 import { scanArtifacts } from "./bundle-scan-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const scenario = JSON.parse(readFileSync(join(root, "scenarios", "missed_deadline.json"), "utf8"));
 const replies = JSON.parse(readFileSync(join(root, "replies", "missed_deadline.en.json"), "utf8"));
 
-const banned = new Map(); // lowercased needle -> reason
+const banned = new Map(privateLanguageNeedles); // lowercased needle -> reason
 function add(needle, reason) {
   const n = String(needle);
   if (n.length < 6 && !/[\s-]/.test(n)) return; // skip bare common words (vendor collisions)

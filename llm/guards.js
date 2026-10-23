@@ -1,5 +1,5 @@
 // llm/guards.js — Leak guard (R-02), semantic check + canon guard (R-09).
-// Local, non-generative, stdlib only. No imports: pure functions over plain
+// Local, non-generative, stdlib only. Pure functions over plain
 // data so the engine stays R-16 clean and every caller passes scenario text
 // explicitly. Outputs carry reason CODES and fact ids only — never sealed
 // fact text, keywords, or private guard detail (R-66).
@@ -14,69 +14,11 @@
 //       conversation. Echo is attribution, not confirmation: confirmation
 //       language attached to an echoed span still fails.
 
-const NUMBER_WORDS = {
-  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5,
-  six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
-};
-
-const DAY_FULL = {
-  mon: "monday", monday: "monday", mondays: "monday",
-  tue: "tuesday", tues: "tuesday", tuesday: "tuesday", tuesdays: "tuesday",
-  wed: "wednesday", weds: "wednesday", wednesday: "wednesday", wednesdays: "wednesday",
-  thu: "thursday", thur: "thursday", thurs: "thursday", thursday: "thursday", thursdays: "thursday",
-  fri: "friday", friday: "friday", fridays: "friday",
-  sat: "saturday", saturday: "saturday", saturdays: "saturday",
-  sun: "sunday", sunday: "sunday", sundays: "sunday",
-};
-
-// SC-01 day-0 anchored labels (D-27: Friday is the day-3 label).
-const DAY_TO_OFFSET = { thursday: 2, friday: 3 };
-
-const STOPWORDS = new Set(
-  "the,a,an,is,in,on,of,to,and,for,with,you,your,it,its,that,this,these,those,have,has,had,been,are,was,were,be,as,at,by,from,or,not,can,will,would,should,about,our,we,i,my,me,us,so,do,does,if,there,here,what,when,how,why,which,who,all,any,but,no,yes,just,now,very,really,quite,more,most,some,such,than,then,they,them,their,he,she,his,her,having,doing,being,because,until,while,again,once".split(","),
-);
-
-const CONFIRM_WORDS = ["yes", "yeah", "correct", "exactly", "indeed", "confirmed", "agree", "agrees", "agreed", "true", "right", "absolutely", "definitely"];
-
-const ATTRIB_RE = /you\s+(said|mentioned|proposed|asked|suggested|told\s+me|noted|wrote|put\s+it)|as\s+you\s+(said|put\s+it)|your\s+(proposal|words|message|question|guess)|you'?re\s+asking\s+about/i;
-
-const DATE_DAY_RE = /\b(mon|monday|mondays|tue|tues|tuesday|tuesdays|wed|weds|wednesday|wednesdays|thu|thur|thurs|thursday|thursdays|fri|friday|fridays|sat|saturday|saturdays|sun|sunday|sundays)\b/i;
-const DATE_COUNT_RE = /\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+days?\b/i;
-const TOMORROW_RE = /\btomorrow\b/i;
-
-const SCOPE_RE = /\bscope\b|drop\s+(a|the)\s+feature|cut\s+(scope|corners)|phased(\s+delivery)?|ship\s+(a\s+)?partial|descope|reduce\s+scope/i;
-const RESOURCE_RE = /two\s+more\s+devs|extra\s+(dev|developer|engineer|resource|help|pair\s+of\s+hands)|more\s+(devs|developers|engineers|headcount)|another\s+(dev|developer|engineer)|two\s+engineers/i;
-const PROGRESS_RE = /\d+\s*(%|percent)\s*complete|half[-\s]?done|almost\s+done|module\s+is\s+(ready|done)|ahead\s+of\s+schedule|already\s+finished/i;
-const MEETING_RE = /(tell|told|email|emailed|call|called)\s+the\s+client|schedul\w*\s+(a\s+)?(meeting|sync|call)|standup|sync\s+with|meeting\s+(on|with|monday|tuesday|wednesday|thursday|friday)/i;
-const AGREE_RE = /we\s+(have\s+)?agreed|deal\b|locked\s+in|\bconfirmed\b|all\s+set|sign[-\s]?off|shake\s+on|we\s+have\s+a\s+deal|closing\s+this/i;
-
-// Agreement/closing wording is only legitimate on a closing act.
-const AGREEMENT_ACTS = new Set(["close_positive"]);
-
-export function normalize(text) {
-  let s = String(text || "").toLowerCase();
-  s = s.replace(/[_—–−]+/g, " ");
-  s = s.replace(/-/g, " ");
-  s = s.replace(/[^a-z0-9\s]/g, " ");
-  s = s.replace(/\b([a-z]+)\b/g, (w) => {
-    if (Object.prototype.hasOwnProperty.call(NUMBER_WORDS, w)) return String(NUMBER_WORDS[w]);
-    if (Object.prototype.hasOwnProperty.call(DAY_FULL, w)) return DAY_FULL[w];
-    return w;
-  });
-  return s.replace(/\s+/g, " ").trim();
-}
-
-export function nospace(text) {
-  return normalize(text).replace(/\s+/g, "");
-}
-
-function tokens(text) {
-  return normalize(text).split(" ").filter(Boolean);
-}
-
-export function contentTokens(text) {
-  return tokens(text).filter((t) => !STOPWORDS.has(t) && t.length > 1);
-}
+import {tokens, normalize, nospace, contentTokens, echoCorpus, phraseHit, supportedByEcho, hasConfirmLanguage} from "./languagePrimitives.js";
+import {legacyCanonCheck} from "./sc01Language.js";
+import {resolveLanguage, checkLanguageCanon} from "./languageContext.js";
+export {normalize, nospace, contentTokens, echoCorpus};
+export const canonCheck = legacyCanonCheck;
 
 function factKeywords(scenario, factId, locale) {
   const f = (scenario.facts || []).find((x) => x && x.id === factId);
@@ -95,61 +37,6 @@ function factContent(scenario, factId) {
 function undisclosedFacts(scenario, revealedIds) {
   const have = new Set(revealedIds || []);
   return (scenario.facts || []).filter((f) => f && !have.has(f.id)).map((f) => f.id);
-}
-
-// Support corpus for the echo allowance: user words to THIS npc +
-// THIS npc's permitted revealed facts + commitments logged in THIS
-// conversation. Returned as normalised + nospace haystacks.
-export function echoCorpus({ userSaid = [], revealedTexts = [], commitments = [] } = {}) {
-  const parts = [];
-  for (const t of userSaid) parts.push(String(t || ""));
-  for (const t of revealedTexts) parts.push(String(t || ""));
-  for (const c of commitments) {
-    if (c && typeof c === "object") {
-      if (c.original_words) parts.push(String(c.original_words));
-      if (c.what) parts.push(String(c.what));
-    } else if (typeof c === "string") parts.push(c);
-  }
-  const norm = normalize(parts.join(" "));
-  return { norm, flat: norm.replace(/\s+/g, "") };
-}
-
-function phraseHit(replyNorm, replyFlat, phrase) {
-  const p = normalize(phrase);
-  if (!p) return false;
-  if (replyNorm.includes(p)) return true;
-  const pf = p.replace(/\s+/g, "");
-  if (pf.length >= 4 && replyFlat.includes(pf)) return true;
-  // Ordered token subsequence with a small gap allowance, so insertions like
-  // "holding them off" still match the keyword "holding off".
-  const pt = p.split(" ").filter(Boolean);
-  if (pt.length >= 2) {
-    const rt = replyNorm.split(" ").filter(Boolean);
-    let pi = 0;
-    let gap = 0;
-    for (const w of rt) {
-      if (w === pt[pi]) { pi += 1; gap = 0; if (pi === pt.length) return true; }
-      else if (pi > 0) { gap += 1; if (gap > 3) { pi = 0; gap = 0; } }
-    }
-  }
-  return false;
-}
-
-function supportedByEcho(corpus, phrase) {
-  const p = normalize(phrase);
-  if (!p) return false;
-  if (p.length >= 3 && corpus.norm.includes(p)) return true;
-  const pf = p.replace(/\s+/g, "");
-  return pf.length >= 4 && corpus.flat.includes(pf);
-}
-
-function hasConfirmLanguage(reply) {
-  const toks = new Set(tokens(reply));
-  return CONFIRM_WORDS.some((w) => toks.has(w));
-}
-
-function hasAttribution(reply) {
-  return ATTRIB_RE.test(String(reply || ""));
 }
 
 // Keyword scan for one fact. Returns {hitPhrases[]} of phrases present in
@@ -206,105 +93,27 @@ export function semanticHitForFact(reply, scenario, factId, corpus) {
   return { hit, overlap, ratio };
 }
 
-function resolveDayClaims(reply, clockDay) {
-  const text = String(reply || ""), claims = [];
-  for (const match of text.matchAll(new RegExp(DATE_DAY_RE.source, "gi"))) {
-    const full = DAY_FULL[match[1].toLowerCase()];
-    claims.push({ day: Object.prototype.hasOwnProperty.call(DAY_TO_OFFSET, full) ? DAY_TO_OFFSET[full] : null, label: full, index: match.index });
-  }
-  for (const match of text.matchAll(new RegExp(DATE_COUNT_RE.source, "gi"))) {
-    const raw = match[1].toLowerCase();
-    const n = Object.prototype.hasOwnProperty.call(NUMBER_WORDS, raw) ? NUMBER_WORDS[raw] : Number(raw);
-    if (Number.isInteger(n)) claims.push({ day: clockDay + n, label: match[0], index: match.index });
-  }
-  for (const match of text.matchAll(new RegExp(TOMORROW_RE.source, "gi"))) claims.push({ day: clockDay + 1, label: match[0], index: match.index });
-  return claims.sort((a, b) => a.index - b.index);
-}
-
-// Canon guard (R-09): structured checks against clock + active commitment.
-// Returns failure codes (no sealed text). `authorisedFactId` spans are
-// exempt; pure user-echo attribution is not a confirmation.
-export function canonCheck(reply, opts = {}) {
-  const {
-    scenario = null, authorisedFactId = null, corpus = null,
-    activeCommitment = null, clockDay = 0, bounds = null, act = "",
-  } = opts;
-  const failures = [];
-  const text = String(reply || "");
-  void scenario;
-
-  const echoSupportedWhole = (re) => {
-    const m = re.exec(text);
-    if (!m) return false;
-    return corpus ? supportedByEcho(corpus, m[0]) : false;
-  };
-
-  // 1. Date claims.
-  for (const claim of resolveDayClaims(text, clockDay)) {
-    if (claim.day !== null) {
-      let exempt = false;
-      if (authorisedFactId === "F1" && (claim.label === "friday" || claim.day === 3)) exempt = true;
-      if (!exempt && activeCommitment && claim.day === activeCommitment.target_day) {
-        exempt = ["close_positive", "acknowledge_relay", "callback_commitment"].includes(act);
-      }
-      if (!exempt && corpus && supportedByEcho(corpus, claim.label) && hasAttribution(text) && !hasConfirmLanguage(text)) {
-        exempt = true; // pure echo attribution ("you proposed Friday")
-      }
-      if (!exempt) {
-        if (bounds && (claim.day < bounds.minDay || claim.day > bounds.cutoffDay)) {
-          failures.push({ code: "canon_date_out_of_bounds" });
-        } else {
-          failures.push({ code: "canon_unverified_date" });
-        }
-      }
-    } else {
-      // Named a weekday outside the SC-01 vocabulary: invented specifics.
-      if (!(corpus && supportedByEcho(corpus, claim.label) && hasAttribution(text) && !hasConfirmLanguage(text))) {
-        failures.push({ code: "canon_unverified_date" });
-      }
-    }
-  }
-
-  // 2. Scope / progress / resources / meetings: reject unless authorised or
-  // pure attributed echo.
-  const matChecks = [
-    { re: SCOPE_RE, code: "canon_invented_scope", authFacts: [] },
-    { re: RESOURCE_RE, code: "canon_invented_resources", authFacts: [] },
-    { re: PROGRESS_RE, code: "canon_invented_progress", authFacts: ["F2"] },
-    { re: MEETING_RE, code: "canon_invented_meeting", authFacts: [] },
-  ];
-  for (const c of matChecks) {
-    if (!c.re.test(text)) continue;
-    if (authorisedFactId && c.authFacts.includes(authorisedFactId)) continue;
-    if (echoSupportedWhole(c.re) && hasAttribution(text) && !hasConfirmLanguage(text)) continue;
-    failures.push({ code: c.code });
-  }
-
-  // 3. Agreement/closing wording only on an agreement/closing act.
-  if (AGREE_RE.test(text) && !AGREEMENT_ACTS.has(act)) {
-    failures.push({ code: "canon_agreement_wrong_act" });
-  }
-
-  return failures;
-}
-
 // Full reply check. `authorised` = {factId, owner, act} | null: the engine's
 // pending disclosure for exactly this npc + act. `revealedIds` = fact ids the
-// user already knows (excluded from "undisclosed" scanning); per-NPC
-// knowledge filtering happens via revealedTexts in the echo corpus.
+// user already knows; only facts OWNED by this actor are excluded from scanning.
+// Other actors' facts still require attributed user relay and cannot be confirmed.
 export function checkReply(reply, opts = {}) {
   const {
     scenario, npcId, act, locale = "en",
-    userSaid = [], revealedTexts = [], commitments = [],
+    userSaid = [], commitments = [],
     revealedIds = [], authorised = null,
-    activeCommitment = null, clockDay = 0, bounds = null,
+    activeCommitment = null, clockDay = 0, bounds = null, runtime = undefined,
   } = opts;
   const failures = [];
-  if (!scenario) return { ok: false, failures: [{ code: "bad_input" }] };
-  const corpus = echoCorpus({ userSaid, revealedTexts, commitments });
-  const authFact = authorised && authorised.owner === npcId && authorised.act === act ? authorised.factId : null;
+  if (!scenario || !scenario.npcs?.some((npc) => npc.id === npcId)) return { ok: false, failures: [{ code: "bad_input" }] };
+  let language;
+  try { language = resolveLanguage(scenario, runtime, locale); } catch { return {ok: false, failures: [{code: "unsupported_language"}]}; }
+  const ownIds = revealedIds.filter((id) => scenario.facts.some((fact) => fact.id === id && fact.owner === npcId));
+  const ownTexts = scenario.facts.filter((fact) => ownIds.includes(fact.id)).map((fact) => factContent(scenario, fact.id));
+  const corpus = echoCorpus({ userSaid, revealedTexts: ownTexts, commitments });
+  const authFact = authorised && authorised.owner === npcId && authorised.act === act && act === `reveal_fact:${authorised.factId}` && scenario.facts.some((fact) => fact.id === authorised.factId && fact.owner === npcId) ? authorised.factId : null;
 
-  for (const fid of undisclosedFacts(scenario, revealedIds)) {
+  for (const fid of undisclosedFacts(scenario, ownIds)) {
     if (fid === authFact) continue; // exemption (a): authorised pending fact
     const kw = keywordHitsForFact(reply, scenario, fid, corpus, locale);
     if (kw.length > 0) failures.push({ code: "leak_keyword", factId: fid });
@@ -312,7 +121,9 @@ export function checkReply(reply, opts = {}) {
     if (sem.hit && kw.length === 0) failures.push({ code: "leak_semantic", factId: fid });
   }
 
-  for (const c of canonCheck(reply, { scenario, authorisedFactId: authFact, corpus, activeCommitment, clockDay, bounds, act })) {
+  const knownCommitments = commitments.map(({original_words, what, target_day}) => ({original_words, what, target_day}));
+  const knownActive = activeCommitment ? {target_day: activeCommitment.target_day, original_words: activeCommitment.original_words, what: activeCommitment.what} : null;
+  for (const c of checkLanguageCanon(language, {text: reply, act, permittedCanon: {public: scenario.canon?.public || {}, userSaid, facts: ownIds.map((id) => ({id, content: factContent(scenario, id)})), commitments: knownCommitments}, authorisedFact: authFact ? {id: authFact, content: factContent(scenario, authFact)} : null, activeCommitment: knownActive, clock: {day: clockDay}, bounds})) {
     failures.push(c);
   }
 

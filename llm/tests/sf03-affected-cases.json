@@ -1,0 +1,43 @@
+{
+  "purpose": "SF-03 affected offline regression cases; no live provider execution",
+  "live_status": "NOT RUN; fresh user authorization required",
+  "prompt_versions": {
+    "classifier": "v3",
+    "npc": "v4",
+    "coach": "v3",
+    "judge": "v2 unchanged"
+  },
+  "cases": [
+    "Public canon hook excludes private root canon, fact metadata and other actor facts",
+    "Conflicting dates clarify; equivalent Friday/three days resolves to day 3; hallucinated model day cannot replace user wording",
+    "Engine-authorized fact date plus extra invented date/resources/meeting/agreement fails canon",
+    "Permissive language policy cannot waive sealed-fact checks or forged/wrong-owner disclosure",
+    "Known pre-turn facts support coaching; guessed secret and later disclosures cannot authorize earlier reply",
+    "Missing/unknown/mismatched modern language context rejects before provider or state mutation",
+    "Session catalogue, turn, ended debrief and retry use the originally pinned package and language runtime",
+    "Unsupported locale fails closed and SC-01 English fallback remains locale-bound",
+    "Current Snehal/Vansh/Prathamesh names, three physical anchors and approved voice identities remain unchanged",
+    "Private policy/prompt markers scanned against synthetic artifacts and absent from frontend import graph",
+    "Conflicting model day/days/target_day aliases cannot bypass normalized Friday commitment in the engine",
+    "Non-SC01 public guidance follows visible goal labels without inheriting SC01 identifiers or copy",
+    "One- and two-actor casts use unique approved existing anchors and voice identities",
+    "Unregistered modern record debrief uses captured scoring bands and first-actor difficulty",
+    "Reset and scenario transitions clear stale public metadata"
+  ],
+  "offline_suites": [
+    "llm/tests/classifier.test.js",
+    "llm/tests/guards.test.js",
+    "llm/tests/pipeline.test.js",
+    "llm/tests/prompts.test.js",
+    "llm/tests/guidance.test.js",
+    "llm/tests/endCoordinator.test.js",
+    "llm/tests/bundleScan.test.js",
+    "llm/tests/sf03Language.test.js",
+    "llm/tests/scripted.test.js",
+    "scoring/tests/feedback.test.js",
+    "scoring/tests/debrief.test.js"
+  ],
+  "api_tests_prepared_not_run_by_coder": [
+    "services/api/tests/scenarioRegistry.test.js"
+  ]
+}
