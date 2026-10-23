@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import specData from "../../scenarios/missed_deadline.json" with { type: "json" };
 import repliesData from "../../replies/missed_deadline.en.json" with { type: "json" };
 import { validateScenario } from "../../engine/scenarioValidator.js";
-import { CONFIG } from "../../scoring/config.js";
+import { sc01EnginePolicy, sc01Rules } from "./sc01EnginePolicy.js";
+import { CONFIG, normalizeScoringProfile } from "../../scoring/config.js";
 
 const clone = (value) => structuredClone(value);
 function freeze(value) {
@@ -35,26 +36,26 @@ function validatePackage(input) {
   const spec = clone(input.spec);
   const replies = clone(input.replies);
   const scoringProfile = clone(input.scoringProfile);
-  const policy = clone(input.policy);
+  const policy = { ...clone({ id: input.policy?.id, version: input.policy?.version }), engine: input.policy?.engine, rules: clone(input.policy?.rules) };
   const validation = validateScenario(spec);
   const config = CONFIG.missed_deadline;
   const matchesItems = (items, expected) => Array.isArray(items) && items.length === Object.keys(expected).length && items.every((item) => expected[item.id] === item.weight);
   const scoring = spec.scoring || {};
-  if (!validation.ok || spec.id !== "missed_deadline" || spec.locales?.length !== 1 || spec.locales[0] !== "en" || !Array.isArray(replies?.entries) || canonical(scoringProfile) !== canonical(config) || scoring.version !== config.scoring_version || canonical(scoring.weights) !== canonical(config.weights) || !matchesItems(spec.goals, config.goals) || !matchesItems(spec.facts, config.facts) || (scoring.penalties && canonical(scoring.penalties) !== canonical(config.penalties)) || policy?.id !== "sc01-legacy" || policy?.version !== 1) throw new Error("invalid scenario package");
+  if (!validation.ok || spec.id !== "missed_deadline" || spec.locales?.length !== 1 || spec.locales[0] !== "en" || !Array.isArray(replies?.entries) || canonical(scoringProfile) !== canonical(config) || canonical(normalizeScoringProfile(spec)) !== canonical(config) || scoring.version !== config.scoring_version || canonical(scoring.weights) !== canonical(config.weights) || !matchesItems(spec.goals, config.goals) || !matchesItems(spec.facts, config.facts) || (scoring.penalties && canonical(scoring.penalties) !== canonical(config.penalties)) || policy?.id !== "sc01-legacy" || policy?.version !== 1 || Object.keys(sc01EnginePolicy).some((key) => policy.engine?.[key] !== sc01EnginePolicy[key]) || canonical(policy.rules) !== canonical(sc01Rules)) throw new Error("invalid scenario package");
   const ids = new Set();
   for (const npc of spec.npcs || []) { if (!npc?.id || ids.has(npc.id)) throw new Error("invalid npc ids"); ids.add(npc.id); }
   for (const entry of replies.entries) {
     if (!ids.has(entry?.npc) || !entry?.id || typeof entry.act !== "string" || !Array.isArray(entry.variants) || entry.variants.length === 0 || entry.variants.some((variant) => !variant?.id || typeof variant.text !== "string" || !variant.text.trim())) throw new Error("invalid reply references");
   }
-  // SF-01's adapter remains deliberately tied to the accepted SC-01 runtime.
+  // Production registration remains deliberately tied to the accepted SC-01 policy.
   const baselineOwners = Object.fromEntries((specData.facts || []).map((fact) => [fact.id, fact.owner]));
   const owners = Object.fromEntries((spec.facts || []).map((fact) => [fact.id, fact.owner]));
   const baselineNpcs = (specData.npcs || []).map((npc) => npc.id).sort();
   const goalIds = (spec.goals || []).map((goal) => goal.id).sort();
   if (canonical(owners) !== canonical(baselineOwners) || canonical([...ids].sort()) !== canonical(baselineNpcs) || canonical(goalIds) !== canonical(["G1", "G2", "G3"]) || canonical(spec.commitment_model) !== canonical(specData.commitment_model)) throw new Error("incompatible legacy scenario package");
   const identity = freeze({ scenarioId: spec.id, contentVersion: spec.version, schemaVersion: 1, policyId: policy.id, policyVersion: policy.version, scoringVersion: spec.scoring.version,
-    contentHash: hash({ spec, replies, scoringProfile, policyId: policy.id, policyVersion: policy.version }) });
-  return freeze({ spec, replies, scoringProfile, policy, identity });
+    contentHash: hash({ spec, replies, scoringProfile, policyId: policy.id, policyVersion: policy.version, policyRules: policy.rules }) });
+  return freeze({ spec, replies, scoringProfile, policy: { ...policy, engine: sc01EnginePolicy }, identity });
 }
 
 export function createScenarioRegistry(packages = []) {
@@ -75,4 +76,4 @@ export function createScenarioRegistry(packages = []) {
 }
 
 export const defaultRegistry = createScenarioRegistry([{ spec: specData, replies: repliesData, scoringProfile: CONFIG.missed_deadline,
-  policy: { id: "sc01-legacy", version: 1 }, aliases: ["deadline"] }]);
+  policy: { id: "sc01-legacy", version: 1, engine: sc01EnginePolicy, rules: sc01Rules }, aliases: ["deadline"] }]);

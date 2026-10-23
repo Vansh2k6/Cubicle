@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import * as engine from "../../engine/engine.js";
+import * as engine from "../../engine/sc01Compatibility.js";
 import { runBot, scenario } from "../../evals/scriptedBot.mjs";
 import { smart, trap, ev } from "../../evals/scriptedPaths.mjs";
 

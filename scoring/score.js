@@ -1,9 +1,10 @@
-import { CONFIG } from "./config.js";
+import { CONFIG, normalizeScoringProfile } from "./config.js";
+import { legacyGoalProofs } from "./sc01Legacy.js";
 import { startMood, warmthGain, patienceDrop, GAIN_EVENTS, VAGUE_EVENTS } from "../engine/config.js";
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-export function createScoreRecord(session, convo, scenario) {
-  return structuredClone({ session, convo, scenario });
+export function createScoreRecord(session, convo, scenario, scoringProfile = session.engine_policy ? undefined : CONFIG[scenario.id]) {
+  return structuredClone({ session, convo, scenario, scoringProfile, ...(session.identity ? { identity: session.identity } : {}) });
 }
 
 export function turnMap(convo, session) {
@@ -15,12 +16,21 @@ export function turnMap(convo, session) {
 // Pure server-side scoring. No provider, transcript persistence or client projection.
 export function scoreSession(record, scenario = record.scenario) {
   const session = record.session;
-  const config = CONFIG[scenario.id];
-  const itemWeightsMatch = (items, expected) => items.length === Object.keys(expected).length &&
-    new Set(items.map((item) => item.id)).size === items.length && items.every((item) => expected[item.id] === item.weight);
-  if (!config || scenario.scoring.version !== config.scoring_version || Object.entries(config.weights).some(([id, weight]) => scenario.scoring.weights[id] !== weight) ||
-      !itemWeightsMatch(scenario.goals, config.goals) || !itemWeightsMatch(scenario.facts, config.facts) ||
-      (scenario.scoring.penalties && Object.entries(config.penalties).some(([id, penalty]) => scenario.scoring.penalties[id] !== penalty))) {
+  const legacy = !session.engine_policy;
+  const legacyProofs = legacy ? legacyGoalProofs(session, scenario) : null;
+  const canonical = (value) => value && typeof value === "object"
+    ? (Array.isArray(value) ? `[${value.map(canonical).join(",")}]` : `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(",")}}`)
+    : JSON.stringify(value);
+  const same = (a, b) => canonical(a) === canonical(b);
+  const config = record.scoringProfile || (legacy ? CONFIG.missed_deadline : null);
+  const profile = scenario.scoring.bands ? normalizeScoringProfile(scenario) : (legacy ? CONFIG.missed_deadline : null);
+  const identity = record.identity;
+  const identityMatches = identity && same(identity, session.identity) && identity.scenarioId === scenario.id &&
+    identity.contentVersion === scenario.version && identity.scoringVersion === config?.scoring_version && identity.schemaVersion === 1 &&
+    typeof identity.contentHash === "string" && /^[a-f0-9]{64}$/.test(identity.contentHash) &&
+    identity.policyId === session.engine_policy?.id && identity.policyVersion === session.engine_policy?.version;
+  if (!config || !profile || !same(config, profile) || session.scenario_id !== scenario.id || session.scenario_version !== scenario.version ||
+      (legacy ? !same(config, CONFIG.missed_deadline) : (!record.scenario || !same(record.scenario, scenario) || !identityMatches || session.engine_policy.proof_version !== 1))) {
     throw new Error("Unsupported scenario scoring version or weights");
   }
   const mapping = turnMap(record.convo, session);
@@ -38,27 +48,47 @@ export function scoreSession(record, scenario = record.scenario) {
   };
   const reserve = (e, metric) => { if (e) allocated.set(e.source_id, metric); };
   const metrics = {}, completedGoalTypes = new Map();
+  const usedGoalSources = new Set(), validGoals = new Set();
 
-  const goals = [];
-  for (const goal of scenario.goals) {
+  const goals = [], orderedGoals = [], visitedGoals = new Set(), visitingGoals = new Set();
+  const visitGoal = (goal) => {
+    if (!goal || visitedGoals.has(goal.id)) return;
+    if (visitingGoals.has(goal.id)) throw new Error("cyclic goal dependencies");
+    visitingGoals.add(goal.id);
+    for (const id of goal.requires) visitGoal(scenario.goals.find((g) => g.id === id));
+    visitingGoals.delete(goal.id); visitedGoals.add(goal.id); orderedGoals.push(goal);
+  };
+  scenario.goals.forEach(visitGoal);
+  for (const goal of orderedGoals) {
     const state = session.goals[goal.id];
-    const closingCommitment = goal.id === "G3" ? (session.commitments || []).find((c) => c.status === "active" && c.accepted_with === "maya" && c.recap_turn_id === state?.turn_id) : null;
-    const done = state?.status === "done" && (goal.id !== "G3" || !!closingCommitment);
+    const proof = legacy ? legacyProofs[goal.id] : state?.proof;
+    const sources = (proof?.source_ids || []).map((id) => events.find((e) => e.source_id === id));
+    const closingCommitment = proof?.requires_delivery ? (session.commitments || []).find((c) => c.id === proof.commitment_id &&
+      c.status === "active" && !c.unrealistic && c.accepted_with === proof.actor_id && c.recap_turn_id === state?.turn_id) : null;
+    const declaredTypes = goal.done_when.filter((x) => x.startsWith("event:")).map((x) => x.slice(6));
+    const declaredActor = legacy ? proof?.actor_id : session.model?.policy_rules?.goalActors?.[goal.id];
+    const proofMatches = proof?.actor_id === declaredActor && proof?.requires_delivery === goal.done_when.includes("date_mutually_agreed") &&
+      declaredTypes.length === sources.length && declaredTypes.every((type) => sources.some((e) => e?.type === type)) &&
+      goal.requires.every((id) => validGoals.has(id));
+    const done = proofMatches && state?.status === "done" && !!proof && sources.length > 0 && new Set(proof.source_ids).size === sources.length &&
+      sources.every((e) => e && e.npc_id === proof.actor_id && e.turn_id <= state.turn_id && !usedGoalSources.has(e.source_id) &&
+        (legacy ? e.allocation !== "integrity" : e.allocation === "goals")) &&
+      (!proof.requires_delivery || !!closingCommitment);
     const row = add("goals", `goal:${goal.id}`, state?.turn_id || session.turn, done ? goal.weight : 0,
       { loss: done ? 0 : goal.weight, status: done ? "awarded" : "missed", evidence: [] });
     if (done) {
-      const types = goal.done_when.filter((x) => x.startsWith("event:")).map((x) => x.slice(6));
-      const npc = goal.id === "G2" ? "jordan" : "maya";
-      for (const type of types) {
-        completedGoalTypes.set(`${npc}:${type}`, true);
-        const e = events.find((e) => e.npc_id === npc && e.type === type &&
-          (goal.id === "G3" ? e.turn_id === closingCommitment.recap_turn_id : e.turn_id <= state.turn_id));
-        if (e) { reserve(e, "goals"); row.evidence.push(evidence(e.source_id, e.turn_id)); }
+      validGoals.add(goal.id);
+      for (const e of sources) {
+        usedGoalSources.add(e.source_id);
+        completedGoalTypes.set(`${proof.actor_id}:${e.type}`, true);
+        reserve(e, "goals"); row.evidence.push(evidence(e.source_id, e.turn_id));
       }
       if (closingCommitment) row.commitment_id = closingCommitment.id;
     }
     goals.push(row);
   }
+  goals.sort((a, b) => scenario.goals.findIndex((g) => `goal:${g.id}` === a.source_id) - scenario.goals.findIndex((g) => `goal:${g.id}` === b.source_id));
+  ledger.splice(0, goals.length, ...goals);
   metrics.goals = { points: Math.min(config.weights.goals, goals.reduce((n, r) => n + r.points, 0)), cap: config.weights.goals, evidence: goals };
 
   const facts = [];
@@ -135,7 +165,7 @@ export function scoreSession(record, scenario = record.scenario) {
     let mood = start;
     const eligible = [];
     for (const e of events.filter((e) => e.npc_id === npc.id)) {
-      if (allocated.has(e.source_id)) { excluded.push({ metric: "relationship", source_id: e.source_id, reason: `allocated_to_${allocated.get(e.source_id)}` }); continue; }
+      if (allocated.has(e.source_id) || e.allocation === "goals") { excluded.push({ metric: "relationship", source_id: e.source_id, reason: `allocated_to_${allocated.get(e.source_id) || "goals"}` }); continue; }
       if (completedGoalTypes.has(`${npc.id}:${e.type}`)) { excluded.push({ metric: "relationship", source_id: e.source_id, reason: "repeated_goal_achievement" }); continue; }
       let delta = GAIN_EVENTS.includes(e.type) ? warmthGain(sliders.warmth ?? 50) : VAGUE_EVENTS.includes(e.type) ? patienceDrop(sliders.patience ?? 50) : 0;
       if (!delta) continue;
@@ -174,6 +204,6 @@ export function scoreSession(record, scenario = record.scenario) {
 
 export const METRIC_REGISTRY = Object.freeze(Object.fromEntries(["goals", "hidden_facts", "integrity", "relationship", "rubric"].map((id) => [id, Object.freeze({
   id,
-  weight(scenario) { return CONFIG[scenario.id].weights[id]; },
+  weight(scenario) { return scenario.scoring.weights[id]; },
   evaluate(record, scenario) { return scoreSession(record, scenario).metrics[id]; },
 })])));

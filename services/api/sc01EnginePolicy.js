@@ -1,9 +1,13 @@
 // Authored SC-01 decisions only. Inputs are read-only projections supplied by core.
-import { b2TurnFor, B3_GAP_TURNS } from "../../engine/config.js";
+import { B2_BASE_TURN, B2_ASSERTIVE_TURN, ASSERTIVENESS_B2_CUTOFF, B3_GAP_TURNS } from "../../engine/config.js";
 
 export const sc01Rules = Object.freeze({
   assistanceFact: "F2", assistanceActor: "jordan", assistanceFlag: "help_accepted_with_jordan",
   goalActors: Object.freeze({ G1: "maya", G2: "jordan", G3: "maya" }),
+  pressureSchedules: Object.freeze({
+    B2: Object.freeze({ baseTurn: B2_BASE_TURN, assertiveTurn: B2_ASSERTIVE_TURN, assertivenessCutoff: ASSERTIVENESS_B2_CUTOFF }),
+    B3: Object.freeze({ gapTurns: B3_GAP_TURNS }),
+  }),
 });
 
 export function commitmentBounds({ state, rules }) {
@@ -34,10 +38,12 @@ export function pressureCandidates({ state, rules }) {
   const date = rules.beats.find((b) => b.id === "B2");
   const candidates = [];
   if (callback) for (const c of state.commitments) {
-    if (c.status === "active" && c.npc_id === callback.npc && !c.callbackFired && state.turn - c.turn_id >= B3_GAP_TURNS)
+    if (c.status === "active" && c.npc_id === callback.npc && !c.callbackFired && state.turn - c.turn_id >= rules.pressureSchedules[callback.id].gapTurns)
       candidates.push({ beatId: callback.id, actorId: callback.npc, act: callback.act, commitmentId: c.id, sourceIds: [c.source_id] });
   }
-  if (date && state.turn >= b2TurnFor(state.customisation[date.npc]?.assertiveness) && state.commitments.length === 0)
+  const schedule = date && rules.pressureSchedules[date.id];
+  const dateTurn = schedule && ((Number(state.customisation[date.npc]?.assertiveness) || 0) >= schedule.assertivenessCutoff ? schedule.assertiveTurn : schedule.baseTurn);
+  if (date && state.turn >= dateTurn && state.commitments.length === 0)
     candidates.push({ beatId: date.id, actorId: date.npc, act: date.act, sourceIds: [] });
   return candidates;
 }

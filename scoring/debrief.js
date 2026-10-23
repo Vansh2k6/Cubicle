@@ -8,7 +8,7 @@ export const bandFor = (total, scenarioId = "missed_deadline") => CONFIG[scenari
 const LABELS = { goals: "Goals", hidden_facts: "Hidden facts", integrity: "Integrity", relationship: "Relationship", rubric: "Communication quality" };
 export async function assembleDebrief({ record, scenario = record.scenario, providers = {}, manifest, previous = null }) {
   if (!record.session.ended) throw Object.assign(new Error("End the session before requesting feedback"), { code: "NOT_ENDED" });
-  const snapshot = createScoreRecord(record.session, record.convo, scenario);
+  const snapshot = createScoreRecord(record.session, record.convo, scenario, record.scoringProfile);
   const deterministic = scoreSession(snapshot);
   const [judge, coach] = await Promise.all([
     (previous?.judged?.status === "available" ? Promise.resolve({ dimensions: previous.judged.dimensions, source: "llm", manifestId: previous.manifest_id }) :

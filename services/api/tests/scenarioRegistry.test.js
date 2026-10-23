@@ -8,7 +8,7 @@ import { SessionStore } from "../../../engine/store.js";
 
 function packageInput() {
   const { spec, replies, scoringProfile, policy } = defaultRegistry.getScenario("deadline");
-  return structuredClone({ spec, replies, scoringProfile, policy, aliases: ["deadline"] });
+  return { ...structuredClone({ spec, replies, scoringProfile, policy: { id: policy.id, version: policy.version, rules: policy.rules }, aliases: ["deadline"] }), policy: { ...policy, rules: structuredClone(policy.rules) } };
 }
 
 function reverseKeys(value) {
@@ -31,7 +31,7 @@ test("SC-01 registry preserves aliases and projects only public metadata", () =>
 
 test("registry clones and deeply freezes packages without changing constructor inputs", () => {
   const input = packageInput();
-  const before = structuredClone(input);
+  const before = packageInput();
   const pkg = createScenarioRegistry([input]).getScenario("deadline");
   assert.deepEqual(input, before);
   assert.notEqual(pkg.spec, input.spec);

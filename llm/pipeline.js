@@ -163,7 +163,7 @@ export async function runTurn(opts = {}) {
 
   // 3. Engine.
   const tEng0 = Date.now();
-  const applied = engine.applyTurn(session, npcId, cls.events, { text });
+  const applied = engine.applyTurn(session, npcId, cls.events, { text, runtime: opts.runtime });
   stages.engineMs = Date.now() - tEng0;
   const act = applied.act;
   trace.act = act;
@@ -313,7 +313,7 @@ export async function runTurn(opts = {}) {
   // Fallbacks never carry discovery/agreement credit.
   const onAct = !usedFallback;
   const delivered = verdict.ok && positive && onAct && gen.source === "llm";
-  engine.commitDelivery(session, session.turn, { delivered,
+  engine.commitDelivery(session, session.turn, { delivered, runtime: opts.runtime,
     agreementExpressed: expressesAcceptance(gen.text),
     closingExpressed: expressesClosing(gen.text) });
   trace.delivered = delivered;

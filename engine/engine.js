@@ -8,10 +8,6 @@
 // two files in sync; the test suite cross-checks engine behaviour against
 // config.js values.
 
-const B2_BASE_TURN = 4;
-const B2_ASSERTIVE_TURN = 3;
-const ASSERTIVENESS_B2_CUTOFF = 70;
-const B3_GAP_TURNS = 3;
 // PROVISIONAL (P1) mirror of config.js VAGUE_EVENTS.
 const VAGUE_EVENTS = ["avoided_question", "off_topic"];
 const GAIN_EVENTS = ["apologized", "took_ownership", "acknowledged_concern"];
@@ -52,12 +48,6 @@ function gateFor(forthcomingness, mood) {
   if (f >= 70) return { asks: 1, moodMin: 0 };
   if (f >= 30) return { asks: m >= 60 ? 1 : 2, moodMin: 0 };
   return { asks: 2, moodMin: 50 };
-}
-
-function b2TurnFor(assertiveness) {
-  return (Number(assertiveness) || 0) >= ASSERTIVENESS_B2_CUTOFF
-    ? B2_ASSERTIVE_TURN
-    : B2_BASE_TURN;
 }
 
 function b3ExtraDrop(assertiveness) {
@@ -101,27 +91,123 @@ function slidersFor(session, npcId) {
   };
 }
 
-function assistanceActive(session) {
-  const f2 = session.facts.F2 ? session.facts.F2.status === "revealed" : false;
-  return {
-    on: f2 && session.flags.includes("help_accepted_with_jordan"),
-    f2delivered: f2,
-    helpAccepted: session.flags.includes("help_accepted_with_jordan"),
-  };
+function freeze(value) {
+  if (value && typeof value === "object") {
+    Object.freeze(value);
+    for (const child of Object.values(value)) freeze(child);
+  }
+  return value;
 }
 
-function boundsFor(session) {
-  const m = session.model.commitment_model;
-  const assist = assistanceActive(session);
-  const min = assist.on ? m.assisted_min_day : m.unassisted_min_day;
-  return { min, cutoff: session.model.cutoff_day, assist };
+function needRuntime(runtime, session) {
+  if (!runtime || runtime.scenarioId !== session.scenario_id || typeof runtime.policyId !== "string" ||
+      !Number.isInteger(runtime.policyVersion) || !runtime.rules ||
+      ["commitmentBounds", "goalCandidates", "pressureCandidates", "relayAccuracy"].some((name) => typeof runtime.engine?.[name] !== "function") ||
+      (session.identity && (session.identity.scenarioId !== runtime.scenarioId || session.identity.policyId !== runtime.policyId || session.identity.policyVersion !== runtime.policyVersion)) ||
+      (session.engine_policy && (session.engine_policy.id !== runtime.policyId || session.engine_policy.version !== runtime.policyVersion ||
+        stableStringify(session.model.policy_rules) !== stableStringify(runtime.rules)))) throw new Error("missing or mismatched engine runtime");
+  return runtime;
+}
+
+function policyResult(session, runtime, operation, extra = {}) {
+  const state = deepClone({ turn: session.turn, clock: session.clock, facts: session.facts, flags: session.flags,
+    user_known: session.user_known, customisation: session.customisation, goals: session.goals,
+    commitments: session.commitments.map(({ what, original_words, ...c }) => c),
+    events_log: session.events_log.map(({ type, source_id, npc_id, turn_id, allocation }) => ({ type, source_id, npc_id, turn_id, allocation })) });
+  const rules = { ...session.model, ...session.model.policy_rules };
+  const input = { state, rules: deepClone(rules), ...deepClone(extra) };
+  if (input.events) input.events = input.events.map(({ type }) => ({ type }));
+  const result = runtime.engine[operation](freeze(input));
+  // Copy results immediately: policies cannot retain a mutable reference into core state.
+  return result === undefined ? undefined : deepClone(result);
+}
+
+function boundsFor(session, runtime, npcId, events = []) {
+  const b = policyResult(session, runtime, "commitmentBounds", { npcId, events });
+  const a = b?.assistance, r = session.model.policy_rules, m = session.model.commitment_model;
+  const factDelivered = session.facts[r.assistanceFact]?.status === "revealed" && session.user_known.includes(r.assistanceFact);
+  const helpAccepted = session.flags.includes(r.assistanceFlag);
+  if (!a || a.factDelivered !== factDelivered || a.helpAccepted !== helpAccepted || a.active !== (factDelivered && helpAccepted) ||
+      !Number.isInteger(b.minDay) || b.minDay !== (a.active ? m.assisted_min_day : m.unassisted_min_day) || b.cutoffDay !== session.model.cutoff_day)
+    throw new Error("invalid commitment bounds");
+  return { min: b.minDay, cutoff: b.cutoffDay, assist: { on: a.active, f2delivered: a.factDelivered, helpAccepted: a.helpAccepted } };
+}
+
+function sourceEvents(session, ids, actorId) {
+  if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some((id) => typeof id !== "string")) throw new Error("invalid policy source ids");
+  return ids.map((id) => {
+    const matches = session.events_log.filter((e) => e.source_id === id);
+    if (matches.length !== 1 || matches[0].npc_id !== actorId || matches[0].turn_id > session.turn) throw new Error("invalid policy source ids");
+    return matches[0];
+  });
+}
+
+function captureGoals(session, runtime, npcId, events) {
+  const candidates = policyResult(session, runtime, "goalCandidates", { npcId, turnId: session.turn, events });
+  if (!Array.isArray(candidates)) throw new Error("invalid goal candidates");
+  const used = new Set(Object.values(session.goals).flatMap((g) => g.proof?.source_ids || []));
+  const triggerTypes = new Set(session.model.facts.flatMap((f) => f.triggers));
+  for (const c of candidates) {
+    const goal = session.model.goals.find((g) => g.id === c?.goalId);
+    if (!goal || c.actorId !== session.model.policy_rules.goalActors[goal.id] || !session.npcs[c.actorId] || typeof c.requiresDelivery !== "boolean") throw new Error("invalid goal candidate");
+    const sources = sourceEvents(session, c.sourceIds, c.actorId);
+    if (session.goals[goal.id].status === "done") continue;
+    if (goal.requires.some((id) => session.goals[id]?.status !== "done")) continue;
+    const types = goal.done_when.filter((x) => x.startsWith("event:")).map((x) => x.slice(6));
+    const dateRequired = goal.done_when.includes("date_mutually_agreed");
+    if (!sources.length || sources.length !== types.length || types.some((type) => !sources.some((e) => e.type === type)) ||
+        sources.some((e) => triggerTypes.has(e.type) || e.allocation !== "none" || used.has(e.source_id)) || c.requiresDelivery !== dateRequired)
+      throw new Error("invalid goal evidence");
+    const commitment = session.commitments.find((x) => x.id === c.commitmentId);
+    if (dateRequired && (!commitment || commitment.status !== "active" || commitment.unrealistic || commitment.accepted_with !== c.actorId ||
+        commitment.pending_recap_turn !== session.turn || sources.some((e) => e.turn_id !== session.turn))) throw new Error("invalid goal commitment");
+    if (!dateRequired && c.commitmentId !== undefined) throw new Error("unexpected goal commitment");
+    if (!evaluateDoneWhen(goal.done_when, { events_log: sources, npc: c.actorId, dateAgreed: dateRequired,
+        facts: session.facts, user_known: session.user_known, goals: session.goals })) throw new Error("unsatisfied goal conditions");
+    const proof = { actor_id: c.actorId, source_ids: c.sourceIds.slice(), requires_delivery: c.requiresDelivery,
+      ...(dateRequired ? { commitment_id: commitment.id } : {}) };
+    session.goals[goal.id] = { status: dateRequired ? "pending_delivery" : "done", turn_id: session.turn, proof };
+    for (const e of sources) { e.allocation = "goals"; used.add(e.source_id); }
+  }
+}
+
+function pressureFor(session, runtime, npcId, events) {
+  const candidates = policyResult(session, runtime, "pressureCandidates", { npcId, turnId: session.turn, events });
+  if (!Array.isArray(candidates)) throw new Error("invalid pressure candidates");
+  for (const c of candidates) {
+    const beat = session.model.beats.find((b) => b.id === c?.beatId);
+    if (!beat || beat.npc !== c.actorId || beat.act !== c.act || !session.npcs[c.actorId] || !["callback_commitment", "press_for_date"].includes(c.act)) throw new Error("invalid pressure candidate");
+    const sources = sourceEvents(session, c.sourceIds, c.actorId);
+    const commitment = session.commitments.find((x) => x.id === c.commitmentId);
+    const schedule = session.model.policy_rules.pressureSchedules?.[beat.id];
+    if (c.act === "callback_commitment" && (!commitment || commitment.status !== "active" || commitment.npc_id !== c.actorId || commitment.callbackFired ||
+        sources.length !== 1 || sources[0].source_id !== commitment.source_id)) throw new Error("invalid pressure commitment");
+    if (c.act === "press_for_date" && (c.commitmentId !== undefined || sources.length !== 0)) throw new Error("invalid pressure source");
+    if (c.act === "callback_commitment" && (!Number.isInteger(schedule?.gapTurns) || schedule.gapTurns < 1 || session.turn - commitment.turn_id < schedule.gapTurns))
+      throw new Error("ineligible pressure callback");
+    if (c.act === "press_for_date") {
+      if (![schedule?.baseTurn, schedule?.assertiveTurn].every((turn) => Number.isInteger(turn) && turn >= 1) ||
+          !Number.isFinite(schedule?.assertivenessCutoff) || schedule.assertivenessCutoff < 0 || schedule.assertivenessCutoff > 100)
+        throw new Error("invalid pressure schedule");
+      const threshold = slidersFor(session, c.actorId).assertiveness >= schedule.assertivenessCutoff ? schedule.assertiveTurn : schedule.baseTurn;
+      if (session.turn < threshold || session.commitments.length !== 0) throw new Error("ineligible date pressure");
+    }
+  }
+  return candidates;
+}
+
+function discardPendingGoals(session) {
+  for (const [id, goal] of Object.entries(session.goals)) if (goal.status === "pending_delivery") {
+    for (const e of session.events_log) if (goal.proof?.source_ids.includes(e.source_id) && e.allocation === "goals") e.allocation = "none";
+    session.goals[id] = { status: "pending", turn_id: null };
+  }
 }
 
 // Re-evaluate active commitments after an assistance change. Records one
 // `commitment_reevaluated` log entry (allocation none) per commitment whose
 // verdict flipped. Historical penalty entries are never repeated or erased.
-function reevaluateCommitments(session) {
-  const { min, cutoff } = boundsFor(session);
+function reevaluateCommitments(session, runtime) {
+  const { min, cutoff, assist } = boundsFor(session, runtime);
   for (const c of session.commitments) {
     if (c.status !== "active") continue;
     const nowRealistic = c.target_day >= min && c.target_day <= cutoff;
@@ -130,9 +216,9 @@ function reevaluateCommitments(session) {
     c.model_inputs = {
       min_day: min,
       cutoff_day: cutoff,
-      assisted: assistanceActive(session).on,
-      f2_delivered: assistanceActive(session).f2delivered,
-      help_accepted: assistanceActive(session).helpAccepted,
+      assisted: assist.on,
+      f2_delivered: assist.f2delivered,
+      help_accepted: assist.helpAccepted,
       target_day: c.target_day,
       unassisted_min: session.model.commitment_model.unassisted_min_day,
       assisted_min: session.model.commitment_model.assisted_min_day,
@@ -151,6 +237,7 @@ function reevaluateCommitments(session) {
 
 export function createSession(scenario, opts) {
   const o = opts || {};
+  const runtime = needRuntime(o.runtime, { scenario_id: scenario.id });
   const seed = o.seed ?? 1;
   const locale = o.locale || (scenario.locales && scenario.locales[0]) || "en";
   const globalSliders = o.sliders || {};
@@ -204,6 +291,7 @@ export function createSession(scenario, opts) {
     id: scenario.id + "#s" + seed,
     scenario_id: scenario.id,
     scenario_version: scenario.version,
+    engine_policy: { id: runtime.policyId, version: runtime.policyVersion, proof_version: 1 },
     locale,
     seed,
     customisation,
@@ -224,6 +312,7 @@ export function createSession(scenario, opts) {
     ended: false,
     endReason: null,
     model: {
+      policy_rules: deepClone(runtime.rules),
       facts: scenario.facts.map((f) => ({
         id: f.id,
         owner: f.owner,
@@ -249,41 +338,14 @@ export function createSession(scenario, opts) {
   };
 }
 
-function dueB3Commitments(session) {
-  const owner = session.model.beats.find((b) => b.id === "B3")?.npc || "maya";
-  return session.commitments.filter(
-    (c) => c.status === "active" && c.npc_id === owner && !c.callbackFired && session.turn - c.turn_id >= B3_GAP_TURNS,
-  );
-}
-
-// shortcut: conservative SC-01 relay evidence; add reviewed patterns with new scenarios.
-export function relayAccuracy(factId, text) {
-  const s = String(text || "").toLowerCase();
-  if (/\b(not|never|no|isn't|isnt|didn't|didnt|wasn't|wasnt)\b/.test(s)) return null;
-  if (/\?|\b(if|maybe|perhaps|might|guess|not sure)\b/.test(s)) return null;
-  if (factId === "F1" && /\b(client|cutoff|deadline)\b/.test(s)) {
-    if (/\b(friday|3 days|three days)\b/.test(s) && !/\b(not|no|isn't|isnt)\b/.test(s)) return true;
-    if (/\b(tomorrow|thursday|1 day|one day|2 days|two days)\b/.test(s)) return false;
-  }
-  if (factId === "F2" && /\bjordan\b/.test(s) && /\b(module|remaining work)\b/.test(s)) {
-    if (/\b(half|50 percent)\b/.test(s) && /\b(all the remaining work|entire remaining work|nothing built|no module)\b/.test(s)) return null;
-    if (/\b(no module|nothing built|all the remaining work|entire remaining work)\b/.test(s)) return false;
-    if (/\b(half|50 percent)\b/.test(s) && !/\b(not|no|isn't|isnt)\b/.test(s)) return true;
-  }
-  if (factId === "F3" && /\b(heads.up|headsup)\b/.test(s) && /\breview\b/.test(s)) {
-    if (/\b(counts against|counted against|hurts)\b/.test(s) && !/\b(not|never|isn't|isnt)\b/.test(s)) return false;
-    if (/\b(not|never|isn't|isnt)\b/.test(s) && /\b(same.day|same day)\b/.test(s)) return true;
-  }
-  return null;
-}
-
 export function endSession(session) {
   if (!session.ended) { session.ended = true; session.endReason = "user_ended"; session.staged = null; }
   return session;
 }
 
-export function applyTurn(session, npc_id, events, opts) {
+function applyDraft(session, npc_id, events, opts) {
   const o = opts || {};
+  const runtime = needRuntime(o.runtime, session);
   if (session.ended) {
     return {
       state: session,
@@ -354,7 +416,8 @@ export function applyTurn(session, npc_id, events, opts) {
         }
         continue;
       }
-      const accuracy = relayAccuracy(ref, o.text);
+      const accuracy = policyResult(session, runtime, "relayAccuracy", { factId: ref, text: String(o.text || "") });
+      if (accuracy !== null && typeof accuracy !== "boolean") throw new Error("invalid relay accuracy");
       if (accuracy === null || accuracy !== params.accurate) {
         session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none", validated: false });
         continue;
@@ -368,14 +431,14 @@ export function applyTurn(session, npc_id, events, opts) {
     if (type === "confirmed_next_steps") {
       if (
         params.help_accepted === true &&
-        npc_id === "jordan" &&
-        session.facts.F2 &&
-        session.facts.F2.status === "revealed"
+        npc_id === session.model.policy_rules.assistanceActor &&
+        session.facts[session.model.policy_rules.assistanceFact]?.status === "revealed" &&
+        session.user_known.includes(session.model.policy_rules.assistanceFact)
       ) {
         session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none" });
-        if (!session.flags.includes("help_accepted_with_jordan")) {
-          session.flags.push("help_accepted_with_jordan");
-          reevaluateCommitments(session);
+        if (!session.flags.includes(session.model.policy_rules.assistanceFlag)) {
+          session.flags.push(session.model.policy_rules.assistanceFlag);
+          reevaluateCommitments(session, runtime);
         }
       } else {
         session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none" });
@@ -397,7 +460,7 @@ export function applyTurn(session, npc_id, events, opts) {
         continue;
       }
       const target = day + 0;
-      const { min, cutoff, assist } = boundsFor(session);
+      const { min, cutoff, assist } = boundsFor(session, runtime, npc_id, list);
       const realistic = target >= min && target <= cutoff;
       const id = "C" + (session.commitments.length + 1);
       const prior = session.commitments.filter((c) => c.status === "active").pop() || null;
@@ -444,7 +507,7 @@ export function applyTurn(session, npc_id, events, opts) {
       const active = session.commitments.filter(
         (c) => c.status === "active" && c.accepted_with,
       ).pop();
-      if (active && npc_id === session.model.commitment_model.agreement_npc && session.goals.G1?.status === "done" && session.goals.G2?.status === "done") {
+      if (active && npc_id === session.model.commitment_model.agreement_npc && session.model.goals.filter((g) => g.done_when.includes("date_mutually_agreed")).some((g) => g.requires.every((id) => session.goals[id]?.status === "done"))) {
         active.pending_recap_turn = t;
       }
       session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none" });
@@ -453,27 +516,8 @@ export function applyTurn(session, npc_id, events, opts) {
     session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none" });
   }
 
-  // 4. Goals.
-  const seen = (type, who) =>
-    session.events_log.some((e) => e.type === type && (!who || e.npc_id === who));
-  if (session.goals.G1 && session.goals.G1.status !== "done") {
-    if (seen("took_ownership", "maya") && seen("gave_honest_status", "maya")) {
-      session.goals.G1 = { status: "done", turn_id: t };
-    }
-  }
-  if (session.goals.G2 && session.goals.G2.status !== "done") {
-    if (seen("asked_requirement_details", "jordan")) {
-      session.goals.G2 = { status: "done", turn_id: t };
-    }
-  }
-  if (session.goals.G3 && session.goals.G3.status !== "done") {
-    const g1 = !session.goals.G1 || session.goals.G1.status === "done";
-    const g2 = !session.goals.G2 || session.goals.G2.status === "done";
-    const agreed = session.commitments.some(
-      (c) => c.status === "active" && c.accepted_with && (c.recap_turn_id || c.pending_recap_turn),
-    );
-    if (g1 && g2 && agreed) session.goals.G3 = { status: "pending_delivery", turn_id: t };
-  }
+  // 4. Policies nominate; core verifies declared conditions and allocates proof.
+  captureGoals(session, runtime, npc_id, list);
 
   // 5. Eligible reveals (trigger fired + forthcomingness gate passed).
   const eligible = [];
@@ -491,17 +535,13 @@ export function applyTurn(session, npc_id, events, opts) {
   eligible.sort();
   const gateFailedProbe = triggeredFacts.some((fid) => !eligible.includes(fid));
 
-  // 6. B3 due?
-  const b3def = session.model.beats.find((b) => b.id === "B3");
-  const b3npc = b3def ? b3def.npc : "maya";
-  const dueB3 = dueB3Commitments(session);
-  let b3fire = null;
-  if (dueB3.length > 0 && npc_id === b3npc) {
-    b3fire = dueB3[0];
-  } else if (dueB3.length > 0) {
-    // Deferred to the owner's next exchange; flag ids only (no knowledge leak).
-    session.deferredBeat = { beatId: "B3", commitmentId: dueB3[0].id, dueTurn: t };
-  }
+  // 6. Only declared, validated pressure participates in the fixed priority.
+  const pressure = pressureFor(session, runtime, npc_id, list);
+  const callback = pressure.find((c) => c.act === "callback_commitment");
+  const b3npc = callback?.actorId;
+  const b3fire = callback?.actorId === npc_id ? session.commitments.find((c) => c.id === callback.commitmentId) : null;
+  if (callback && !b3fire) session.deferredBeat = { beatId: callback.beatId, commitmentId: callback.commitmentId, dueTurn: t };
+  const datePressure = pressure.find((c) => c.act === "press_for_date" && c.actorId === npc_id);
 
   // 7. Act selection (first match wins).
   let act = "react_freely";
@@ -531,15 +571,11 @@ export function applyTurn(session, npc_id, events, opts) {
       if (redirect) {
         act = "redirect_to_npc";
       } else {
-        const mayaSl = slidersFor(session, "maya");
-        const b2turn = session.npcs.maya ? b2TurnFor(mayaSl.assertiveness) : B2_BASE_TURN;
-        const noCommit = session.commitments.length === 0;
-        if (npc_id === "maya" && session.turn >= b2turn && noCommit) {
+        if (datePressure) {
           act = "press_for_date";
-          if (session.beats.B2) {
-            session.beats.B2.status = "fired";
-            if (!session.beats.B2.fired_turn) session.beats.B2.fired_turn = t;
-          }
+          const beat = session.beats[datePressure.beatId];
+          beat.status = "fired";
+          if (!beat.fired_turn) beat.fired_turn = t;
         } else {
           // Closing needs every visible required goal done; hidden goals
           // (visible:false) never gate ending or closing.
@@ -563,10 +599,10 @@ export function applyTurn(session, npc_id, events, opts) {
   // 8. Apply act effects. A reveal stages ONLY when its act wins; suppressed
   // reveals leave facts sealed/probed with no staged trace.
   const agreementAllowed = session.commitments.some((c) => c.id === newCommitmentId && c.status === "active" && c.pending_acceptance === true) && ["react_freely", "greet"].includes(act);
-  const closingAllowed = act === "close_positive" && session.goals.G3?.status === "pending_delivery";
+  const closingAllowed = act === "close_positive" && Object.values(session.goals).some((g) => g.status === "pending_delivery");
   if (!closingAllowed) {
     for (const c of session.commitments) { if (c.pending_recap_turn === t) delete c.pending_recap_turn; }
-    if (session.goals.G3?.status === "pending_delivery") session.goals.G3 = { status: "pending", turn_id: null };
+    discardPendingGoals(session);
   }
   if (act.startsWith("reveal_fact:")) {
     const fid = act.slice("reveal_fact:".length);
@@ -581,9 +617,9 @@ export function applyTurn(session, npc_id, events, opts) {
   }
   if (act === "callback_commitment" && b3fire) {
     b3fire.callbackFired = true;
-    if (session.beats.B3) {
-      session.beats.B3.status = "fired";
-      if (!session.beats.B3.fired_turn) session.beats.B3.fired_turn = t;
+    if (session.beats[callback.beatId]) {
+      session.beats[callback.beatId].status = "fired";
+      if (!session.beats[callback.beatId].fired_turn) session.beats[callback.beatId].fired_turn = t;
     }
     if (session.deferredBeat && session.deferredBeat.commitmentId === b3fire.id) {
       session.deferredBeat = null;
@@ -628,7 +664,8 @@ export function applyTurn(session, npc_id, events, opts) {
   return { state: session, act, ended: session.ended, endReason: session.endReason };
 }
 
-export function commitDelivery(session, turn_id, opts) {
+function deliverDraft(session, turn_id, opts) {
+  const runtime = needRuntime(opts?.runtime, session);
   const delivered = !!(opts && opts.delivered);
   const st = session.staged;
   if (!st || st.turnId !== turn_id) return session;
@@ -638,21 +675,27 @@ export function commitDelivery(session, turn_id, opts) {
       if (st.agreementAllowed && opts?.agreementExpressed && c.id === st.agreementCommitmentId && c.pending_acceptance) { c.accepted_with = st.npcId; c.pending_acceptance = false; }
       if (st.closingAllowed && opts?.closingExpressed && c.pending_recap_turn === turn_id) { c.recap_turn_id = turn_id; delete c.pending_recap_turn; }
     }
-    if (session.goals.G3?.status === "pending_delivery" && st.closingAllowed && opts?.closingExpressed) {
-      session.goals.G3.status = "done";
+    if (st.closingAllowed && opts?.closingExpressed) for (const goal of Object.values(session.goals)) {
+      if (goal.status !== "pending_delivery") continue;
+      const commitment = session.commitments.find((c) => c.id === goal.proof?.commitment_id && c.status === "active" &&
+        c.accepted_with === goal.proof.actor_id && !c.unrealistic && c.recap_turn_id === turn_id);
+      if (commitment) goal.status = "done";
+    }
+    discardPendingGoals(session);
+    const required = session.model.goals.filter((g) => g.required && g.visible);
+    if (required.length && required.every((g) => session.goals[g.id]?.status === "done")) {
       session.ended = true; session.endReason = "goals_complete";
     }
-    if (session.goals.G3?.status === "pending_delivery") session.goals.G3 = { status: "pending", turn_id: null };
     if (st.factId && session.facts[st.factId] && session.facts[st.factId].status === "pending_delivery") {
       session.facts[st.factId].status = "revealed";
       if (!session.user_known.includes(st.factId)) session.user_known.push(st.factId);
     }
     session.staged = null;
-    reevaluateCommitments(session);
+    reevaluateCommitments(session, runtime);
   } else {
     for (const c of session.commitments) { if (c.pending_recap_turn === turn_id) delete c.pending_recap_turn; }
     for (const c of session.commitments) { if (c.id === st.agreementCommitmentId) c.pending_acceptance = false; }
-    if (session.goals.G3?.status === "pending_delivery") session.goals.G3 = { status: "pending", turn_id: null };
+    discardPendingGoals(session);
     // Failed delivery: fact stays pending, earns nothing, staged cleared for retry.
     session.staged = null;
   }
@@ -660,6 +703,30 @@ export function commitDelivery(session, turn_id, opts) {
   delete snapshot.snapshots;
   if (session.snapshots.length) session.snapshots[session.snapshots.length - 1] = snapshot;
   return session;
+}
+
+function replaceState(target, source) {
+  for (const key of Object.keys(target)) if (!(key in source)) delete target[key];
+  for (const [key, value] of Object.entries(source)) {
+    if (target[key] === value) continue;
+    if (value && typeof value === "object" && target[key] && typeof target[key] === "object" && Array.isArray(value) === Array.isArray(target[key])) replaceState(target[key], value);
+    else target[key] = value;
+  }
+  if (Array.isArray(target)) target.length = source.length;
+}
+
+// A policy exception or invalid result never leaves a partially applied session.
+function transaction(session, operation) {
+  const draft = deepClone(session);
+  const result = operation(draft);
+  replaceState(session, draft);
+  return result?.state ? { ...result, state: session } : session;
+}
+export function applyTurn(session, npcId, events, opts) {
+  return transaction(session, (draft) => applyDraft(draft, npcId, Array.isArray(events) ? deepClone(events) : events, opts));
+}
+export function commitDelivery(session, turnId, opts) {
+  return transaction(session, (draft) => deliverDraft(draft, turnId, opts));
 }
 
 export function canonicalState(session) {

@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "../server.js";
 import { nextHintFor, projectGoals } from "../../../llm/pipeline.js";
-import * as engine from "../../../engine/engine.js";
+import * as engine from "../../../engine/sc01Compatibility.js";
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const scenario = JSON.parse(readFileSync(join(dir, "..", "..", "..", "scenarios", "missed_deadline.json"), "utf8"));

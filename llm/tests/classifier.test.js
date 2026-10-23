@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { classifyTurn, buildClassifierInput, getClassifierPrompt, TAXONOMY } from "../classifier.js";
 import { loadConfig } from "../config.js";
 import { cannedClassifier, FakeProvider } from "../fakeProvider.js";
-import { createSession, applyTurn } from "../../engine/engine.js";
+import { createSession, applyTurn } from "../../engine/sc01Compatibility.js";
 import { rulesToEvents } from "../../services/api/offlineProviders.js";
 
 const scenario = JSON.parse(readFileSync(new URL("../../scenarios/missed_deadline.json", import.meta.url), "utf8"));

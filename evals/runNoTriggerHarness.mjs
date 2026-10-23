@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import * as engine from "../engine/engine.js";
+import * as engine from "../engine/sc01Compatibility.js";
 import { createConversation, runTurn } from "../llm/pipeline.js";
 import { normalize } from "../llm/guards.js";
 

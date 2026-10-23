@@ -15,11 +15,14 @@ Each registered package is an immutable authored value:
   spec, replies, scoringProfile,
   policy: {
     id, version,
+    rules,
     engine: { commitmentBounds, goalCandidates, pressureCandidates, relayAccuracy },
     language: { publicCanonLines, normalizeCommitment, canonCheck }
   }
 }
 ```
+
+`policy.rules` is private, serializable authored data: for SC-01 it pins actor bindings, the assistance binding, and `pressureSchedules` for date pressure on turn 4, or turn 3 at assertiveness 70, plus the callback gap of 3 turns. It is content-hashed and identity-pinned with the package; runtime functions are excluded from both the hash and session JSON. This is an authored bounded rules record, not a general DSL.
 
 The serialized identity is `{scenarioId, contentVersion, schemaVersion, policyId, policyVersion, scoringVersion, contentHash}`. `contentHash` is calculated from canonical authored data, not functions. Functions remain only in a resolved runtime context; session JSON stores the identity and no package object/function/reference. The session store keeps the immutable resolved context keyed by session ID; ended score records retain a private serializable record plus identity. Old saved records stay readable through an explicit SC-01 version-2 compatibility path and never replay under current rules as a fallback.
 

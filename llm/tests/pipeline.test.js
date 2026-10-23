@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import * as engine from "../../engine/engine.js";
+import * as engine from "../../engine/sc01Compatibility.js";
 import { cannedClassifier, cannedText, FakeProvider } from "../fakeProvider.js";
 import { createConversation, runTurn, publicResponse, PUBLIC_KEYS, PUBLIC_STATE_KEYS, neutralFor } from "../pipeline.js";
 import { defaultStore, clearMemory } from "../../replies/fallbackStore.js";

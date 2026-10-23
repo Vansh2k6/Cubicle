@@ -137,7 +137,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     if (job && (!retry || job.status === "pending" || job.retryUsed || job.status === "ready")) return job;
     const context = contexts.get(session.id);
     if (!context) return null;
-    if (!job) job = { revision: 0, record: createScoreRecord(session, convos.get(session.id), context.pkg.spec), retryUsed: false };
+    if (!job) job = { revision: 0, record: createScoreRecord(session, convos.get(session.id), context.pkg.spec, context.pkg.scoringProfile), retryUsed: false };
     if (retry) { job.retryUsed = true; job.revision++; coachSpeech.clear(session.id); }
     const previous = job.result || null;
     job.status = "pending"; job.result = previous;
@@ -282,8 +282,9 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         if (!sliders.ok) { send(res, 400, { error: "sliders must be integer values from 0 to 100", retryable: false }); return; }
         const offline = createOfflineProviders(pkg);
         if (!offline?.store || typeof offline.npcProvider !== "function" || typeof offline.classifyProviderFor !== "function") { send(res, 400, { error: "unsupported scenario_id" }); return; }
-        const context = Object.freeze({ pkg, store: offline.store, npcProvider: npcProvider || liveProvider || offline.npcProvider, classifyProviderFor: offline.classifyProviderFor });
-        const session = store.create(pkg.spec, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value });
+        const runtime = Object.freeze({ scenarioId: pkg.spec.id, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules });
+        const context = Object.freeze({ pkg, runtime, store: offline.store, npcProvider: npcProvider || liveProvider || offline.npcProvider, classifyProviderFor: offline.classifyProviderFor });
+        const session = store.create(pkg.spec, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value, runtime });
         session.identity = pkg.identity;
         contexts.set(session.id, context);
         convos.set(session.id, createConversation());
@@ -362,7 +363,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
               convo,
               npcId,
               text,
-              engine,
+              engine, runtime: context.runtime,
               providers: { classify: liveProvider || context.classifyProviderFor(text), npc: context.npcProvider },
               manifestId: manifest.id,
               store: context.store,
