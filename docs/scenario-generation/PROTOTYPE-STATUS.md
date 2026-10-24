@@ -20,6 +20,8 @@ The coworker frame's authored first-fact question (“What else is on your plate
 
 Anthropic transport uses the standard Messages API and local gateway/schema validation. However, full live classification and play are **NOT VERIFIED**: the live batch covered 11 cases and 26 provider dispatches; four injection attempts stayed safe, while seven authored unlock attempts returned empty classifier events. A follow-up live retest was blocked by the remaining grant budget. An earlier one-call synthetic adapter smoke is not full-play evidence. Do not describe live classification, full play, smart completion, or acceptance as passing.
 
+The later, separately authorized all-scenarios gameplay run on candidate `fd2d32d5932e31d64f6a4f2d8168cff795e1165f` supersedes the earlier partial live evidence above for its seven-case runs. Its [dated report](LIVE-GAMEPLAY-2026-10-25.md) records aggregate results and limitations; it does not change the blocked acceptance status.
+
 ## Local operator setup
 
 The ignored server-side key file is `C:\Project\Codeapex\Cubicle-scenario-prototype\.env`. Keep any existing file and key intact; add or edit only the `ANTHROPIC_API_KEY` line locally. The tracked `.env.example` contains blank placeholders and is not a credential source. Never put the key in a `VITE_*` variable, source file, command output, or commit.
