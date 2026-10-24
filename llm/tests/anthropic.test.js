@@ -6,6 +6,9 @@ import {anthropicProviderMode,createAnthropicProvider,initializeAnthropicBudgetL
 import {loadConfig} from "../config.js";
 import {complete} from "../gateway.js";
 import {classifyTurn} from "../classifier.js";
+import * as engine from "../../engine/engine.js";
+import {prototypeRegistry} from "../../services/api/scenarioRegistry.js";
+import {createConversation,runTurn} from "../pipeline.js";
 
 const grant = "cubicle-scenario-prototype-haiku-2026-10-25";
 const gameplayGrant = "all-scenarios-live-gameplay";
@@ -131,7 +134,7 @@ test("Anthropic sends the supported Messages API shape, counts text blocks and r
   assert.ok(request.body.max_tokens <= 1024);
   assert.equal(request.body.system,"policy");
   assert.deepEqual(request.body.messages,[{role:"user",content:"hello"}]);
-  assert.equal(Object.hasOwn(request.body,"output_config"),false);
+  assert.deepEqual(request.body.output_config,{effort:"low"});
   for (const forbidden of ["temperature","top_p","top_k"]) assert.equal(Object.hasOwn(request.body,forbidden),false);
   const saved = JSON.parse(await readFile(ledger,"utf8"));
   assert.equal(saved.calls,1); assert.equal(saved.actualInputTokens,12); assert.equal(saved.actualOutputTokens,4);
@@ -150,8 +153,83 @@ test("Anthropic classifier accepts the shared open-params schema through local v
   });
   assert.deepEqual(result.events,[{type:"asked_for_help",params:{person:"Maya"}}]);
   assert.equal(request.model,"claude-haiku-5-5");
-  assert.equal(Object.hasOwn(request,"output_config"),false);
+  assert.deepEqual(request.output_config,{effort:"low"});
   assert.equal(JSON.parse((await readFile(ledger,"utf8"))).actualOutputTokens,8);
+}));
+
+test("schema-bearing Anthropic output accepts one exact JSON fence; NPC prose stays unchanged", async () => fixture(async (_dir, ledger) => {
+  const fenced='```json\n{"events":[{"type":"asked_requirement_details","params":{}}],"clarify":[]}\n```';
+  let calls=0;
+  const provider=createAnthropicProvider({env:envFor(ledger),fetchFn:async(_url,options)=>{
+    calls++;
+    const body=JSON.parse(options.body);
+    return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:4,output_tokens:5},content:[{type:"text",text:body.system==="structured"?fenced:"```json\\nnot npc json\\n```"}]}),{status:200});
+  }});
+  const schema={type:"object",required:["events","clarify"],properties:{events:{type:"array"},clarify:{type:"array"}}};
+  const structured=await provider({role:"classifier",system:"structured",messages:[{role:"user",content:"classify"}],schema});
+  assert.equal(structured.text,'{"events":[{"type":"asked_requirement_details","params":{}}],"clarify":[]}');
+  const prose=await provider({role:"npc",system:"npc",messages:[{role:"user",content:"reply"}]});
+  assert.equal(prose.text,"```json\\nnot npc json\\n```");
+  assert.equal(calls,2);
+}));
+
+test("prose-wrapped, multiple-fence, wrong-label and truncated structured output retain bounded fallback", async () => fixture(async (_dir, ledger) => {
+  for(const malformed of [
+    'Here is the JSON:\n```json\n{"events":[],"clarify":[]}\n```',
+    '```json\n{"events":[],"clarify":[]}\n```\n```json\n{"events":[],"clarify":[]}\n```',
+    '```javascript\n{"events":[],"clarify":[]}\n```',
+    '```json\n{"events":[],"clarify":[]}\n',
+    '{"events":[],"clarify":[]} {"events":[],"clarify":[]}',
+  ]) {
+    let calls=0;
+    const provider=createAnthropicProvider({env:envFor(ledger),fetchFn:async()=>{
+      calls++;
+      return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:2,output_tokens:2},content:[{type:"text",text:malformed}]}),{status:200});
+    }});
+    const result=await classifyTurn({provider,system:"Return JSON.",timeoutMs:1000},{text:"What remains?",lastTurns:[],userKnown:[],clock:{day:0}});
+    assert.deepEqual(result.events,[]);
+    assert.equal(calls,2);
+  }
+}));
+
+test("fenced classifier events flow through the real prototype pipeline without forced engine events", async () => fixture(async (_dir, ledger) => {
+  const pkg=prototypeRegistry.getScenario("prototype_manager"), runtime={scenarioId:pkg.spec.id,schemaVersion:pkg.identity.schemaVersion,
+    policyId:pkg.policy.id,policyVersion:pkg.policy.version,engine:pkg.policy.engine,rules:pkg.policy.rules,language:pkg.policy.language,identity:pkg.identity,spec:pkg.spec};
+  const session=engine.createSession(pkg.spec,{seed:83,runtime}); session.identity=pkg.identity;
+  const convo=createConversation(), classifierReplies=[];
+  const provider=createAnthropicProvider({env:envFor(ledger),fetchFn:async(_url,options)=>{
+    const body=JSON.parse(options.body);
+    if(body.system.startsWith("# Classifier prompt v5")) {
+      const input=JSON.parse(body.messages[0].content), message=input.message;
+      let events=[];
+      if(/work remains/i.test(message)) events=[{type:"gave_honest_status",params:{}},{type:"asked_requirement_details",params:{}}];
+      else if(/protect the date/i.test(message)) events=[{type:"pushed_back_constructively",params:{}},{type:"proposed_scope_cut",params:{}}];
+      else if(/deliver Friday/i.test(message)) events=[{type:"committed_deadline",params:{day:3}}];
+      else if(/To recap:/i.test(message)) events=[{type:"recapped_agreement",params:{}}];
+      const text=JSON.stringify({events,clarify:[]});
+      classifierReplies.push({message,events});
+      return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:10,output_tokens:6},content:[{type:"text",text:`\`\`\`json\n${text}\n\`\`\``}]}),{status:200});
+    }
+    const text=body.system.includes("engine authorizes acceptance")?"That plan works for me."
+      :body.system.includes("engine authorizes closing")?"We have a plan."
+        :"I hear you. What would help clarify the next step?";
+    return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:10,output_tokens:6},content:[{type:"text",text}]}),{status:200});
+  }});
+  const turn=(text)=>runTurn({session,scenario:pkg.spec,convo,npcId:"maya",text,engine,runtime,providers:{classify:provider,npc:provider}});
+  const g1=await turn("To be honest, what work remains and what is done?");
+  assert.equal(g1.trace.events.includes("asked_requirement_details"),true); assert.equal(session.goals["MGR-G1"].status,"done");
+  const g2=await turn("To protect the date, we can cut scope.");
+  assert.equal(g2.trace.events.includes("proposed_scope_cut"),true); assert.equal(session.goals["MGR-G2"].status,"done");
+  await turn("I will deliver Friday.");
+  assert.equal(session.commitments.at(-1)?.accepted_with,"maya");
+  const recap=await turn("To recap: the delivery work is owned by me, and the next step is to send the checklist.");
+  assert.equal(recap.trace.events.includes("recapped_agreement"),true);
+  assert.equal(session.goals["MGR-G3"].status,"done"); assert.equal(session.endReason,"goals_complete");
+  assert.deepEqual(classifierReplies.map(({events})=>events.map((event)=>event.type)),[
+    ["gave_honest_status","asked_requirement_details"],["pushed_back_constructively","proposed_scope_cut"],
+    ["committed_deadline"],["recapped_agreement"],
+  ]);
+  assert.equal(JSON.parse(await readFile(ledger,"utf8")).calls,8,"four classifier and four NPC dispatches use the mock adapter");
 }));
 
 test("malformed Anthropic classifier JSON follows the bounded retry and empty fallback", async () => fixture(async (_dir, ledger) => {
@@ -159,7 +237,7 @@ test("malformed Anthropic classifier JSON follows the bounded retry and empty fa
   const provider=createAnthropicProvider({env:envFor(ledger),fetchFn:async (_url,options)=>{
     calls++;
     const body=JSON.parse(options.body);
-    assert.equal(Object.hasOwn(body,"output_config"),false);
+    assert.deepEqual(body.output_config,{effort:"low"});
     return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:2,output_tokens:1},content:[{type:"text",text:"not json"}]}),{status:200});
   }});
   const result=await classifyTurn({provider,system:"Return the requested JSON.",timeoutMs:1000},{

@@ -88,6 +88,28 @@ test("3. reveal omits fact: stays pending, retry delivers once, no double credit
   assert.equal(c.reply, CLEAN);
 });
 
+test("authorized fact regeneration preserves only the staged disclosure", async () => {
+  clearMemory();
+  const session = newSession({maya:{forthcomingness:100}}), convo = createConversation(), correctionPrompts = [];
+  const providers = {
+    classify: async () => ({text: JSON.stringify({events:[{type:"asked_deadline_flexibility",params:{}}],clarify:[]})}),
+    npc: async ({system}) => {
+      if (system.includes("Correction:")) {
+        correctionPrompts.push(system);
+        return {text:scenario.facts.find((fact)=>fact.id==="F1").content.en};
+      }
+      return {text:"I hear you. What would help clarify the next step?"};
+    },
+  };
+  const result=await runTurn({session,scenario,convo,npcId:"maya",text:"Is there any flexibility?",engine,providers});
+  assert.equal(result.act,"reveal_fact:F1");
+  assert.equal(result.delivered,true);
+  assert.deepEqual(session.user_known,["F1"]);
+  assert.equal(correctionPrompts.length,1);
+  assert.match(correctionPrompts[0],/deliver only the one engine-authorized fact/);
+  assert.doesNotMatch(correctionPrompts[0],/without stating any private fact/);
+});
+
 test("4. reveal outranked by callback: fact never exposed", async () => {
   clearMemory();
   const session = newSession({ maya: { forthcomingness: 100 } });

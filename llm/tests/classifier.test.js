@@ -21,9 +21,11 @@ test("buildClassifierInput slices lastTurns to <=2", () => {
   assert.deepEqual(in1.lastTurns.map((t) => t.text), ["b", "c"]);
 });
 
-test("classifier v4 prompt and config share provenance", () => {
-  assert.equal(loadConfig({}).classifier.promptVersion, "v4");
-  assert.match(getClassifierPrompt(), /Classifier prompt v4/);
+test("classifier v5 prompt and config share provenance", () => {
+  assert.equal(loadConfig({}).classifier.promptVersion, "v5");
+  assert.match(getClassifierPrompt(), /Classifier prompt v5/);
+  assert.match(getClassifierPrompt(), /concrete work, names who owns it, and/);
+  assert.match(getClassifierPrompt(), /does not create a new promise/);
   assert.match(getClassifierPrompt(), /Ownership and status are independent multi-labels/);
 });
 

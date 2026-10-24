@@ -261,3 +261,82 @@ test("supported offline questions deliver the first fact; coworker source wordin
     assert.ok(convo.turns.some((turn)=>turn.speaker==="npc"&&turn.text.includes(fact.content.en)),`${id}: fact text was not delivered`);
   }
 });
+
+test("each authored prototype fact reaches the real offline classifier and guarded NPC delivery", async () => {
+  const probeFor = (fact) => {
+    if (fact.triggers.includes("asked_why_urgent")) return "Why is this urgent?";
+    if (fact.triggers.includes("asked_impact")) return "What impact could this have?";
+    if (fact.triggers.includes("asked_requirement_details")) return "What requirement is still open?";
+    if (fact.triggers.includes("asked_deadline_flexibility")) return "Is there flexibility on the deadline?";
+    if (fact.triggers.includes("asked_for_help")) return "Who can help with coverage?";
+    if (fact.triggers.includes("asked_advice")) return "What advice would you suggest?";
+    if (fact.triggers.includes("asked_expectation")) return "What do you expect from me?";
+    throw new Error(`no natural probe for authored trigger ${fact.triggers.join(",")}`);
+  };
+  for (const id of [...familyIds,...composedIds]) {
+    const pkg=prototypeRegistry.getScenario(id),runtime={scenarioId:pkg.spec.id,schemaVersion:pkg.identity.schemaVersion,
+      policyId:pkg.policy.id,policyVersion:pkg.policy.version,engine:pkg.policy.engine,rules:pkg.policy.rules,language:pkg.policy.language,identity:pkg.identity,spec:pkg.spec};
+    const session=createSession(pkg.spec,{seed:67,runtime}); session.identity=pkg.identity;
+    const convo=createConversation(),offline=createOfflineProviders(pkg);
+    const providers={classify:async ({messages})=>{
+      const input=JSON.parse(messages[0].content);
+      return offline.classifyProviderFor(input.message)({messages});
+    },npc:offline.npcProvider};
+    for (const fact of pkg.spec.facts) {
+      const question=probeFor(fact);
+      let result;
+      for(let attempt=0;attempt<8&&!session.user_known.includes(fact.id);attempt++) {
+        result=await runTurn({session,scenario:pkg.spec,convo,npcId:fact.owner,text:question,
+          engine:{applyTurn,commitDelivery},runtime,store:offline.store,providers});
+      }
+      assert.ok(session.user_known.includes(fact.id),`${id}:${fact.id} not reached via natural offline classification`);
+      assert.equal(result?.trace.events.some((type)=>fact.triggers.includes(type)),true,`${id}:${fact.id} classifier did not emit an authored trigger`);
+      assert.ok(convo.turns.some((turn)=>turn.speaker==="npc"&&turn.text.includes(fact.content.en)),`${id}:${fact.id} text not delivered through guarded NPC path`);
+    }
+  }
+});
+
+test("offline recap classification requires material work, owner, and next step", () => {
+  const pkg=prototypeRegistry.getScenario("prototype_manager"), classify=pkg.policy.offline.classifyEvents;
+  assert.ok(classify("To recap: the handover work is owned by me, and the next step is to send the checklist.").some((event)=>event.type==="recapped_agreement"));
+  for(const text of ["To recap: Friday is the date.","The next step is to deliver Friday.","To recap: I own the handover work."]) {
+    assert.equal(classify(text).some((event)=>event.type==="recapped_agreement"),false,text);
+  }
+});
+
+test("all six prototype scenarios can complete required goals through natural offline turns", async () => {
+  const scripts={
+    prototype_manager:["To be honest, what work remains and what is done?","To protect the date, we can cut scope."],
+    prototype_hr:["To be honest, what work remains and what is done?","We can plan the transfer next step, and I agree."],
+    prototype_client:["What would you like me to do? What is the background?","To be honest, the status is that I own this work."],
+    prototype_coworker:["What work remains? What is the context?","I own this handover. We can plan the next step."],
+    prototype_omitted_feature:["My fault; to be honest, the status is clear.","We can cut scope and I agree."],
+    prototype_earlier_delivery:["What would you like me to do? What is the background?","To be honest, the status is that I own this work."],
+  };
+  for(const id of [...familyIds,...composedIds]) {
+    const pkg=prototypeRegistry.getScenario(id),runtime={scenarioId:pkg.spec.id,schemaVersion:pkg.identity.schemaVersion,
+      policyId:pkg.policy.id,policyVersion:pkg.policy.version,engine:pkg.policy.engine,rules:pkg.policy.rules,language:pkg.policy.language,identity:pkg.identity,spec:pkg.spec};
+    const session=createSession(pkg.spec,{seed:71,runtime}); session.identity=pkg.identity;
+    const convo=createConversation(),offline=createOfflineProviders(pkg);
+    const providers={classify:async ({messages})=>{
+      const input=JSON.parse(messages[0].content);
+      return offline.classifyProviderFor(input.message)({messages});
+    },npc:offline.npcProvider};
+    const turn=(npcId,text)=>runTurn({session,scenario:pkg.spec,convo,npcId,text,
+      engine:{applyTurn,commitDelivery},runtime,store:offline.store,providers});
+    const goalIds=pkg.spec.goals.filter((goal)=>goal.required).map((goal)=>goal.id);
+    const [g1,g2,g3]=goalIds.map((goalId)=>pkg.spec.goals.find((goal)=>goal.id===goalId));
+    await turn(pkg.policy.rules.goalActors[g1.id],scripts[id][0]);
+    assert.equal(session.goals[g1.id].status,"done",`${id}:${g1.id}`);
+    await turn(pkg.policy.rules.goalActors[g2.id],scripts[id][1]);
+    assert.equal(session.goals[g2.id].status,"done",`${id}:${g2.id}`);
+    const agreementNpc=pkg.spec.commitment_model.agreement_npc;
+    const acceptance=await turn(agreementNpc,"I will deliver Friday.");
+    assert.ok(["greet","react_freely"].includes(acceptance.act),`${id}: unexpected agreement interaction`);
+    assert.equal(session.commitments.at(-1)?.accepted_with,agreementNpc,`${id}: selected acceptance not delivered`);
+    await turn(pkg.policy.rules.goalActors[g3.id],"To recap: the delivery work is owned by me, and the next step is to send the checklist.");
+    assert.equal(session.goals[g3.id].status,"done",`${id}:${g3.id}`);
+    assert.equal(session.ended,true,`${id}: required goals did not end the scenario`);
+    assert.equal(session.endReason,"goals_complete",id);
+  }
+});

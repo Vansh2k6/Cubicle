@@ -72,6 +72,19 @@ test("F1 staged for maya: contains F1, no other sealed fact", () => {
   assertSealed(system, "F1", "maya/reveal_fact:F1");
 });
 
+test("hyphenated authored fact IDs preserve pending-reveal and owner checks", () => {
+  const scenario = structuredClone(spec);
+  scenario.facts[0].id = "MGR-F1";
+  const pendingReveal = {factId: "MGR-F1", content: scenario.facts[0].content.en};
+  const {system} = buildNpcPrompt({scenario,npcId:"maya",act:"reveal_fact:MGR-F1",pendingReveal});
+  assert.match(system,/NPC prompt v6/);
+  assert.match(system,/When CURRENT MOVE is an engine-authorized `reveal_fact:<id>`/);
+  assert.match(system,/CURRENT MOVE: reveal_fact:MGR-F1 — Share the disclosed fact below naturally, in your own words\./);
+  assert.ok(system.includes(pendingReveal.content));
+  assert.throws(() => buildNpcPrompt({scenario,npcId:"jordan",act:"reveal_fact:MGR-F1",pendingReveal}), (e) => e.code === "BAD_INPUT");
+  assert.throws(() => buildNpcPrompt({scenario,npcId:"maya",act:"reveal_fact:MGR-F1",pendingReveal:null}), (e) => e.code === "BAD_INPUT");
+});
+
 test("F2 delivered (jordan revealed): jordan prompt may use F2, never F1/F3", () => {
   const { system } = buildNpcPrompt({
     scenario: spec, npcId: "jordan", act: "react_freely",

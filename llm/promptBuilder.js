@@ -1,5 +1,5 @@
 import {readFileSync} from "node:fs";
-const BOUNDARY = readFileSync(new URL("./prompts/npc/v5-boundary.md", import.meta.url), "utf8");
+const BOUNDARY = readFileSync(new URL("./prompts/npc/v6-boundary.md", import.meta.url), "utf8");
 import {resolveLanguage, publicLanguageInput} from "./languageContext.js";
 // llm/promptBuilder.js — Pure NPC prompt composer (R-01/R-04).
 // Includes: persona, tone text, public canon, THIS npc's revealed facts, and ONLY
@@ -70,7 +70,7 @@ export function buildNpcPrompt(opts = {}) {
 
   let instruction = ACT_INSTRUCTIONS[act];
   if (instruction === undefined) {
-    const m = /^reveal_fact:([A-Za-z0-9_]+)$/.exec(act);
+    const m = /^reveal_fact:([A-Za-z0-9_-]+)$/.exec(act);
     if (m) {
       const fact = factById(scenario, m[1]);
       if (!fact || fact.owner !== npcId) throw badInput(`reveal act ${act} not authorised for ${npcId}`);

@@ -122,6 +122,24 @@ test("selected acknowledgements are guarded; friendly replies/provider fallback 
   assert.equal(checkReply(PLAN_REPLIES.approval, {...ctx, act: "accept_plan", npcId: "maya"}).ok, false);
 });
 
+test("plan acknowledgement regeneration keeps the selected engine move", async () => {
+  const f=fresh(), prompts=[];
+  const npc=async({system})=>{
+    if(system.includes("Correction:")) {
+      prompts.push(system);
+      return {text:"Thank you for taking responsibility and giving a clear status."};
+    }
+    return {text:"The implementation is already complete."};
+  };
+  const result=await f.turn("maya","I own the delay; the portal is overdue.",{npc});
+  assert.equal(result.act,"accept_plan");
+  assert.equal(result.delivered,true,JSON.stringify(result.trace));
+  assert.equal(f.session.goals.G1.status,"done");
+  assert.equal(prompts.length,1);
+  assert.match(prompts[0],/preserve only the current engine-selected plan acknowledgement/);
+  assert.doesNotMatch(prompts[0],/without stating any private fact/);
+});
+
 test("grounded public/own-known paraphrases and ordinary reactions are supported without secret guesses", () => {
   const ctx = {scenario: pkg.spec, runtime, npcId: "client", act: "react_freely"};
   for (const text of ["I hear you. Let's take this step by step.", "That sounds frustrating. What would you like to clarify?",
@@ -239,7 +257,7 @@ test("classifier/NPC context contains no other transcript, sealed facts, private
 });
 
 test("provenance and synthetic source scans include both versions without publishing duplicate ids", () => {
-  assert.equal(loadConfig({}).classifier.promptVersion, "v4"); assert.equal(loadConfig({}).npc.promptVersion, "v5");
+  assert.equal(loadConfig({}).classifier.promptVersion, "v5"); assert.equal(loadConfig({}).npc.promptVersion, "v6");
   assert.equal(loadConfig({}).classifier.schemaVersion, 1); assert.equal(loadConfig({}).judge.promptVersion, "v2");
   assert.equal(scanRegistry.listScenarios().length, 1); assert.equal(scanRegistry.allPackages().length, 4);
   const needles = new Map([...registeredPrivateNeedles(scanRegistry), ...privateLanguageNeedles]);

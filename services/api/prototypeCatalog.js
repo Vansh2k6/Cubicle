@@ -19,10 +19,15 @@ const genericEvents = (family, text) => {
   if (/\b(?:what|which|who|how|when|where|can|could|would|is there|do we)\b/.test(t) && /\b(?:requirement|scope|feature|transfer|process|step|handover|hand over|left|blocked|remaining|agreement|paperwork|checklist|work|task)\b/.test(t)) add("asked_requirement_details");
   if (/\b(?:impact|affect|displace|risk|what could go wrong|who is affected)\b/.test(t)) add("asked_impact");
   if (/\b(?:why|urgent|urgency|deadline|due|demo|window|time-sensitive|time sensitive)\b/.test(t)) add("asked_why_urgent");
-  if (family === "hr" && /\btransfer window\b.{0,30}\b(?:close|end|deadline)\b/.test(t)) add("asked_deadline_flexibility");
+  if (/\b(?:flexib\w*|more time|extend|move.{0,20}(?:date|deadline|delivery)|earlier.{0,20}(?:delivery|deadline)|delivery.{0,20}earlier)\b/.test(t) ||
+      family === "hr" && /\btransfer window\b.{0,30}\b(?:close|end|deadline)\b/.test(t)) add("asked_deadline_flexibility");
   if (/\b(?:can you help|could you help|who can help|available to help|pair with|cover this|coverage)\b/.test(t)) add("asked_for_help");
+  if (/\b(?:advice|suggestions?|what should i|how should i|what would you recommend)\b/.test(t)) add("asked_advice");
   if (/\b(?:apolog|i'm sorry|i am sorry)\b/.test(t)) add("apologized");
-  if (/\b(?:recap|to summarize|let me summarize|next step is)\b/.test(t)) add("recapped_agreement");
+  if (/\b(?:recap|to summarize|let me summarize)\b/.test(t) &&
+      /\b(?:work|task|handover|transfer|feature|scope|deliver(?:y)?|checklist|report|plan)\b/.test(t) &&
+      /\b(?:owner|owns?|owned by|responsible|i own|i am taking|mine)\b/.test(t) &&
+      /\b(?:next step|next action|will (?:send|share|schedule|deliver|complete|confirm)|should (?:send|share|schedule|deliver|complete|confirm))\b/.test(t)) add("recapped_agreement");
   if (/\b(?:reduce scope|cut scope|defer the feature|move .* to (?:a )?later|phase (?:it|this)|phased delivery|ship .* later)\b/.test(t)) add("proposed_scope_cut");
   if (/\b(?:propose|suggest|we can|let's|let us)\b.{0,60}\b(?:plan|next step|scope|handover|transfer|delivery|date)\b/.test(t)) add("proposed_plan");
   if (/\b(?:i agree|we agree|that works|sounds good|let's do that|let us do that|confirmed)\b/.test(t)) {

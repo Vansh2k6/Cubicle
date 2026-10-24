@@ -1,0 +1,11 @@
+{
+  "version": "v3",
+  "callbackChallenge": "Engine-selected callback: challenge the earlier promise and ask for a workable revision. Do not disclose the reason or suggest a date.",
+  "callbackAcknowledge": "Engine-selected callback: acknowledge the earlier promise and ask for a progress update. Do not invent terms.",
+  "agreement": "The engine authorizes acceptance of the user's current plan. Reply with exactly this single sentence and no other words: That plan works for me.",
+  "closing": "The engine authorizes closing after the user's recap. Reply with exactly this single sentence and no other words: We have a plan.",
+  "correctPlanReply": "Rewrite the reply to preserve only the current engine-selected plan acknowledgement and its authorized meaning. Do not add facts, dates, commitments, owners, or any other claims. Stay in character, 1-3 short sentences, no stage directions.",
+  "correctAuthorizedFact": "Rewrite the reply to deliver only the one engine-authorized fact already supplied for this move, clearly and concisely in your own words. Add no other fact, date, scope, progress, commitment, resource, or outcome. Stay in character, 1-3 short sentences, no stage directions.",
+  "correctAgreement": "Rewrite using only the engine-authorized single-sentence acceptance: That plan works for me. Do not add any other claim or agreement.",
+  "correctClosing": "Rewrite using only the engine-authorized single-sentence closing: We have a plan. Do not add any other claim or agreement."
+}

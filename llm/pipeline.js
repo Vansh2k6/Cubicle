@@ -17,7 +17,7 @@ import {resolveLanguage} from "./languageContext.js";
 
 import { classifyTurn, buildClassifierInput } from "./classifier.js";
 import { readFileSync } from "node:fs";
-const MOVE_PROMPTS = JSON.parse(readFileSync(new URL("./prompts/npc/v2-moves.json", import.meta.url), "utf8"));
+const MOVE_PROMPTS = JSON.parse(readFileSync(new URL("./prompts/npc/v3-moves.json", import.meta.url), "utf8"));
 const expressesAcceptance = (text) => /^that plan works for me[.!]?$/i.test(String(text).trim());
 const expressesClosing = (text) => /^we have a plan[.!]?$/i.test(String(text).trim());
 import { buildNpcPrompt } from "./promptBuilder.js";
@@ -28,6 +28,14 @@ import { fetch as fetchFallback } from "../replies/fallbackStore.js";
 
 const REGEN_INSTRUCTION =
   "Rewrite the reply without stating any private fact, date, commitment term, or agreement. Stay in character, 1-3 sentences, no stage directions.";
+
+function regenInstruction({planDelivery, authorised, staged} = {}) {
+  if (planDelivery) return MOVE_PROMPTS.correctPlanReply;
+  if (authorised) return MOVE_PROMPTS.correctAuthorizedFact;
+  if (staged?.agreementAllowed) return MOVE_PROMPTS.correctAgreement;
+  if (staged?.closingAllowed) return MOVE_PROMPTS.correctClosing;
+  return REGEN_INSTRUCTION;
+}
 
 // Prevalidated neutral clarifications: no dates, scope, progress, resources,
 // meetings, or agreement language. Verified by the guard unit tests.
@@ -280,7 +288,7 @@ export async function runTurn(opts = {}) {
   if (gen.source === "llm" && (!verdict.ok || !positive)) {
     trace.regen = true;
     const regenPrompt = {
-      system: prompt.system + "\nCorrection: " + REGEN_INSTRUCTION,
+      system: prompt.system + "\nCorrection: " + regenInstruction({planDelivery, authorised, staged: session.staged}),
       messages: prompt.messages,
     };
     const tReg0 = Date.now();

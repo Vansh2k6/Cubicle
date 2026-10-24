@@ -109,6 +109,18 @@ function contentText(blocks) {
   return Array.isArray(blocks) ? blocks.filter((block) => block?.type === "text" && typeof block.text === "string").map((block) => block.text).join("") : "";
 }
 
+function normalizeStructuredJson(text, schema) {
+  let source = String(text || "").trim();
+  if (source.startsWith("```")) {
+    const fence = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i.exec(source);
+    if (!fence) return null;
+    source = fence[1].trim();
+  }
+  const parsed = safeJson(source);
+  if (parsed === null || !validateAgainstSchema(parsed, schema).ok) return null;
+  return JSON.stringify(parsed);
+}
+
 async function readBoundedJson(response, limit = 256_000) {
   const length = Number(response.headers?.get?.("content-length"));
   if (Number.isFinite(length) && length > limit) { await response.body?.cancel?.().catch?.(() => {}); throw error("OUTPUT_INVALID"); }
@@ -177,7 +189,7 @@ export function createAnthropicProvider({ env = process.env, config = loadConfig
     // Anthropic strict structured outputs require every object to close its
     // properties, which would reject those established schemas. Keep the
     // existing prompt contract and gateway/schema validation for this provider.
-    const body = { model: MODEL, max_tokens: maxTokens, system, messages: safeMessages };
+    const body = { model: MODEL, max_tokens: maxTokens, output_config: {effort: config[role].reasoningEffort}, system, messages: safeMessages };
     const {reservedTokens, reservedUsd} = profile.reserve(body, maxTokens);
     await authorizeLedger(ledgerPath, profile);
     await lockedUpdate(ledgerPath, profile, (ledger) => ledger.calls + 1 > profile.caps.calls || ledger.reservedTokens + reservedTokens > profile.caps.reservedTokens || ledger.reservedUsd + reservedUsd > profile.caps.usd
@@ -202,8 +214,9 @@ export function createAnthropicProvider({ env = process.env, config = loadConfig
           ? {...ledger, actualInputTokens: ledger.actualInputTokens + input, actualOutputTokens: ledger.actualOutputTokens + output} : null);
       }
       if (["refusal", "max_tokens", "model_context_window_exceeded"].includes(data?.stop_reason)) throw error("OUTPUT_INVALID", data.stop_reason !== "refusal");
-      const text = contentText(data?.content);
-      if (!text || (schema && !validateAgainstSchema(safeJson(text), schema).ok)) throw error("OUTPUT_INVALID", true);
+      const rawText = contentText(data?.content);
+      const text = schema ? normalizeStructuredJson(rawText, schema) : rawText;
+      if (!text) throw error("OUTPUT_INVALID", true);
       return { text, model: MODEL, tokens: { in: Number.isSafeInteger(input) ? input : 0, out: Number.isSafeInteger(output) ? output : 0 } };
     } catch (e) {
       if (e?.code && e.code.startsWith("LLM_")) throw e;
