@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "frame_id": "frame-client-v1",
+  "family": "client",
+  "scoring_id": "client_change_request",
+  "source": {
+    "assembly_id": "asm-client",
+    "assembly_version": 2,
+    "spec_sha256": "61cdb51205ef9a9acccbe76a4f769fe269e577fdb9f7dc799efe73ce6bd6a4c1"
+  },
+  "slots": {
+    "situation": {
+      "count": 1
+    },
+    "goals": {
+      "ids": [
+        "CL-G1",
+        "CL-G2",
+        "CL-G3",
+        "CL-R1",
+        "CL-R2",
+        "CL-R3"
+      ]
+    },
+    "facts": {
+      "ids": [
+        "CL-F1",
+        "CL-F2",
+        "CL-F3",
+        "CL-F4"
+      ],
+      "owners": {
+        "CL-F1": "maya",
+        "CL-F2": "jordan",
+        "CL-F3": "sam",
+        "CL-F4": "maya"
+      }
+    },
+    "cast": {
+      "npcs": [
+        "maya",
+        "jordan",
+        "sam"
+      ]
+    }
+  },
+  "mechanics": {
+    "spec": {
+      "id": "client_change_request",
+      "version": 1,
+      "locales": [
+        "en"
+      ],
+      "title": null,
+      "briefing": {
+        "en": null
+      },
+      "player": {
+        "id": "alex",
+        "name": "Alex",
+        "role": "employee"
+      },
+      "clock": {
+        "day": 0,
+        "advance_on_turn": false
+      },
+      "canon": {
+        "public": {},
+        "private": {
+          "change_window": {
+            "day": 4
+          }
+        }
+      },
+      "commitment_model": {
+        "unassisted_min_day": 3,
+        "assisted_min_day": 2,
+        "assistance_requires": [
+          "CL-F2_delivered",
+          "help_accepted_with_jordan"
+        ],
+        "latest_day_from": "canon.private.change_window.day",
+        "agreement_npc": "maya",
+        "agreement_requires": [
+          "CL-G1",
+          "CL-G2"
+        ]
+      },
+      "npcs": [
+        {
+          "id": "maya",
+          "name": "Maya",
+          "role": null,
+          "persona": null,
+          "public_context": null,
+          "default_sliders": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "topics": [
+            "asked_deadline_flexibility",
+            "asked_why_urgent",
+            "asked_impact",
+            "asked_expectation",
+            "asked_advice",
+            "gave_honest_status",
+            "confirmed_next_steps",
+            "recapped_agreement",
+            "committed_deadline"
+          ]
+        },
+        {
+          "id": "jordan",
+          "name": "Jordan",
+          "role": null,
+          "persona": null,
+          "public_context": null,
+          "default_sliders": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "topics": [
+            "asked_requirement_details",
+            "asked_background",
+            "proposed_plan",
+            "proposed_scope_cut"
+          ]
+        },
+        {
+          "id": "sam",
+          "name": "Sam",
+          "role": null,
+          "persona": null,
+          "public_context": null,
+          "default_sliders": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "topics": [
+            "asked_advice",
+            "asked_background",
+            "asked_deadline_flexibility",
+            "acknowledged_concern",
+            "proposed_plan"
+          ]
+        }
+      ],
+      "goals": [
+        {
+          "id": "CL-G1",
+          "visible": true,
+          "required": true,
+          "weight": 8,
+          "label": null,
+          "done_when": [
+            "event:asked_expectation",
+            "event:asked_background"
+          ],
+          "requires": []
+        },
+        {
+          "id": "CL-G2",
+          "visible": true,
+          "required": true,
+          "weight": 8,
+          "label": null,
+          "done_when": [
+            "event:gave_honest_status"
+          ],
+          "requires": [
+            "CL-G1"
+          ]
+        },
+        {
+          "id": "CL-G3",
+          "visible": true,
+          "required": true,
+          "weight": 8,
+          "label": null,
+          "done_when": [
+            "date_mutually_agreed",
+            "event:recapped_agreement"
+          ],
+          "requires": [
+            "CL-G1",
+            "CL-G2"
+          ]
+        },
+        {
+          "id": "CL-R1",
+          "visible": true,
+          "required": false,
+          "weight": 2,
+          "label": null,
+          "done_when": [
+            "event:proposed_plan"
+          ],
+          "requires": []
+        },
+        {
+          "id": "CL-R2",
+          "visible": true,
+          "required": false,
+          "weight": 2,
+          "label": null,
+          "done_when": [
+            "event:proposed_scope_cut"
+          ],
+          "requires": []
+        },
+        {
+          "id": "CL-R3",
+          "visible": true,
+          "required": false,
+          "weight": 2,
+          "label": null,
+          "done_when": [
+            "event:confirmed_next_steps"
+          ],
+          "requires": []
+        }
+      ],
+      "facts": [
+        {
+          "id": "CL-F1",
+          "owner": "maya",
+          "weight": 6,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_why_urgent",
+            "asked_impact"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        },
+        {
+          "id": "CL-F2",
+          "owner": "jordan",
+          "weight": 5,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_requirement_details"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        },
+        {
+          "id": "CL-F3",
+          "owner": "sam",
+          "weight": 5,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_deadline_flexibility"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        },
+        {
+          "id": "CL-F4",
+          "owner": "maya",
+          "weight": 4,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_advice"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        }
+      ],
+      "beats": [
+        {
+          "id": "B2",
+          "npc": "maya",
+          "when": "turn>=4 and no_commitment",
+          "act": "press_for_date"
+        },
+        {
+          "id": "B3",
+          "npc": "maya",
+          "when": "commitment_made and turns_since_commitment>=3",
+          "act": "callback_commitment"
+        }
+      ],
+      "end": {
+        "max_turns": 20
+      },
+      "scoring": {
+        "version": 2,
+        "weights": {
+          "goals": 30,
+          "hidden_facts": 20,
+          "integrity": 15,
+          "relationship": 10,
+          "rubric": 25
+        }
+      }
+    },
+    "prompt_profile": {
+      "maya": {
+        "motivation": null
+      },
+      "jordan": {
+        "motivation": null
+      },
+      "sam": {
+        "motivation": null
+      }
+    }
+  },
+  "protected_hash": "sha256:54ba619e27d5ed323a034a7cdf7725c24a089233974a90c5eec2811572199713"
+}

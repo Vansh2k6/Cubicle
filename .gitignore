@@ -3,6 +3,10 @@ dist/
 *.log
 .env
 .env*.local
+.state/anthropic-budget-ledger.json
+.state/anthropic-budget-ledger.json.lock
+.state/anthropic-budget-ledger.json.*.tmp
+.state/haiku-smoke-evidence.json
 __pycache__/
 *.py[cod]
 .venv/

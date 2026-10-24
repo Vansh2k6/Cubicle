@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "frame_id": "frame-manager-v1",
+  "family": "manager",
+  "scoring_id": "mgr_scope_creep",
+  "source": {
+    "assembly_id": "asm-manager",
+    "assembly_version": 1,
+    "spec_sha256": "35e7271d968404771b0b2898ea2fdaee4d7c804709e6e27edfd31990c7074548"
+  },
+  "slots": {
+    "situation": {
+      "count": 1
+    },
+    "goals": {
+      "ids": [
+        "MGR-G1",
+        "MGR-G2",
+        "MGR-G3",
+        "MGR-R1",
+        "MGR-R2",
+        "MGR-R3"
+      ]
+    },
+    "facts": {
+      "ids": [
+        "MGR-F1",
+        "MGR-F2",
+        "MGR-F3",
+        "MGR-F4"
+      ],
+      "owners": {
+        "MGR-F1": "maya",
+        "MGR-F2": "jordan",
+        "MGR-F3": "sam",
+        "MGR-F4": "maya"
+      }
+    },
+    "cast": {
+      "npcs": [
+        "maya",
+        "jordan",
+        "sam"
+      ]
+    }
+  },
+  "mechanics": {
+    "spec": {
+      "id": "mgr_scope_creep",
+      "version": 1,
+      "locales": [
+        "en"
+      ],
+      "title": null,
+      "briefing": {
+        "en": null
+      },
+      "player": {
+        "id": "alex",
+        "name": "Alex",
+        "role": "employee"
+      },
+      "clock": {
+        "day": 0,
+        "advance_on_turn": false
+      },
+      "canon": {
+        "public": {},
+        "private": {
+          "delivery_window": {
+            "day": 4
+          }
+        }
+      },
+      "commitment_model": {
+        "unassisted_min_day": 3,
+        "assisted_min_day": 2,
+        "assistance_requires": [
+          "MGR-F2_delivered",
+          "help_accepted_with_jordan"
+        ],
+        "latest_day_from": "canon.private.delivery_window.day",
+        "agreement_npc": "maya",
+        "agreement_requires": [
+          "MGR-G1",
+          "MGR-G2"
+        ]
+      },
+      "npcs": [
+        {
+          "id": "maya",
+          "name": "Maya",
+          "role": null,
+          "persona": null,
+          "public_context": null,
+          "default_sliders": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "topics": [
+            "asked_deadline_flexibility",
+            "asked_why_urgent",
+            "asked_impact",
+            "asked_expectation",
+            "took_ownership",
+            "gave_honest_status",
+            "pushed_back_constructively",
+            "proposed_scope_cut",
+            "committed_deadline",
+            "recapped_agreement",
+            "confirmed_next_steps"
+          ]
+        },
+        {
+          "id": "jordan",
+          "name": "Jordan",
+          "role": null,
+          "persona": null,
+          "public_context": null,
+          "default_sliders": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "topics": [
+            "asked_requirement_details",
+            "asked_for_help",
+            "asked_background",
+            "proposed_plan",
+            "proposed_phased_delivery"
+          ]
+        },
+        {
+          "id": "sam",
+          "name": "Sam",
+          "role": null,
+          "persona": null,
+          "public_context": null,
+          "default_sliders": {
+            "assertiveness": 50,
+            "patience": 50,
+            "warmth": 50,
+            "forthcomingness": 50
+          },
+          "topics": [
+            "asked_advice",
+            "acknowledged_concern",
+            "apologized"
+          ]
+        }
+      ],
+      "goals": [
+        {
+          "id": "MGR-G1",
+          "visible": true,
+          "required": true,
+          "weight": 8,
+          "label": null,
+          "done_when": [
+            "event:gave_honest_status",
+            "event:asked_requirement_details"
+          ],
+          "requires": []
+        },
+        {
+          "id": "MGR-G2",
+          "visible": true,
+          "required": true,
+          "weight": 8,
+          "label": null,
+          "done_when": [
+            "event:pushed_back_constructively",
+            "event:proposed_scope_cut"
+          ],
+          "requires": [
+            "MGR-G1"
+          ]
+        },
+        {
+          "id": "MGR-G3",
+          "visible": true,
+          "required": true,
+          "weight": 8,
+          "label": null,
+          "done_when": [
+            "date_mutually_agreed",
+            "event:recapped_agreement"
+          ],
+          "requires": [
+            "MGR-G1",
+            "MGR-G2"
+          ]
+        },
+        {
+          "id": "MGR-R1",
+          "visible": true,
+          "required": false,
+          "weight": 2,
+          "label": null,
+          "done_when": [
+            "event:proposed_phased_delivery"
+          ],
+          "requires": []
+        },
+        {
+          "id": "MGR-R2",
+          "visible": true,
+          "required": false,
+          "weight": 2,
+          "label": null,
+          "done_when": [
+            "event:confirmed_next_steps"
+          ],
+          "requires": []
+        },
+        {
+          "id": "MGR-R3",
+          "visible": true,
+          "required": false,
+          "weight": 2,
+          "label": null,
+          "done_when": [
+            "event:asked_background"
+          ],
+          "requires": []
+        }
+      ],
+      "facts": [
+        {
+          "id": "MGR-F1",
+          "owner": "maya",
+          "weight": 6,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_why_urgent",
+            "asked_impact"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        },
+        {
+          "id": "MGR-F2",
+          "owner": "jordan",
+          "weight": 5,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_for_help"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        },
+        {
+          "id": "MGR-F3",
+          "owner": "sam",
+          "weight": 5,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_advice"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        },
+        {
+          "id": "MGR-F4",
+          "owner": "maya",
+          "weight": 4,
+          "content": {
+            "en": null
+          },
+          "triggers": [
+            "asked_expectation"
+          ],
+          "leak_keywords": {
+            "en": null
+          },
+          "unlock_question": {
+            "en": null
+          }
+        }
+      ],
+      "beats": [
+        {
+          "id": "B2",
+          "npc": "maya",
+          "when": "turn>=4 and no_commitment",
+          "act": "press_for_date"
+        },
+        {
+          "id": "B3",
+          "npc": "maya",
+          "when": "commitment_made and turns_since_commitment>=3",
+          "act": "callback_commitment"
+        }
+      ],
+      "end": {
+        "max_turns": 20
+      },
+      "scoring": {
+        "version": 2,
+        "weights": {
+          "goals": 30,
+          "hidden_facts": 20,
+          "integrity": 15,
+          "relationship": 10,
+          "rubric": 25
+        }
+      }
+    },
+    "prompt_profile": {
+      "maya": {
+        "motivation": null
+      },
+      "jordan": {
+        "motivation": null
+      },
+      "sam": {
+        "motivation": null
+      }
+    }
+  },
+  "protected_hash": "sha256:caf34b8fb06620f93b40815eb5059aab82061f8efd4b601a1e480987d312daa9"
+}

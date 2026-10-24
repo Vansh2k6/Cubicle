@@ -72,6 +72,7 @@ import { createEndCoordinator, captureRun } from "./endCoordinator.js";
 import { compareAttempts, displayAttemptMetric, displayAttemptScore, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
 import {parseScenarioMetadata} from "./scenarioMetadata.js";
 import { projectGuidance } from "./guidance.js";
+import { renderPrototypeEntry } from "./prototypeEntry.js";
 import "./guidance.css";
 const ending = createEndCoordinator();
 const voiceBuildEnabled = import.meta.env.VITE_VOICE === "1";
@@ -1315,6 +1316,10 @@ $("#nav-office").onclick = () => {
   $("#game-viewport").focus();
 };
 $("#nav-progress").onclick = showProgress;
+$("#nav-prototype").onclick = () => {
+  showModal("Try a scenario", '<div id="prototype-content" aria-live="polite"></div>');
+  renderPrototypeEntry($("#prototype-content"));
+};
 $("#profile").onclick = () =>
   showModal(
     "Meet your work self.",

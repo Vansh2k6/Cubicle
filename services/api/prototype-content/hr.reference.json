@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "frame_id": "frame-hr-v1",
+  "components": [
+    {
+      "id": "hr.situation.reference",
+      "frame": "frame-hr-v1",
+      "slot": "situation",
+      "status": "reference",
+      "body": {
+        "title": "Requesting an internal transfer",
+        "briefing": "You want to move to the platform team. Sam in People and Culture can start the process, Maya has to support it, and Jordan knows your current work. Find the real constraints and agree a next step."
+      }
+    },
+    {
+      "id": "hr.goals.reference",
+      "frame": "frame-hr-v1",
+      "slot": "goals",
+      "status": "reference",
+      "body": {
+        "labels": {
+          "HR-G1": "Describe the transfer you want and why now",
+          "HR-G2": "Agree how your current work continues",
+          "HR-G3": "Confirm the application steps and the date with Sam",
+          "HR-R1": "Ask about trying the new team before deciding",
+          "HR-R2": "Take ownership of the handover notes",
+          "HR-R3": "Acknowledge the disruption to the current team"
+        }
+      }
+    },
+    {
+      "id": "hr.fact.HR-F1.reference",
+      "frame": "frame-hr-v1",
+      "slot": "fact:HR-F1",
+      "status": "reference",
+      "body": {
+        "content": "The internal transfer window closes at the end of day 4, and late requests wait for the next cycle.",
+        "leak_keywords": [
+          "transfer window",
+          "next cycle",
+          "end of day 4"
+        ],
+        "unlock_question": "When does the transfer window close?"
+      }
+    },
+    {
+      "id": "hr.fact.HR-F2.reference",
+      "frame": "frame-hr-v1",
+      "slot": "fact:HR-F2",
+      "status": "reference",
+      "body": {
+        "content": "Maya will support the move once a coverage plan for the weekly report exists.",
+        "leak_keywords": [
+          "coverage plan"
+        ],
+        "unlock_question": "What does Maya need before she can support the move?"
+      }
+    },
+    {
+      "id": "hr.fact.HR-F3.reference",
+      "frame": "frame-hr-v1",
+      "slot": "fact:HR-F3",
+      "status": "reference",
+      "body": {
+        "content": "Jordan can take the weekly report for a month, which covers the main gap.",
+        "leak_keywords": [
+          "take the weekly report",
+          "for a month",
+          "covers the gap"
+        ],
+        "unlock_question": "Who could cover the weekly report for now?"
+      }
+    },
+    {
+      "id": "hr.fact.HR-F4.reference",
+      "frame": "frame-hr-v1",
+      "slot": "fact:HR-F4",
+      "status": "reference",
+      "body": {
+        "content": "People and Culture can arrange two shadowing days before the decision, and no unpaid time off is needed.",
+        "leak_keywords": [
+          "shadowing days",
+          "unpaid time off"
+        ],
+        "unlock_question": "Can I try the new team before deciding?"
+      }
+    },
+    {
+      "id": "hr.cast.maya.reference",
+      "frame": "frame-hr-v1",
+      "slot": "cast:maya",
+      "status": "reference",
+      "body": {
+        "role": "manager",
+        "persona": "Protective of delivery continuity and responds to concrete plans.",
+        "public_context": "Maya leads your current team and has a say in the move.",
+        "motivation": "Maya wants team changes discussed with her before they are decided."
+      }
+    },
+    {
+      "id": "hr.cast.jordan.reference",
+      "frame": "frame-hr-v1",
+      "slot": "cast:jordan",
+      "status": "reference",
+      "body": {
+        "role": "engineer",
+        "persona": "Pragmatic teammate who helps when the ask is specific.",
+        "public_context": "Jordan works on your current team and knows its routines.",
+        "motivation": "Jordan prefers being asked directly over hearing plans second-hand."
+      }
+    },
+    {
+      "id": "hr.cast.sam.reference",
+      "frame": "frame-hr-v1",
+      "slot": "cast:sam",
+      "status": "reference",
+      "body": {
+        "role": "people partner",
+        "persona": "Careful process owner who explains steps once and expects them followed.",
+        "public_context": "Sam runs the internal transfer process and knows the current cycle.",
+        "motivation": "Sam wants every request to move through the published steps without exceptions."
+      }
+    }
+  ]
+}

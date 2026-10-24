@@ -36,6 +36,7 @@ function canonicalize(value) {
 
 export function loadConfig(env = process.env) {
   const config = {};
+  const anthropic = env?.LLM_PROVIDER === "anthropic";
   for (const role of Object.keys(DEFAULTS)) {
     const base = DEFAULTS[role];
     const override = env && typeof env[MODEL_ENV[role]] === "string" && env[MODEL_ENV[role]].trim() !== ""
@@ -47,9 +48,9 @@ export function loadConfig(env = process.env) {
     if (!extraParams || typeof extraParams !== "object" || Array.isArray(extraParams)) extraParams = {};
     const modelExtras = /^openai\/gpt-oss-(20b|120b)$/.test(override) ? { include_reasoning: false }
       : override === "qwen/qwen3.8-27b" ? { reasoning_format: "hidden" } : {};
-    config[role] = { ...base, model: override,
-      maxTokens: positiveInt(env[`${prefix}_MAX_TOKENS`], base.maxTokens),
-      reasoningEffort: env[`${prefix}_REASONING_EFFORT`] || base.reasoningEffort,
+    config[role] = { ...base, model: anthropic ? "claude-haiku-5-5" : override,
+      maxTokens: anthropic ? Math.min(1024, positiveInt(env[`${prefix}_MAX_TOKENS`], 1024)) : positiveInt(env[`${prefix}_MAX_TOKENS`], base.maxTokens),
+      reasoningEffort: anthropic ? "low" : env[`${prefix}_REASONING_EFFORT`] || base.reasoningEffort,
       extraParams: { ...modelExtras, ...extraParams },
     };
   }
@@ -62,6 +63,7 @@ export function positiveInt(value, fallback) {
 }
 
 export function providerName(env = process.env) {
+  if (env.LLM_PROVIDER === "anthropic") return "anthropic";
   return env.LLM_PROVIDER === "groq" && typeof env.GROQ_API_KEY === "string" && env.GROQ_API_KEY.trim() ? "groq" : "offline";
 }
 

@@ -384,7 +384,7 @@ export async function runTurn(opts = {}) {
 
 // Public API projection (R-03 allowlist). Anything not listed here must never
 // leave the server during a live session.
-const PUBLIC_KEYS = ["npc_reply", "public_state", "ended", "end_reason", "turn_id", "speech"];
+const PUBLIC_KEYS = ["npc_reply", "public_state", "ended", "end_reason", "turn_id", "speech", "reply_source"];
 const PUBLIC_STATE_KEYS = ["mood_label", "goals", "next_hint", "npc_availability", "ended"];
 export function publicResponse(result) {
   const ps = result.publicState || {};
@@ -393,6 +393,7 @@ export function publicResponse(result) {
     : [];
   return {
     npc_reply: result.reply,
+    reply_source: result.trace?.replySource === "fallback" ? "fallback" : "normal",
     public_state: {
       mood_label: ps.mood_label,
       goals,

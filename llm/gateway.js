@@ -9,7 +9,7 @@ const ROLE_FALLBACK = {
   judge: { insufficient: true },
   coach: { insufficient: true },
 };
-const FAILURE_CODES = new Set(["TIMEOUT", "PROVIDER_ERROR", "OUTPUT_INVALID", "PROVIDER_UNAVAILABLE", "LLM_BUDGET_EXCEEDED", "THROTTLED", "RATE_LIMITED", "INVALID_JSON", "SCHEMA_INVALID", "EMPTY_OUTPUT"]);
+const FAILURE_CODES = new Set(["TIMEOUT", "PROVIDER_ERROR", "OUTPUT_INVALID", "PROVIDER_UNAVAILABLE", "LLM_BUDGET_EXCEEDED", "LLM_BUDGET_UNAVAILABLE", "THROTTLED", "RATE_LIMITED", "INVALID_JSON", "SCHEMA_INVALID", "EMPTY_OUTPUT"]);
 
 export function safeFailure(error) {
   const failureCode = FAILURE_CODES.has(error?.code) ? error.code : "PROVIDER_ERROR";
