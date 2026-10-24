@@ -113,9 +113,12 @@ export function createAnthropicProvider({ env = process.env, config = loadConfig
     const maxTokens = Math.min(OUTPUT_CAP, Math.max(1, Number.isSafeInteger(config[role].maxTokens) ? config[role].maxTokens : OUTPUT_CAP));
     if (!messages.length || messages.some((m) => !m || !["user", "assistant"].includes(m.role) || typeof m.content !== "string" || !m.content) || messages.at(-1)?.role !== "user") throw error("PROVIDER_ERROR");
     const safeMessages = messages.map(({role: messageRole, content}) => ({role: messageRole, content}));
-    const body = { model: MODEL, max_tokens: maxTokens, system,
-      messages: safeMessages,
-      ...(schema ? { output_config: { format: { type: "json_schema", schema } } } : {}) };
+    // The shared runtime schemas intentionally leave event params open because
+    // the classifier validates them against its own taxonomy after decoding.
+    // Anthropic strict structured outputs require every object to close its
+    // properties, which would reject those established schemas. Keep the
+    // existing prompt contract and gateway/schema validation for this provider.
+    const body = { model: MODEL, max_tokens: maxTokens, system, messages: safeMessages };
     const reserveTokens = Buffer.byteLength(JSON.stringify(body), "utf8") + 2048 + maxTokens;
     const reservedUsd = reserveTokens * RATE_PER_MILLION / 1_000_000;
     await authorizeLedger(ledgerPath);

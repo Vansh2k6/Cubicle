@@ -5,6 +5,7 @@ import {join} from "node:path";
 import {anthropicProviderMode,createAnthropicProvider} from "../providers/anthropic.js";
 import {loadConfig} from "../config.js";
 import {complete} from "../gateway.js";
+import {classifyTurn} from "../classifier.js";
 
 const grant = "cubicle-scenario-prototype-haiku-2026-10-25";
 const initialLedger = {version:1,calls:0,reservedTokens:0,reservedUsd:0,actualInputTokens:0,actualOutputTokens:0};
@@ -42,8 +43,7 @@ test("Anthropic sends the supported Messages API shape, counts text blocks and r
       {type:"thinking",thinking:"ignored and never surfaced"},{type:"text",text:'{"events":[]}'},
     ]}),{status:200,headers:{"content-type":"application/json"}});
   }});
-  const schema = {type:"object",required:["events"],properties:{events:{type:"array"}}};
-  const out = await provider({role:"classifier",system:"policy",messages:[{role:"user",content:"hello"}],schema});
+  const out = await provider({role:"classifier",system:"policy",messages:[{role:"user",content:"hello"}],schema:{type:"object"}});
   assert.equal(out.text,'{"events":[]}');
   assert.equal(out.model,"claude-haiku-5-5");
   assert.equal(request.url,"https://api.anthropic.com/v1/messages");
@@ -52,10 +52,43 @@ test("Anthropic sends the supported Messages API shape, counts text blocks and r
   assert.ok(request.body.max_tokens <= 1024);
   assert.equal(request.body.system,"policy");
   assert.deepEqual(request.body.messages,[{role:"user",content:"hello"}]);
-  assert.deepEqual(request.body.output_config.format.schema,schema);
+  assert.equal(Object.hasOwn(request.body,"output_config"),false);
   for (const forbidden of ["temperature","top_p","top_k"]) assert.equal(Object.hasOwn(request.body,forbidden),false);
   const saved = JSON.parse(await readFile(ledger,"utf8"));
   assert.equal(saved.calls,1); assert.equal(saved.actualInputTokens,12); assert.equal(saved.actualOutputTokens,4);
+}));
+
+test("Anthropic classifier accepts the shared open-params schema through local validation", async () => fixture(async (_dir, ledger) => {
+  let request;
+  const provider=createAnthropicProvider({env:envFor(ledger),fetchFn:async (_url,options)=>{
+    request=JSON.parse(options.body);
+    return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:8,output_tokens:8},content:[
+      {type:"text",text:JSON.stringify({events:[{type:"asked_for_help",params:{person:"Maya"}}],clarify:[]})},
+    ]}),{status:200});
+  }});
+  const result=await classifyTurn({provider,system:"Return the requested JSON.",timeoutMs:1000},{
+    text:"Could you help me?",lastTurns:[],userKnown:[],clock:{day:1},
+  });
+  assert.deepEqual(result.events,[{type:"asked_for_help",params:{person:"Maya"}}]);
+  assert.equal(request.model,"claude-haiku-5-5");
+  assert.equal(Object.hasOwn(request,"output_config"),false);
+  assert.equal(JSON.parse((await readFile(ledger,"utf8"))).actualOutputTokens,8);
+}));
+
+test("malformed Anthropic classifier JSON follows the bounded retry and empty fallback", async () => fixture(async (_dir, ledger) => {
+  let calls=0;
+  const provider=createAnthropicProvider({env:envFor(ledger),fetchFn:async (_url,options)=>{
+    calls++;
+    const body=JSON.parse(options.body);
+    assert.equal(Object.hasOwn(body,"output_config"),false);
+    return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:2,output_tokens:1},content:[{type:"text",text:"not json"}]}),{status:200});
+  }});
+  const result=await classifyTurn({provider,system:"Return the requested JSON.",timeoutMs:1000},{
+    text:"Could you help me?",lastTurns:[],userKnown:[],clock:{day:1},
+  });
+  assert.deepEqual(result.events,[]);
+  assert.equal(calls,2);
+  assert.equal(JSON.parse(await readFile(ledger,"utf8")).calls,2);
 }));
 
 test("authorization, missing ledgers, invalid ledgers and exhausted grants fail before dispatch", async () => {

@@ -78,7 +78,7 @@ function checkExample(text) {
     const separator = t.indexOf("=");
     const name = t.slice(0, separator);
     const value = t.slice(separator + 1);
-    const allowed = { LLM_PROVIDER: "offline", LLM_MAX_CALLS: "40", LLM_MAX_TOKENS_TOTAL: "60000", LLM_TPM_LIMIT: "6000", CLASSIFIER_MODEL: "openai/gpt-oss-20b", NPC_MODEL: "qwen/qwen3.8-27b", JUDGE_MODEL: "openai/gpt-oss-120b", COACH_MODEL: "openai/gpt-oss-120b", CLASSIFIER_REASONING_EFFORT: "low", NPC_REASONING_EFFORT: "none", JUDGE_REASONING_EFFORT: "low", COACH_REASONING_EFFORT: "low", VOICE_ENABLED: "0", VITE_VOICE: "0", VOICE_STT_DEVICE: "auto", VOICE_STT_CHAIN: "local", VOICE_TTS_CHAIN: "local,browser", VOICE_LOCAL_URL: "http://127.0.0.1:8790", VOICE_STT_TIMEOUT_MS: "8000", VOICE_TTS_TIMEOUT_MS: "6000" };
+    const allowed = { LLM_PROVIDER: "offline", LLM_MAX_CALLS: "40", LLM_MAX_TOKENS_TOTAL: "60000", LLM_TPM_LIMIT: "6000", CLASSIFIER_MODEL: "openai/gpt-oss-20b", NPC_MODEL: "qwen/qwen3.8-27b", JUDGE_MODEL: "openai/gpt-oss-120b", COACH_MODEL: "openai/gpt-oss-120b", CLASSIFIER_REASONING_EFFORT: "low", NPC_REASONING_EFFORT: "none", JUDGE_REASONING_EFFORT: "low", COACH_REASONING_EFFORT: "low", ANTHROPIC_BUDGET_LEDGER: "./.state/anthropic-budget-ledger.json", VOICE_ENABLED: "0", VITE_VOICE: "0", VOICE_STT_DEVICE: "auto", VOICE_STT_CHAIN: "local", VOICE_TTS_CHAIN: "local,browser", VOICE_LOCAL_URL: "http://127.0.0.1:8790", VOICE_STT_TIMEOUT_MS: "8000", VOICE_TTS_TIMEOUT_MS: "6000" };
     assert.ok(separator > 0 && /^[A-Z_]+$/.test(name), "invalid environment variable name");
     assert.ok(value === (allowed[name] || ""), `unapproved default for ${name}`);
   }
