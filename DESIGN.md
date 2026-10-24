@@ -1,5 +1,11 @@
 # DESIGN.md — P2c free-text conversation panel
 
+## CN-02 phone contact extension (Operate)
+
+Preserve the current green-and-graphite immersive office and shared conversation shell. A small graphite desk phone sits on the existing shared island only when approved public scenario metadata declares one phone contact. Nearby E/context and the People list open that actor's ordinary thread; the People action reads “Call {name}”. No avatar, room, separate calling flow, automatic microphone permission, or new visual system.
+
+The existing 44px close control is named “Hang up call” for a phone thread. Escape/hangup cancels capture and playback while preserving the transcript; physical proximity changes do not disconnect a remote thread. A closed pending reply may finish in its thread without reopening the panel or playing audio. Metadata loading leaves physical colleagues usable; unavailable contact details show an inline Retry action. Names, roles and initials are escaped and long labels wrap. Restart, End and scenario/menu changes invalidate late run effects. Browser/narrow/device verification is pending reviewer handoff; no rendered-result claim is made here.
+
 **Surface:** the in-viewport conversation panel (`src/main.js` text mode + `src/api.js` + `src/debug.js`, styles in `src/style.css`).
 **Mode:** Operate — the visitor completes a task (a practice conversation). Scanability, consistency with the scripted panel, and native form expectations outrank expression.
 **Method:** Impeccable narrow refinement of the incumbent implementation (v4.1.1; owning playbooks `harden.md` + `operate.md`, floor `craft-floor.md`). Preserve the ivory interface, the office viewport, and keyboard-only operation. No quick-reply chips (D-12 unconfirmed — left out).

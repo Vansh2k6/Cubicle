@@ -245,6 +245,15 @@ export function createOffice(container, hooks) {
   cyl(0.23, 0.1, 0.4, "#89a27d", -0.9, 1.84, -0.85, 5);
   chair(-0.45, 0.8, Math.PI);
   chair(1.35, 0.8, Math.PI);
+  // A desk object, not a character: enabled only by approved public contact metadata.
+  const phone = new THREE.Group();
+  phone.position.set(1.15, 1.52, -0.8);
+  scene.add(phone);
+  box(0.48, 0.1, 0.55, "#394b42", 0, 0.05, 0, phone);
+  box(0.42, 0.08, 0.13, "#26372f", 0, 0.16, -0.14, phone);
+  box(0.22, 0.015, 0.12, "#a8bcae", 0, 0.11, 0.04, phone);
+  for (let x of [-0.09, 0, 0.09]) for (let z of [0.15, 0.23]) box(0.055, 0.018, 0.04, "#c9d3c9", x, 0.11, z, phone);
+  phone.visible = false;
   // Lounge, coffee table, cabinet and tiny desk details.
   box(3.5, 0.025, 3.3, "#d4d6bf", -6.2, 0.045, 3.05);
   let sofa = new THREE.Group();
@@ -595,6 +604,10 @@ export function createOffice(container, hooks) {
           min = d;
         }
       }
+      if (hooks.phoneContact?.() && !hooks.isPaused()) {
+        const distance = Math.hypot(p.x - 1.15, p.z + 0.8);
+        if (distance < min) next = "@phone";
+      }
     if (next !== near) {
       near = next;
       hooks.onNear(near);
@@ -602,8 +615,8 @@ export function createOffice(container, hooks) {
     } // end proximity block (always live, even while paused)
     nearRing.visible = !!near;
     if (near) {
-      nearRing.position.x = npcs[near].root.position.x;
-      nearRing.position.z = npcs[near].root.position.z;
+      nearRing.position.x = near === "@phone" ? 1.15 : npcs[near].root.position.x;
+      nearRing.position.z = near === "@phone" ? 0.65 : npcs[near].root.position.z;
     }
     playerRing.position.x = p.x;
     playerRing.position.z = p.z;
@@ -616,6 +629,7 @@ export function createOffice(container, hooks) {
   function frame(now) {
     if (disposed) return;
     frameId = requestAnimationFrame(frame);
+    phone.visible = !!hooks.phoneContact?.() && hooks.isVisible?.() !== false && !document.hidden;
     if (document.hidden || hooks.isVisible?.() === false) {
       keys.clear();
       target = null;

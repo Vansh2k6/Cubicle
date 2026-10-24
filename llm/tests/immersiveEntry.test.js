@@ -29,7 +29,7 @@ function fixture({ reduced = false, fail = false } = {}) {
     document: { body: { classList: makeNode().classList }, activeElement: null, querySelectorAll: () => [] },
     window: { addEventListener(type, fn) { if (type === 'keydown') keydown = fn; } },
     loadOffice() { counts.loads++; return new Promise(resolve => { loadResolve = resolve; }); },
-    officeHooks: () => ({}),
+    officeHooks: () => ({}), loadScenarioMetadata() {},
   };
   // Execute the production entry and native-dialog handlers with a deferred scene module.
   const code = part('const scenarios =', 'const people =') + part('function renderEntry()', 'function persistProgress()') +

@@ -207,7 +207,7 @@ test("reset and scenario transitions clear metadata before a new run can reuse p
   const end = source.indexOf("function startRetrySession", start);
   const reset = source.slice(start, end);
   const state = {scenario: "deadline", scenarioMetadata: {id: "old-package"}};
-  const run = Function("state", "closeConversation", "$", "office", "updateScenario", `${reset}; return resetTextRun;`)(state, () => {}, () => ({}), null, () => {});
+  const run = Function("state", "closeConversation", "$", "office", "updateScenario", "loadScenarioMetadata", `${reset}; return resetTextRun;`)(state, () => {}, () => ({}), null, () => {}, () => {});
   run("email");
   assert.equal(state.scenarioMetadata, null);
   assert.equal(state.scenario, "email");

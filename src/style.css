@@ -655,6 +655,12 @@ h1 > span {
   pointer-events: none;
   z-index: 2;
 }
+.person { min-height: 44px; }
+.person > span { min-width: 0; }
+.person strong, .person small { overflow-wrap: anywhere; }
+.contact-status { color: var(--muted); font-size: 0.875rem; }
+.text-mode .dialogue-heading > .icon-button { min-width: 44px; min-height: 44px; }
+.talk-prompt { min-height: 44px; }
 .npc-label {
   position: absolute;
   transform: translate(-50%, -100%);

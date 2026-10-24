@@ -24,7 +24,7 @@ function motionContext({ paused = false, reducedMotion = false } = {}) {
     hooks: { isPaused: () => paused, onMove() {}, onNear: (id) => nearCalls.push(id), onReady() {} },
     keys: new Set(), target: null, targetYaw: 0, walkTime: 0, moved: false, near: null,
     player: { root: { position, rotation: { y: 0 } }, legs: [limb(), limb()], arms: [limb(), limb()], body: { position: {} } },
-    allowed: () => true, reducedMotion, npcs: {}, nearRing: { position: {} }, playerRing: { position: {} },
+    allowed: () => true, reducedMotion, npcs: {}, phone: {visible: false}, nearRing: { position: {} }, playerRing: { position: {} },
     document: { hidden: false, querySelector: () => ({ setAttribute: (key, value) => { map[key] = value; } }) },
     disposed: false, frameId: null, events: { signal: undefined }, dispose() { this.disposed = true; }, requestAnimationFrame() {}, renderer: { render() {} }, scene: {}, camera: {}, width: 1, height: 1,
     entries: {}, projection: vector(), ready: false, accumulator: 0, last: 0, map, nearCalls,
@@ -115,6 +115,21 @@ test("hidden and paused offices ignore E and walking key presses", () => {
     keydown({ key: "e", preventDefault() {} }); keydown({ key: "w", preventDefault() {} });
     assert.equal(talks, visible && !paused ? 1 : 0); assert.equal(context.keys.size, visible && !paused ? 1 : 0);
   }
+});
+
+test("the enabled phone is a floor interaction target without a fourth character or collision change", () => {
+  const context = motionContext(); context.player.root.position.set(1.15, 0, 0.65);
+  context.hooks.phoneContact = () => "client";
+  runInNewContext(`${stepSource}\nstep(1 / 60);`, context);
+  assert.equal(context.near, "@phone"); assert.deepEqual(context.nearCalls, ["@phone"]);
+  assert.equal(context.nearRing.position.x, 1.15); assert.equal(context.nearRing.position.z, 0.65);
+  assert.equal(Object.keys(context.npcs).length, 0);
+  context.hooks.phoneContact = () => null; context.runFrame = null;
+  runInNewContext(`${stepSource}\nstep(1 / 60);`, context); assert.equal(context.near, null);
+  const paused = motionContext({paused: true}); paused.player.root.position.set(1.15, 0, 0.65); paused.hooks.phoneContact = () => "client";
+  runInNewContext(`${stepSource}\nstep(1 / 60);`, paused); assert.equal(paused.near, null);
+  const hidden = motionContext(); hidden.hooks.phoneContact = () => "client"; hidden.hooks.isVisible = () => false;
+  runFrame(hidden); assert.equal(hidden.phone.visible, false);
 });
 
 test("scene disposal cancels its loop, listeners, observer, DOM and GPU resources idempotently", () => {

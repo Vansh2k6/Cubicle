@@ -79,6 +79,7 @@ test("a failed same-settings retry retains the originating draft for recovery", 
   let reject, opened;
   const state = { near: "maya", dialogue: null, paused: false, startingSession: false, sessionId: "old", scenario: "deadline", threads: {}, sharedGoals: [], sharedHint: "", round: 0, score: 0, appliedSettings: null };
   const run = Function("state", "DEFAULT_SLIDERS", "captureRun", "createSession", "closeConversation", "office", "updateScenario", "closeModal", "toast", "openSettings", "chime", "$", "renderTextDialogue", `
+    const currentPeople = () => ({maya: {}}), physicalActorId = (id) => id, loadScenarioMetadata = () => {}, syncPeople = () => {};
     ${fn("freshThread")} ${fn("threadsFor")} ${fn("resetTextRun")} ${fn("startRetrySession")} ${fn("restartTextRun")} ${fn("openTextConversation")}
     return { restartTextRun, openTextConversation };
   `)(state, { assertiveness: 50, patience: 50, warmth: 50, forthcomingness: 50 }, () => () => true,
@@ -115,6 +116,7 @@ test("text session retry keeps loading state only for its current thread", async
     const state = { sessionId: null, scenario: "deadline", threads: { maya: thread }, textMode: true, text: thread, startingSession: false, appliedSettings: null, sharedGoals: [], sharedHint: "" };
     let resolve, reject, renders = 0;
     const startTextSession = Function("state", "captureRun", "createSession", "DEFAULT_SLIDERS", "renderTextDialogue", "updatePublicGuidance", "threadsFor", `
+      const syncPeople = () => {};
       ${fn("startTextSession")}
       return startTextSession;
     `)(state, captureRun, () => new Promise((res, rej) => { resolve = res; reject = rej; }), {}, () => { renders++; }, () => {}, () => state.threads);
@@ -164,6 +166,7 @@ test("setup-load retry preserves the approached colleague through loading and cr
   };
   const $ = (selector) => ({ "#setup-content": box, "#setup-start": start, "#setup-retry": retry, "#setup-preview": preview, "#talk-prompt": talk }[selector] || null);
   const { openSettings } = Function("state", "DEFAULT_SLIDERS", "presetsEnabled", "settingsPreview", "showModal", "captureRun", "$", "PRESETS", "presetName", "presetSettings", "document", "getScenario", "closeModal", "createSession", "renderTextDialogue", "updatePublicGuidance", "toast", `
+    const people = {maya: {sceneAnchor: "maya"}}, personFor = (id) => people[id], currentPeople = () => people, physicalActorId = (id) => id, remoteContact = () => null, syncPeople = () => {}, parseScenarioMetadata = (data) => data;
     ${fn("escapeHtml")}
     ${fn("freshThread")}
     ${fn("threadsFor")}

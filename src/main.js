@@ -29,6 +29,7 @@ import {
   CircleCheck,
   Circle,
   Mic,
+  PhoneOff,
 } from "lucide";
 const icons = {
   Box,
@@ -60,6 +61,7 @@ const icons = {
   CircleCheck,
   Circle,
   Mic,
+  PhoneOff,
 };
 import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, getVoiceStatus, transcribeAudio, getTurnAudio, getDebriefAudio, newKey } from "./api.js";
 import { DEFAULT_SLIDERS } from "../shared/settings.js";
@@ -68,7 +70,7 @@ import { PRESETS, presetName, presetSettings, presetsEnabled } from "../shared/p
 import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
 import { createEndCoordinator, captureRun } from "./endCoordinator.js";
 import { compareAttempts, displayAttemptMetric, displayAttemptScore, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
-import {publicCast} from "../shared/presentation.js";
+import {parseScenarioMetadata} from "./scenarioMetadata.js";
 import { projectGuidance } from "./guidance.js";
 import "./guidance.css";
 const ending = createEndCoordinator();
@@ -344,6 +346,8 @@ function showSelection() {
   document.body.classList.remove("office-mounted", "office-entering");
   $("#entry-screen").classList.remove("entry-leaving");
   state.entry = "selection";
+  state.metadataGeneration = (state.metadataGeneration || 0) + 1;
+  state.scenarioMetadata = null;
   $(".game-card").inert = true;
   document.body.classList.remove("office-active");
   $("#entry-screen").hidden = false;
@@ -371,18 +375,22 @@ let officeGeneration = 0;
 let entryFade;
 let officeCancel = null;
 function officeHooks() { return {
+  phoneContact: () => state.entry === "office" && !state.paused && !$("#end-practice-dialog").open ? remoteContact()?.id : null,
   onNear(id) {
     state.near = id;
     // P3.1 walk-away close: proximity stays live while the text panel is
     // open, so leaving range (or reaching another NPC) closes the panel.
     // Threads and in-flight turns persist; reopening resumes the thread.
-    if (state.textMode && state.dialogue && id !== state.dialogue) {
+    if (state.textMode && state.dialogue && personFor(state.dialogue)?.contactMode !== "phone" && physicalActorId(id) !== state.dialogue) {
       closeConversation();
     }
     const b = $("#talk-prompt");
     b.classList.toggle("hidden", !state.near || !!state.dialogue);
-    if (state.near)
-      b.querySelector("strong").textContent = people[state.near].name.split(" ")[0];
+    if (state.near) {
+      const phone = state.near === "@phone";
+      const name = phone ? remoteContact()?.name || "contact" : personFor(physicalActorId(state.near))?.name.split(" ")[0] || "colleague";
+      b.querySelector("span").innerHTML = `${phone ? "Call" : "Talk to"} <strong>${escapeHtml(name)}</strong>`;
+    }
   },
   onMove() {
     $("#move-hint").classList.add("dismissed");
@@ -400,6 +408,7 @@ function officeHooks() { return {
 }; }
 function enterOffice() {
   state.entry = "office";
+  loadScenarioMetadata();
   document.body.classList.add("office-active", "office-entering");
   $("#entry-screen").classList.add("entry-leaving");
   const finish = () => {
@@ -489,18 +498,21 @@ function chime() {
 window.addEventListener("blur", stopSpeech);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") stopSpeech(); });
 function openConversation() {
-  if (state.entry !== "office" || $("#end-practice-dialog").open || !state.near || state.paused) return;
+  const targetId = arguments[0];
+  if (state.entry !== "office" || $("#end-practice-dialog").open || document.hidden || state.paused || ending.busy(state.sessionId, state.scenario)) return;
+  const target = typeof targetId === "string" ? targetId : state.near === "@phone" ? remoteContact()?.id : physicalActorId(state.near);
+  if (!target || !Object.hasOwn(currentPeople(), target)) return;
   // E near another NPC while a text thread is open switches threads on the
   // same session (P3.1 interact{npc_id}); the previous thread keeps its
   // history and any in-flight turn.
   if (state.dialogue) {
-    if (!state.textMode || state.near === state.dialogue) return;
+    if (!state.textMode || target === state.dialogue) return;
     closeConversation();
   }
   // SC-01 ("deadline") uses free-text turns via the turn API. SC-02/SC-03
   // keep the scripted button baseline untouched (P2c contract).
   if (state.scenario === "deadline") {
-    openTextConversation();
+    openTextConversation(target);
     return;
   }
   state.dialogue = state.near;
@@ -576,6 +588,60 @@ function escapeHtml(s) {
 
 // --- P3a threads (one session, per-NPC history). No quick-reply chips
 // (D-12 unconfirmed). The panel shows public state only (R-03/R-08).
+function currentPeople() {
+  if (!state.scenarioMetadata) return people;
+  return Object.fromEntries(state.scenarioMetadata.npcs.map((actor) => [actor.id, {
+    ...actor, color: people[actor.sceneAnchor]?.color || "sage",
+    initials: actor.name.split(/\s+/).slice(0, 2).map((word) => word[0]).join(""),
+  }]));
+}
+function personFor(id) { return currentPeople()[id]; }
+function remoteContact() { return state.scenario === "deadline" ? state.scenarioMetadata?.npcs.find((actor) => actor.contactMode === "phone") : null; }
+function physicalActorId(anchor) {
+  if (!anchor || anchor === "@phone") return null;
+  return state.scenarioMetadata ? state.scenarioMetadata.npcs.find((actor) => actor.sceneAnchor === anchor)?.id : Object.hasOwn(people, anchor) ? anchor : null;
+}
+function renderPeople(box) {
+  if (!box) return;
+  const sidebar = box === $(".people-list");
+  box.innerHTML = Object.entries(currentPeople()).map(([id, actor]) => `<button type="button" class="person" data-contact-person="${escapeHtml(id)}">${sidebar && actor.contactMode !== "phone" ? `<span class="avatar ${actor.color}"><span class="avatar-head"></span><span class="avatar-body"></span></span>` : ""}<span><strong>${actor.contactMode === "phone" ? "Call " : ""}${escapeHtml(actor.name)}</strong><small>${escapeHtml(actor.role)}${actor.contactMode === "phone" ? " · Phone" : ""}</small></span>${sidebar && actor.contactMode !== "phone" ? '<span class="person-status"></span>' : ""}</button>`).join("") +
+    (state.metadataStatus === "error" ? '<p class="contact-status" role="status">Contact details could not load. Colleagues are still available.</p><button type="button" class="secondary-button" data-contact-retry>Retry contact details</button>' : state.metadataStatus === "loading" ? '<p class="contact-status" role="status">Loading contact details…</p>' : "");
+  box.querySelectorAll("[data-contact-person]").forEach((button) => button.onclick = () => {
+    const id = button.dataset.contactPerson, actor = personFor(id);
+    if (state.entry !== "office" || document.hidden || $("#end-practice-dialog").open || !actor) return;
+    closeModal();
+    if (actor.contactMode === "phone") openConversation(id);
+    else { office?.highlight(actor.sceneAnchor || id); toast(`Find ${actor.name.split(" ")[0]} by the highlighted marker. Walk over to chat.`); }
+  });
+  const retry = box.querySelector("[data-contact-retry]");
+  if (retry) retry.onclick = loadScenarioMetadata;
+}
+function syncPeople() {
+  renderPeople($(".people-list"));
+  renderPeople($("#context-people"));
+  if (state.threads) {
+    for (const id of Object.keys(state.threads)) if (!Object.hasOwn(currentPeople(), id)) delete state.threads[id];
+    threadsFor();
+  }
+}
+function loadScenarioMetadata() {
+  const generation = state.metadataGeneration = (state.metadataGeneration || 0) + 1;
+  if (state.entry !== "office" || state.scenario !== "deadline" || state.sessionId) { syncPeople(); return; }
+  const scenario = state.scenario;
+  state.metadataStatus = "loading";
+  syncPeople();
+  return getScenario("deadline").then((data) => {
+    if (generation !== state.metadataGeneration || scenario !== state.scenario || state.sessionId || state.entry !== "office") return;
+    state.scenarioMetadata = parseScenarioMetadata(data);
+    state.metadataStatus = "ready";
+    syncPeople();
+  }).catch(() => {
+    if (generation !== state.metadataGeneration || scenario !== state.scenario || state.sessionId || state.entry !== "office") return;
+    state.scenarioMetadata = null;
+    state.metadataStatus = "error";
+    syncPeople();
+  });
+}
 function freshThread() {
   return {
     transcript: [],
@@ -590,15 +656,16 @@ function freshThread() {
 
 function threadsFor() {
   if (!state.threads) {
-    state.threads = { maya: freshThread(), jordan: freshThread(), sam: freshThread() };
+    state.threads = Object.fromEntries(Object.keys(currentPeople()).map((id) => [id, freshThread()]));
   }
+  for (const id of Object.keys(currentPeople())) if (!Object.hasOwn(state.threads, id)) state.threads[id] = freshThread();
   return state.threads;
 }
 
-function openTextConversation() {
-  if (!state.near || state.dialogue || state.paused) return;
+function openTextConversation(npcId = physicalActorId(state.near)) {
+  if (!npcId || !Object.hasOwn(currentPeople(), npcId) || state.dialogue || state.paused) return;
   if (state.startingSession) { toast("Preparing your fresh conversation…"); return; }
-  state.dialogue = state.near;
+  state.dialogue = npcId;
   state.textMode = true;
   state.text = threadsFor()[state.dialogue];
   $("#talk-prompt").classList.add("hidden");
@@ -619,16 +686,21 @@ function startTextSession() {
   createSession("deadline", state.appliedSettings || DEFAULT_SLIDERS).then(
     (data) => {
       if (!current()) return;
+      const metadata = data.scenario ? parseScenarioMetadata(data.scenario) : null;
+      if (typeof data.session_id !== "string" || !data.session_id) throw new Error("Could not read this practice session. Retry when ready.");
       state.startingSession = false;
       state.sessionId = data.session_id;
-    state.scenarioMetadata = data.scenario ? {...data.scenario, npcs: publicCast(data.scenario.npcs, Object.fromEntries(data.scenario.npcs.map((npc) => [npc.id, npc])))} : null;
+      state.scenarioMetadata = metadata;
+      state.metadataStatus = "ready";
+      state.metadataGeneration = (state.metadataGeneration || 0) + 1;
+      syncPeople();
+      if (state.dialogue && !Object.hasOwn(currentPeople(), state.dialogue)) { closeConversation(); toast("This contact is unavailable in this practice. Choose a colleague from People."); }
       state.sharedGoals = (data.public_state && data.public_state.goals) || [];
       state.sharedHint = (data.public_state && data.public_state.next_hint) || "";
       state.appliedSettings = data.settings || state.appliedSettings;
       updatePublicGuidance();
       if (state.textMode && state.text === thread) renderTextDialogue();
-    },
-    (err) => {
+    }).catch((err) => {
       if (!current()) return;
       state.startingSession = false;
       if (!state.textMode || !state.text) {
@@ -643,8 +715,7 @@ function startTextSession() {
       state.text.loadError =
         (err && err.message) || "Could not reach the conversation server.";
       renderTextDialogue();
-    },
-  );
+    });
 }
 
 function renderTextDialogue() {
@@ -652,7 +723,7 @@ function renderTextDialogue() {
   if (!t || !state.dialogue) return;
   cancelVoice();
   const busy = t.busy || ending.busy(state.sessionId, state.scenario);
-  const p = people[state.dialogue];
+  const p = personFor(state.dialogue);
   const npcId = state.dialogue;
   const first = p.name.split(" ")[0];
   const guidance = currentGuidance();
@@ -675,10 +746,10 @@ function renderTextDialogue() {
     .join("");
   $("#dialogue-layer").innerHTML =
     `<section class="dialogue text-mode" role="dialog" aria-modal="true" aria-labelledby="dialogue-name">` +
-    `<div class="dialogue-heading"><span class="dialogue-avatar ${p.color}">${p.initials}</span>` +
-    `<div><strong id="dialogue-name">${p.name}</strong><small>${p.role}</small></div>` +
-    `<span class="conversation-label">TEXT SESSION${t.mood ? ` · ${escapeHtml(t.mood).toUpperCase()}` : ""}</span>` +
-    `<button id="close-dialogue" class="icon-button" aria-label="Leave conversation and continue exploring" title="Leave conversation and continue exploring">${icon("x")}</button></div>` +
+    `<div class="dialogue-heading"><span class="dialogue-avatar ${p.color}">${escapeHtml(p.initials)}</span>` +
+    `<div><strong id="dialogue-name">${escapeHtml(p.name)}</strong><small>${escapeHtml(p.role)}</small></div>` +
+    `<span class="conversation-label">${p.contactMode === "phone" ? "PHONE" : "TEXT SESSION"}${t.mood ? ` · ${escapeHtml(t.mood).toUpperCase()}` : ""}</span>` +
+    `<button id="close-dialogue" class="icon-button" aria-label="${p.contactMode === "phone" ? "Hang up call" : "Leave conversation and continue exploring"}" title="${p.contactMode === "phone" ? "Hang up call" : "Leave conversation and continue exploring"}">${icon(p.contactMode === "phone" ? "phone-off" : "x")}</button></div>` +
     `<div class="transcript" role="log" aria-live="polite" aria-label="Conversation transcript">${lines || `<div class="t-empty">Say hello to ${escapeHtml(first)} — type your reply below.</div>`}</div>` +
     (state.startingSession
       ? `<div class="typing" role="status"><span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>Preparing this conversation…</div>`
@@ -780,10 +851,11 @@ async function sendTextTurn(text, key, isRetry) {
   if (state.text === thread) renderTextDialogue();
   try {
     const data = await sendTurn(sessionId, npcId, text, key);
+    if (!current()) return;
     thread.busy = false;
     thread.transcript.push({
       who: "npc",
-      name: people[npcId].name.split(" ")[0],
+      name: personFor(npcId).name.split(" ")[0],
       text: data.npc_reply,
       speech: data.speech?.available ? data.speech : null,
       sessionId,
@@ -804,19 +876,19 @@ async function sendTextTurn(text, key, isRetry) {
       updatePublicGuidance();
     }
     if (window.__CUBICLE_DEBUG) stashTextTrace(data, thread);
-    if (data.ended) {
-      if (state.text === thread) renderTextDialogue();
+    if (data.ended && state.text === thread) {
+      renderTextDialogue();
       openDebrief(sessionId);
     }
     else if (state.text === thread) { renderTextDialogue(); playSpeech(npcLine, thread, npcId); }
   } catch (err) {
+    if (!current()) return;
     thread.busy = false;
     thread.failed = {
       text,
       key,
       message: (err && err.message) || "Something went wrong.",
     };
-    if (!current()) return;
     if (state.text === thread) renderTextDialogue();
   }
 }
@@ -984,12 +1056,15 @@ function completeScenario() {
     closeModal();
     office?.reset();
     updateScenario();
+    loadScenarioMetadata();
   };
   refreshIcons();
 }
 function resetTextRun(scenarioId = state.scenario) {
   closeConversation();
   state.scenarioMetadata = null;
+  state.metadataStatus = null;
+  state.metadataGeneration = (state.metadataGeneration || 0) + 1;
   state.scenario = scenarioId;
   $("#scenario").value = scenarioId;
   state.sessionId = null;
@@ -1003,6 +1078,7 @@ function resetTextRun(scenarioId = state.scenario) {
   state.appliedSettings = null;
   office?.reset();
   updateScenario();
+  loadScenarioMetadata();
 }
 function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null) {
   const threads = threadsFor();
@@ -1012,15 +1088,21 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, r
   if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) renderTextDialogue();
   createSession("deadline", sliders).then((data) => {
     if (!current() || state.threads !== threads || state.sessionId) return;
+    const metadata = data.scenario ? parseScenarioMetadata(data.scenario) : null;
+    if (typeof data.session_id !== "string" || !data.session_id) throw new Error("Could not read this practice session.");
     state.sessionId = data.session_id;
-    state.scenarioMetadata = data.scenario ? {...data.scenario, npcs: publicCast(data.scenario.npcs, Object.fromEntries(data.scenario.npcs.map((npc) => [npc.id, npc])))} : null;
+    state.scenarioMetadata = metadata;
+    state.metadataStatus = "ready";
+    state.metadataGeneration = (state.metadataGeneration || 0) + 1;
+    syncPeople();
+    if (state.dialogue && !Object.hasOwn(currentPeople(), state.dialogue)) { closeConversation(); toast("This contact is unavailable in this practice. Choose a colleague from People."); }
     state.sharedGoals = data.public_state?.goals || [];
     state.sharedHint = data.public_state?.next_hint || "";
     state.appliedSettings = data.settings || sliders;
     state.startingSession = false;
     updatePublicGuidance();
     if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) renderTextDialogue();
-  }, () => {
+  }).catch(() => {
     if (!current() || state.threads !== threads) return;
     state.startingSession = false;
     if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) {
@@ -1032,6 +1114,7 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, r
   });
 }
 function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
+  const resumeAnchor = personFor(resumeNpc)?.sceneAnchor || (Object.hasOwn(people, resumeNpc) ? resumeNpc : null);
   const draft = { ...initial };
   const showPresets = presetsEnabled(import.meta.env.VITE_PRESETS);
   const preview = () => settingsPreview(draft);
@@ -1041,6 +1124,18 @@ function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
   const current = () => run() && $("#setup-content") === box;
   const render = (scenario) => {
     if (!current()) return;
+    try {
+      if (!state.sessionId) {
+        state.scenarioMetadata = parseScenarioMetadata(scenario);
+        state.metadataGeneration = (state.metadataGeneration || 0) + 1;
+        state.metadataStatus = "ready";
+        if (resumeNpc && !Object.hasOwn(currentPeople(), resumeNpc)) resumeNpc = physicalActorId(resumeAnchor);
+        syncPeople();
+      }
+    } catch {
+      box.innerHTML = '<p role="alert">Practice details are unavailable. Close this panel and retry.</p>';
+      return;
+    }
     const controls = Object.keys(DEFAULT_SLIDERS).map((key) => `<label class="setup-slider">${escapeHtml(key)} <output id="slider-${key}">${draft[key]}</output><input type="range" min="0" max="100" step="1" value="${draft[key]}" data-slider="${key}"></label>`).join("");
     const presetOptions = Object.keys(PRESETS).map((name) => `<option value="${name}"${presetName(draft) === name ? " selected" : ""}>${name}</option>`).join("");
     const selector = showPresets ? `<label class="setup-preset">Starting style<select id="setup-preset"><option value="Custom"${presetName(draft) === "Custom" ? " selected" : ""}>Custom</option>${presetOptions}</select></label>` : "";
@@ -1052,7 +1147,7 @@ function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
     $("#setup-start").onclick = () => {
       closeModal();
       state.appliedSettings = { ...draft };
-      if (resumeNpc && state.near === resumeNpc) {
+      if (resumeNpc && (remoteContact()?.id === resumeNpc || physicalActorId(state.near) === resumeNpc)) {
         state.dialogue = resumeNpc;
         state.textMode = true;
         state.text = threadsFor()[resumeNpc];
@@ -1175,8 +1270,7 @@ $("#office-context").onclick = () => {
   };
   $("#context-restart").onclick = () => { closeModal(); resetTextRun(); };
   const peopleBox = $("#context-people");
-  peopleBox.innerHTML = Object.entries(people).map(([id, p]) => `<button class="person" data-context-person="${id}"><strong>${p.name}</strong><small>${p.role}</small></button>`).join("");
-  peopleBox.querySelectorAll("[data-context-person]").forEach((button) => button.onclick = () => { closeModal(); office?.highlight(button.dataset.contextPerson); });
+  renderPeople(peopleBox);
 };
 $("#help").onclick = showGuide;
 $("#nav-guide").onclick = showGuide;
@@ -1190,16 +1284,7 @@ $("#profile").onclick = () =>
     "Meet your work self.",
     `<div class="large-avatar">SP</div><h3>Shubhankar Parsewar</h3><p>You’re a project coordinator at a small creative company. Snehal is your manager, Vansh is your teammate, and Prathamesh looks after people & culture.</p><div class="reflection">Your mission: build confidence in the everyday conversations that make work better.</div>`,
   );
-document.querySelectorAll("[data-person]").forEach(
-  (b) =>
-    (b.onclick = () => {
-      office?.highlight(b.dataset.person);
-      toast(
-        `Find ${people[b.dataset.person].name.split(" ")[0]} by the highlighted marker. Walk over to chat.`,
-      );
-      $("#game-viewport").focus();
-    }),
-);
+syncPeople();
 $("#sound").onclick = () => {
   state.muted = !state.muted;
   try { window.localStorage.setItem("cubicle-muted", String(state.muted)); } catch {}

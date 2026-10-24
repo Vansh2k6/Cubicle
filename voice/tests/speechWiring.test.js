@@ -28,7 +28,7 @@ function fixture() {
     } } }), activeSpeechNpc: null, activeListenMoment: null, markListen() {}, voiceBuildEnabled: true,
     voiceController: { isEnabled: () => true, isAudioUnlocked: () => true }, voiceStatus: { enabled: true, stt: true },
     ending: createEndCoordinator(), office: { setSpeaking() {} }, cancelVoice() {},
-    $: (id) => nodes[id] || null, people: { maya: { name: "Maya", color: "green", initials: "M", role: "Manager" } },
+    $: (id) => nodes[id] || null, people: { maya: { name: "Maya", color: "green", initials: "M", role: "Manager" } }, personFor: () => ({name: "Maya", color: "green", initials: "M", role: "Manager"}),
     currentGuidance: () => ({}), escapeHtml: String, icon: () => "", refreshIcons() {}, paintTextDebug() {}, initialiseVoice() {}, updatePublicGuidance() {},
     rerenderVoiceSafely() {}, chime() {}, toast() {}, threadsFor: () => ({ maya: thread }),
     endSession: () => new Promise((resolve) => { finishEnd = resolve; }),
