@@ -1,22 +1,17 @@
-import { mkdir, open } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { initializeAnthropicBudgetLedger } from "../llm/providers/anthropic.js";
 
-const path = resolve(process.env.ANTHROPIC_BUDGET_LEDGER || ".state/anthropic-budget-ledger.json");
-const initial = {version: 1, calls: 0, reservedTokens: 0, reservedUsd: 0, actualInputTokens: 0, actualOutputTokens: 0};
-await mkdir(dirname(path), {recursive: true});
-let handle;
-try {
-  handle = await open(path, "wx", 0o600);
-  await handle.writeFile(`${JSON.stringify(initial, null, 2)}\n`, "utf8");
-  console.log("Created an empty Anthropic budget ledger. Keep this file between runs; the adapter binds it to the named task grant before first dispatch.");
-} catch (error) {
-  if (error.code === "EEXIST") {
-    console.error("Budget ledger already exists; it was left unchanged.");
-    process.exitCode = 1;
-  } else {
-    console.error("Could not create the budget ledger.");
+const gameplayGrant = "all-scenarios-live-gameplay";
+const prototypeGrant = "cubicle-scenario-prototype-haiku-2026-10-25";
+const grantName = process.argv[2] || process.env.CUBICLE_LIVE_TEST;
+if (grantName && ![gameplayGrant, prototypeGrant].includes(grantName)) {
+  console.error("Unknown Anthropic task grant; use an approved exact grant name.");
+  process.exitCode = 2;
+} else {
+  try {
+    const path = await initializeAnthropicBudgetLedger(grantName, process.env.ANTHROPIC_BUDGET_LEDGER);
+    console.log(`Initialized new grant ledger at ${path}`);
+  } catch (error) {
+    console.error(`Ledger initialization refused (${error?.code || "file exists or storage unavailable"}). Existing ledgers are never overwritten.`);
     process.exitCode = 1;
   }
-} finally {
-  await handle?.close();
 }
