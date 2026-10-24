@@ -45,6 +45,9 @@ test("prototype packages retain the complete reviewed source frames and current 
       assert.equal(new Set(entry.variants.map((variant) => variant.text)).size, entry.variants.length, `${id}:${entry.id} variants must be distinct`);
     }
     const familySource = PROTOTYPE_CORPUS[pkg.prototypeSources.family];
+    if (id !== "missed_deadline") for (const npc of pkg.spec.npcs.filter((actor) => actor.id !== "client")) {
+      assert.equal(npc.role,familySource.cast[npc.id].role,`${id}:${npc.id} keeps the authored family role`);
+    }
     const composed = pkg.prototypeSources.composition !== null;
     assert.deepEqual(pkg.spec.facts.map(({id,owner,weight,triggers}) => ({id,owner,weight,triggers})), familySource.spec.facts.map(({id,owner,weight,triggers}) => ({id,owner,weight,triggers})));
     if (!composed) {
@@ -223,5 +226,38 @@ test("guarded pipeline reveals each authorized fact and rejects injection for ev
     const score=scoreSession(createScoreRecord(session,convo,pkg.spec,pkg.scoringProfile));
     assert.equal(score.metrics.hidden_facts.points,20);
     assert.equal(score.deterministic<=75,true);
+  }
+});
+
+test("supported offline questions deliver the first fact; coworker source wording stays safely sealed", async () => {
+  for (const id of [...familyIds,...composedIds]) {
+    const pkg=prototypeRegistry.getScenario(id),runtime={scenarioId:pkg.spec.id,schemaVersion:pkg.identity.schemaVersion,
+      policyId:pkg.policy.id,policyVersion:pkg.policy.version,engine:pkg.policy.engine,rules:pkg.policy.rules,language:pkg.policy.language,identity:pkg.identity,spec:pkg.spec};
+    const session=createSession(pkg.spec,{seed:61,runtime}); session.identity=pkg.identity;
+    const convo=createConversation(),offline=createOfflineProviders(pkg),fact=pkg.spec.facts[0];
+    const providers={
+      classify:async ({messages})=>{
+        const input=JSON.parse(messages[0].content);
+        return offline.classifyProviderFor(input.message)({messages});
+      },
+      npc:offline.npcProvider,
+    };
+    const authoredEvents=pkg.policy.offline.classifyEvents(fact.unlock_question.en);
+    if (!fact.triggers.some((trigger)=>authoredEvents.some((event)=>event.type===trigger))) {
+      await runTurn({session,scenario:pkg.spec,convo,npcId:fact.owner,text:fact.unlock_question.en,
+        engine:{applyTurn,commitDelivery},runtime,store:offline.store,providers});
+      assert.equal(session.user_known.includes(fact.id),false,`${id}: unmatched authored question must leave its fact sealed`);
+    }
+    // CO-F1's immutable source prompt asks about workload, while its existing
+    // authored trigger is asked_why_urgent. Use a natural supported question
+    // for the certification turn; the source wording above remains safely sealed.
+    const probe=id==="prototype_coworker" ? "Why is the handover urgent this week?" : fact.unlock_question.en;
+    assert.ok(fact.triggers.some((trigger)=>pkg.policy.offline.classifyEvents(probe).some((event)=>event.type===trigger)),`${id}: probe must use an existing authored trigger`);
+    for(let attempt=0;attempt<6&&!session.user_known.includes(fact.id);attempt++) {
+      await runTurn({session,scenario:pkg.spec,convo,npcId:fact.owner,text:probe,
+        engine:{applyTurn,commitDelivery},runtime,store:offline.store,providers});
+    }
+    assert.ok(session.user_known.includes(fact.id),`${id}: authored question did not reveal ${fact.id} through offline classifier and NPC`);
+    assert.ok(convo.turns.some((turn)=>turn.speaker==="npc"&&turn.text.includes(fact.content.en)),`${id}: fact text was not delivered`);
   }
 });

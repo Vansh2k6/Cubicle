@@ -8,6 +8,7 @@ const choices = [
   ["prototype_client", "Client change after sign-off"],
   ["prototype_coworker", "Employee handover"],
 ];
+const composedIds = new Set(["prototype_omitted_feature", "prototype_earlier_delivery"]);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 
 export function renderPrototypeEntry(host) {
@@ -29,7 +30,7 @@ export function renderPrototypeEntry(host) {
           const reply = await sendTurn(session.session_id, npcId, text, pendingTurn.key, {timeoutMs:190000});
           const npc = session.scenario.npcs.find((entry) => entry.id === npcId);
           transcript.push({speaker: "npc", name: npc?.name || "Colleague", text: reply.npc_reply || "Let's take that one step at a time."});
-          if (reply.reply_source === "fallback") transcript.push({speaker: "system", name: "Practice status", text: "The live response was unavailable, so this turn used a guarded fallback reply."});
+          if (reply.reply_source === "fallback") transcript.push({speaker: "system", name: "Practice status", text: "This turn used a guarded fallback reply."});
           pendingTurn = null;
           if (reply.ended) { await showFeedback(); return; }
         } catch { busy = false; render(); const input = host.querySelector("#prototype-message"); if (input) { input.value = text; input.focus(); } showError("The response is delayed. Retry this same message safely; it may still be processing."); return; }
@@ -38,8 +39,10 @@ export function renderPrototypeEntry(host) {
       host.querySelector("#prototype-end").onclick = async () => { if (busy) return; busy = true; try { await endSession(session.session_id); await showFeedback(); } catch { busy = false; showError("This practice could not be ended. Please try again."); } };
       return;
     }
+    const composedOption = composedIds.has(selected) && preview?.id === selected
+      ? `<option value="${escapeHtml(selected)}" selected>${escapeHtml(preview.title)}</option>` : "";
     const options = choices.map(([id, label]) => `<option value="${id}" ${id === selected ? "selected" : ""}>${label}</option>`).join("");
-    host.innerHTML = `<p>Choose one of five prepared situations, or describe one of the two supported client changes. Check the briefing and goals before you start.</p><label class="field-label" for="prototype-choice">Situation</label><select id="prototype-choice">${options}</select><section class="prototype-compose"><label class="field-label" for="prototype-request">Or describe a client request</label><textarea id="prototype-request" maxlength="400" placeholder="For example: the client asks to move delivery sooner"></textarea><button type="button" class="secondary-button" id="prototype-compose">Build preview</button></section><div data-prototype-error role="status"></div><div id="prototype-preview"></div>`;
+    host.innerHTML = `<p>Choose one of five prepared situations, or describe one of the two supported client changes. Check the briefing and goals before you start.</p><label class="field-label" for="prototype-choice">Situation</label><select id="prototype-choice">${composedOption}${options}</select><section class="prototype-compose"><label class="field-label" for="prototype-request">Or describe a client request</label><textarea id="prototype-request" maxlength="400" placeholder="For example: the client asks to move delivery sooner"></textarea><button type="button" class="secondary-button" id="prototype-compose">Build preview</button></section><div data-prototype-error role="status"></div><div id="prototype-preview"></div>`;
     host.querySelector("#prototype-choice").onchange = (event) => { selected = event.target.value; preview = null; renderPreview(); };
     host.querySelector("#prototype-compose").onclick = async () => {
       const text = host.querySelector("#prototype-request").value;

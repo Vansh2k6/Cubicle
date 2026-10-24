@@ -19,6 +19,7 @@ const genericEvents = (family, text) => {
   if (/\b(?:what|which|who|how|when|where|can|could|would|is there|do we)\b/.test(t) && /\b(?:requirement|scope|feature|transfer|process|step|handover|hand over|left|blocked|remaining|agreement|paperwork|checklist|work|task)\b/.test(t)) add("asked_requirement_details");
   if (/\b(?:impact|affect|displace|risk|what could go wrong|who is affected)\b/.test(t)) add("asked_impact");
   if (/\b(?:why|urgent|urgency|deadline|due|demo|window|time-sensitive|time sensitive)\b/.test(t)) add("asked_why_urgent");
+  if (family === "hr" && /\btransfer window\b.{0,30}\b(?:close|end|deadline)\b/.test(t)) add("asked_deadline_flexibility");
   if (/\b(?:can you help|could you help|who can help|available to help|pair with|cover this|coverage)\b/.test(t)) add("asked_for_help");
   if (/\b(?:apolog|i'm sorry|i am sorry)\b/.test(t)) add("apologized");
   if (/\b(?:recap|to summarize|let me summarize|next step is)\b/.test(t)) add("recapped_agreement");
@@ -50,7 +51,7 @@ function replyCorpus(spec) {
     ["press_for_date", "What date do you think is workable?"], ["close_positive", "That sounds like a clear next step."],
     ["accept_plan", "I can work with a specific next step. What should we confirm?"], ["walkout", "We can leave it here for now."],
   ];
-  for (const actor of spec.npcs) for (const [act, text] of common) entries.push({id: `${actor.id}-${act}`, npc: actor.id, act, variants: [{id: "a", text}, {id: "b", text: `${text} What should we confirm next?`}]});
+  for (const actor of spec.npcs) for (const [act, text] of common) entries.push({id: `${actor.id}-${act}`, npc: actor.id, act, variants: [{id: "a", text}, {id: "b", text: `${text} What would you like to ask next?`}]});
   for (const fact of spec.facts) entries.push({id: `${fact.owner}-${fact.id}`, npc: fact.owner, act: `reveal_fact:${fact.id}`, variants: [{id: "a", text: fact.content.en}, {id: "b", text: `${fact.content.en} Is there another detail you need?`}]});
   return {entries};
 }
@@ -82,7 +83,7 @@ function makePackage(base, family, {composed = null} = {}) {
   const frameNpcs = new Map(source.spec.npcs.map((npc) => [npc.id, npc]));
   spec.npcs = spec.npcs.map((npc) => {
     const current = currentNpcs.get(npc.id), authored = source.cast[npc.id];
-    return {...npc, name: current?.name || npc.name, role: current?.role || authored?.role,
+    return {...npc, name: current?.name || npc.name, role: authored?.role || current?.role || npc.role,
       persona: replaceNames([authored?.persona,authored?.motivation].filter(Boolean).join(" ")), public_context: replaceNames(authored?.public_context || ""),
       topics: [...(frameNpcs.get(npc.id)?.topics || npc.topics)]};
   });

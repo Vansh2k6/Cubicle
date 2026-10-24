@@ -104,7 +104,7 @@ export function createOfflineProviders(pkg, { locale = "en" } = {}) {
 }
 
 function parseAct(system) {
-  const m = /CURRENT MOVE:\s*([A-Za-z_]+(?::[A-Za-z0-9_]+)?)/.exec(String(system || ""));
+  const m = /CURRENT MOVE:\s*([A-Za-z_]+(?::[A-Za-z0-9_-]+)?)/.exec(String(system || ""));
   return m ? m[1] : "react_freely";
 }
 

@@ -105,9 +105,12 @@ test('confirmed Menu clears an ended feedback modal, cancels audio and invalidat
 test('entry rendering uses full viewport mounting and reduced-motion CSS without a sidebar dashboard', () => {
   const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../../src/style.css', import.meta.url), 'utf8');
+  const prototypeEntry = readFileSync(new URL('../../src/prototypeEntry.js', import.meta.url), 'utf8');
   assert.match(html, /<button[^>]*id="entry-prototype"[^>]*>[\s\S]*Try scenarios[\s\S]*<\/button>/);
   assert.match(source, /\$\("#entry-prototype"\)\.onclick = openPrototypeModal/);
   assert.match(source, /\$\("#nav-prototype"\)\.onclick = openPrototypeModal/);
+  assert.match(prototypeEntry, /composedIds\.has\(selected\) && preview\?\.id === selected/);
+  assert.match(prototypeEntry, /escapeHtml\(selected\).*escapeHtml\(preview\.title\)/);
   assert.match(css, /\.modal-backdrop:has\(#prototype-content\) \{ z-index: 70; \}/);
   assert.match(css, /\.sidebar, \.topbar, \.page-heading, \.page-footer \{ display: none; \}/);
   assert.match(css, /body\.office-mounted #game-viewport[^}]+height: 100%/);
