@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../server.js";
-import { defaultRegistry, publicScenario } from "../scenarioRegistry.js";
+import { legacyRegistry, publicScenario } from "../scenarioRegistry.js";
 import { remoteProofInput, remoteProofRegistry } from "./fixtures/remoteProof.js";
 import { createOfflineProviders } from "../offlineProviders.js";
 import { SessionStore } from "../../../engine/store.js";
@@ -42,9 +42,9 @@ test("remote package projection is public-only and metadata lookup creates no se
     assert.equal(Object.hasOwn(contact, "sceneAnchor"), false);
     assert.deepEqual(detail.body.npcs.slice(0, 3).map((actor) => actor.sceneAnchor), ["maya", "jordan", "sam"]);
     for (const marker of ["facts", "policy", "contentHash", "canon", "orchid", "copper", "scoring"]) assert.equal(JSON.stringify(detail.body).includes(marker), false, marker);
-    assert.deepEqual((await f.request("/scenarios")).body, [JSON.parse(JSON.stringify(publicScenario(defaultRegistry.getScenario("deadline"))))]);
-    assert.equal(defaultRegistry.getScenario("private_remote_proof"), null);
-    assert.equal(defaultRegistry.getScenario("deadline").spec.npcs.length, 3);
+    assert.deepEqual((await f.request("/scenarios")).body, [JSON.parse(JSON.stringify(publicScenario(legacyRegistry.getScenario("deadline"))))]);
+    assert.equal(legacyRegistry.getScenario("private_remote_proof"), null);
+    assert.equal(legacyRegistry.getScenario("deadline").spec.npcs.length, 3);
   } finally { await f.close(); }
 });
 
@@ -66,7 +66,7 @@ test("ordinary remote state, guarded owner reveal, threads and audio stay pinned
     assert.deepEqual(Object.keys(state.npcs), ["proof_observer", "proof_dispatcher", "proof_qa", "client"]);
     assert.deepEqual(Object.keys(state.npcs.client), Object.keys(state.npcs.proof_observer));
     const physicalMood = state.npcs.proof_observer.mood, remoteMood = state.npcs.client.mood;
-    selected = defaultRegistry;
+    selected = legacyRegistry;
     assert.equal((await f.request("/sessions", {scenario_id: "private_remote_proof"})).status, 400);
     assert.equal(f.app.resolveSessionContext(a.session_id), context);
     const first = await f.turn(a.session_id, "client", "I take responsibility and give an honest status. client-only-token", {idempotencyKey: "remote", voiceId: "arbitrary", sceneAnchor: "maya"});

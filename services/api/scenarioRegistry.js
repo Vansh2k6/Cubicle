@@ -1,6 +1,6 @@
 import {publicCast, FIXED_CAST} from "../../shared/presentation.js";
 import {sc01Language} from "../../llm/sc01Language.js";
-// Static, server-only scenario registry. SF-01 deliberately registers SC-01 only.
+// Static, server-only registry with explicit supported production packages.
 import { createHash } from "node:crypto";
 import specData from "../../scenarios/missed_deadline.json" with { type: "json" };
 import repliesData from "../../replies/missed_deadline.en.json" with { type: "json" };
@@ -102,5 +102,7 @@ export function createScenarioRegistry(packages = [], { privatePolicies = {} } =
   });
 }
 
-export const defaultRegistry = createScenarioRegistry([{ spec: specData, replies: repliesData, scoringProfile: CONFIG.missed_deadline,
-  policy: { id: "sc01-legacy", version: 1, engine: sc01EnginePolicy, language: sc01Language, rules: sc01Rules }, aliases: ["deadline"] }]);
+export const legacyPackageInput = () => ({ spec: clone(specData), replies: clone(repliesData), scoringProfile: clone(CONFIG.missed_deadline),
+  policy: { id: "sc01-legacy", version: 1, engine: sc01EnginePolicy, language: sc01Language, rules: clone(sc01Rules) }, aliases: ["deadline"] });
+export const legacyRegistry = createScenarioRegistry([legacyPackageInput()]);
+export const defaultRegistry = createScenarioRegistry([{...deadlineV2PackageInput(), aliases: ["deadline"]}]);

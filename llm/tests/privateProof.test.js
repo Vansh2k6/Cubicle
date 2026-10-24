@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as engine from "../../engine/engine.js";
-import { createScenarioRegistry, defaultRegistry } from "../../services/api/scenarioRegistry.js";
+import { createScenarioRegistry, legacyRegistry } from "../../services/api/scenarioRegistry.js";
 import { privateProofInput, privateProofPolicy } from "../../services/api/tests/fixtures/privateProof.js";
 import { createOfflineProviders } from "../../services/api/offlineProviders.js";
 import { createConversation, runTurn } from "../pipeline.js";
@@ -13,7 +13,7 @@ import { resolveLanguage } from "../languageContext.js";
 import { registeredPrivateNeedles, scanRegistry } from "../../scripts/registered-private-sources.mjs";
 import { scanArtifacts } from "../../scripts/bundle-scan-core.mjs";
 
-const registry = () => createScenarioRegistry([...defaultRegistry.allPackages(), privateProofInput()], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
+const registry = () => createScenarioRegistry([...legacyRegistry.allPackages(), privateProofInput()], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
 function context(pkg) {
   const runtime = { scenarioId: pkg.spec.id, policyId: pkg.policy.id, policyVersion: pkg.policy.version, rules: pkg.policy.rules, engine: pkg.policy.engine, language: pkg.policy.language, identity: pkg.identity, spec: pkg.spec };
   const offline = createOfflineProviders(pkg);
@@ -26,8 +26,8 @@ function context(pkg) {
 
 test("private proof registration remains explicit, validated, hidden and offline-only", () => {
   const r = registry(), pkg = r.getScenario("private_email_proof");
-  assert.equal(defaultRegistry.getScenario(pkg.spec.id), null);
-  assert.deepEqual(r.listScenarios(), defaultRegistry.listScenarios());
+  assert.equal(legacyRegistry.getScenario(pkg.spec.id), null);
+  assert.deepEqual(r.listScenarios(), legacyRegistry.listScenarios());
   assert.equal(r.allPackages().length, 2);
   assert.deepEqual(pkg.spec.npcs.map((npc) => npc.id), ["proof_observer", "proof_dispatcher"]);
   assert.equal(pkg.spec.clock.day, 8); assert.equal(pkg.spec.commitment_model.agreement_npc, "proof_dispatcher");
@@ -130,7 +130,7 @@ test("registered private sources include hidden fixtures and detect injected sou
 test("reply scanning keeps public lookup metadata clean while retaining private templates and conditions", () => {
   const publicText = JSON.stringify({ scenario: "missed_deadline", locale: "en", presets: ["direct", "supportive"] });
   const privateText = "A direct supportive missed_deadline reply remains private template content.";
-  const pkg = defaultRegistry.getScenario("missed_deadline");
+  const pkg = legacyRegistry.getScenario("missed_deadline");
   const entry = { id: "private-reply-condition-control", npc: "maya", act: "react_freely", toneTags: ["direct", "supportive"], predicates: { factsRevealed: ["F1"] }, variants: [{ id: "private-reply-variant-control", text: privateText }] };
   const registry = { listScenarios: () => scanRegistry.listScenarios(), allPackages: () => [...scanRegistry.allPackages().filter((p) => p !== scanRegistry.getScenario("missed_deadline")), { ...pkg, replies: { ...pkg.replies, entries: [...pkg.replies.entries, entry] } }] };
   const needles = registeredPrivateNeedles(registry);

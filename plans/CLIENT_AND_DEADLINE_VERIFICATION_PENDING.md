@@ -1,27 +1,29 @@
 # Client and deadline verification pending
 
-This is a verification handoff, not an acceptance or demo-readiness claim. DS02 is accepted offline (checkpoint `963ddc2`). The production default remains the legacy story. DS03 now implements schema-v2/scoring-v3 evidence consumption in a candidate awaiting independent review and verification; it is not final integration acceptance.
+CP-00 through DS-04 are accepted offline, with bounded rendered browser verification. This branch now defaults to the completed deadline content v2/schema 2/scoring v3 package; explicit legacy packages and captured retries remain supported. This handoff does not establish Stage 1 or demo readiness. Detailed evidence and earlier failed gates remain in [status](CLIENT_AND_DEADLINE_STATUS.md).
 
-Implemented safeguards in the DS02 candidate include one shared semantic extractor, core-owned authority/revision/delivery checks, exact package binding, material plan delivery to each approving actor, owner-only NPC fact context, guarded fallback without credit, and private-source enumeration. Their verification status is determined by the frozen manifest and reviewer/tester reports; implementation alone does not establish correctness.
+Implemented safeguards include one shared semantic extractor, core-owned authority/revision/delivery checks, captured package binding, material plan delivery to each approving actor, owner-only NPC fact context, guarded fallback without credit, validated scoring proof, and private-source enumeration. Offline regression coverage does not establish unrestricted natural-language robustness.
 
-| Deferred verification | Status | Resume with |
+| Verification | Status | Evidence / resume with |
 |---|---|---|
-| Extended natural paraphrases, unusual word order and exact-wording sensitivity beyond the authored positive cases | NOT RUN | Extend the versioned language cases around observed user phrasing; keep one shared extractor and reject unsupported material claims. |
-| Extended refusal, attribution, prompt-injection and contradictory-clause permutations beyond essential regressions | NOT RUN | Add concrete failing examples, review the trust boundary, then run affected tests. No exhaustive robustness claim is made. |
-| Real classifier/generator recall, precision, naturalness and leakage evaluation | NOT RUN | Obtain explicit live-call authorization, use the pinned prompt/model/schema manifest, and evaluate the authored cases without publishing private inputs. |
-| Full offline gate, default/voice build and artifact scans for the final deadline integration | NOT RUN | After DS03/DS04 source review, run the authorized final gate once on the frozen candidate. Synthetic scanner controls do not replace artifact scans. |
-| New-story browser and narrow-screen walkthrough | NOT RUN | After approved integration, use an isolated browser profile and the normal public API; preserve other previews/worktrees. |
-| Real microphone, speaker, remote-contact playback, captions and replay across restart/end | NOT RUN | Use explicit device/live authorization and the existing local voice lifecycle checks. Offline fake providers do not establish device behavior. |
-| Latency, concurrent load and performance budget for the new story | NOT RUN | Measure the accepted final source and report observed timings and limits. No repeated stress loops are claimed. |
-| New scoring-v3 consumption and historical-record compatibility | CODER CHECKS PASSED; independent review/verification pending | DS03 affected checks: 123 unit and 19 API tests, zero failed/skipped; `out/ds03-coder-unit.log`, `out/ds03-coder-api.log`. Full/phased records score 65 deterministic; an offline quality-only fake judge adds 25 with verified quotes. These fixtures do not establish real-model quality. Follow the frozen manifest through Sol → Luna → root. |
-| Final integrated smart/trap and feedback-quality acceptance | NOT RUN | Complete DS04 activation/integration and its authorized final gates. DS03 preserves legacy 60/7 fixtures and the existing debrief layout; it does not establish live quality or final demo readiness. |
+| Extended natural paraphrases, unusual word order and exact-wording sensitivity beyond authored positive cases | NOT RUN | Extend versioned cases around observed user phrasing; retain one shared extractor and reject unsupported material claims. |
+| Extended refusal, attribution, prompt-injection and contradictory-clause permutations beyond essential regressions | NOT RUN | Add concrete failures, review the trust boundary and run affected checks; no exhaustive robustness claim. |
+| Real classifier/generator recall, precision, naturalness and leakage evaluation | NOT RUN | Obtain explicit live-call authorization and evaluate authored cases with pinned prompt/model/schema provenance. |
+| Final offline suites and default/voice build scans | PASSED AS COMPOSED EVIDENCE | Full gate passed 402 unit / 83 API and default scan before final scanner-only delta (`out/ds04-verified-offline-accepted.log`). Final delta passed 10 scanner tests and both builds/scans: default 6 / voice 7 artifacts, each 383 needles, zero hits (`out/ds04-verified-scanner-final.log`, `out/ds04-default-bundle-final.log`, `out/ds04-voice-bundle-final.log`, `out/ds04-verified-scanner-summary.log`). No full-suite rerun on final scanner hash. |
+| New-story desktop/narrow UI walkthrough | PASSED, BOUNDED OFFLINE | Root inspected images and actual full/phased 18-turn paths with walking/client call, four facts, score 65/v3, no runtime exceptions or narrow debrief overflow. Reports: `out/ds04-browser-report.json`, `out/ds04-browser-supplement.json`; includes corrected Practice copy, phone hangup and menu lifecycle. |
+| Real microphone/speaker, remote-contact playback, captions/replay across restart/end | NOT RUN | Explicit device/live authorization and existing local voice lifecycle checks; fake providers/headless UI do not establish device behavior. |
+| Latency, concurrent load, frame rate and performance budget | NOT MEASURED | Measure accepted final source on representative hardware. Software headless screenshots are not frame-rate evidence. |
+| Scoring-v3 proof consumption and historical compatibility | PASSED OFFLINE | DS03 independently passed 123 unit / 19 API; DS04 retained legacy 60/7 and captured retries. Full/phased deterministic 65 plus quality-only fake-judge 25 with verified quotes equals fixture 90, not real-model quality acceptance. |
+| Final real-model smart/trap and feedback-quality acceptance | NOT RUN | Execute authorized live acceptance cases; offline deterministic/fake-judge arithmetic and browser paths do not close Stage 1 acceptance. |
 
 Resumption checklist:
 
-1. Read the current CONTEXT instructions, accepted master plan and latest frozen manifest; verify source hashes before trusting earlier results.
-2. Finish only the assigned slice, retaining unpublished v2 registration and the legacy default until DS04 authorization.
-3. Inspect affected test logs for actual commands, counts and failures. A draft or partial pass is not final approval.
-4. Send the exact source candidate through reviewer → tester → root. Any later fix repeats that handoff.
-5. Update this handoff with concrete verified evidence only; leave unrun live, device, browser, performance and extended-language checks marked NOT RUN.
+1. Read current CONTEXT instructions, accepted master/status and frozen authored manifests; verify hashes before using earlier results.
+2. Keep accepted v2 default and exact captured legacy retry binding; preserve other worktrees and the old 5180 preview.
+3. Inspect actual logs and distinguish failed gates, composed final evidence and unrun checks. Generated reports/logs/builds stay excluded from authored manifests and commits.
+4. Send any concrete fix through coder → reviewer → tester → root; select affected checks from the actual change rather than repeating unneeded stress loops.
+5. Obtain explicit authorization before live/provider or device work; retain pending labels until measured evidence exists.
 
-DS03 candidate UI checks are limited to public-guidance/scene-label unit coverage and the Impeccable detector (`out/ds03-detector.json`, exit 0, no findings). Rendered browser verification remains deferred to the final DS04 pass. Scoring trusts server-captured package identity and immutable records; it does not authenticate an attacker-rewritten server record cryptographically. No client API accepts arbitrary scoring records.
+Earlier failures remain recorded in `out/ds04-verified-offline.log`, `out/ds04-verified-offline-final.log` and `out/ds04-verified-voice-bundle.log`. Scanner corrections cover observed public prose/code contexts only, with standalone/private-prose/full-fact/template/policy controls retained. Final accepted source fingerprint: `0fb81fa00f7d6360115cd31d727730a949e9c0b6c3248c2badfed8f36a6617b0`; authored cumulative fingerprint before final docs: `13590f02fd724fda2b75d6a55bfab6c49f203d17ee2f5eb003adb3a5f6874ec2`.
+
+Impeccable detector evidence (`out/ds04-detector.json`, exit 0, no findings) is mechanical; root's browser evidence supplies the bounded rendered checks. The existing >500 kB office-chunk warning remains. Scoring trusts immutable server-captured package identity/records and does not cryptographically authenticate a wholly rewritten server record. No client API accepts arbitrary scoring records. No real-model, hardware, performance or demo-ready claim is made.

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createServer} from "../server.js";
-import {createScenarioRegistry, defaultRegistry} from "../scenarioRegistry.js";
+import {createScenarioRegistry, legacyRegistry} from "../scenarioRegistry.js";
 import {deadlineV2PackageInput} from "../deadlineV2Package.js";
 import {loadVoiceConfig} from "../../../voice/config.js";
 import {words} from "../../../scoring/tests/fixtures/deadlineV2Record.js";
@@ -23,7 +23,7 @@ test("injected v2/v1 sessions keep exact package binding and remote knowledge pr
     const id = first.body.session_id, context = app.resolveSessionContext(id);
     assert.equal(context.runtime.schemaVersion, 2); assert.equal(context.pkg, v2.getScenario("missed_deadline"));
     assert.equal(context.runtime.identity, context.pkg.identity);
-    selected = defaultRegistry;
+    selected = legacyRegistry;
     const old = await post("/sessions", {scenario_id: "deadline"});
     assert.equal(old.status, 200); assert.equal(old.body.scenario.npcs.length, 3);
     assert.equal(app.resolveSessionContext(old.body.session_id).runtime.schemaVersion, 1);

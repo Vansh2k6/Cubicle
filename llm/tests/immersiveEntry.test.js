@@ -1,3 +1,5 @@
+import {defaultRegistry, publicScenario} from "../../services/api/scenarioRegistry.js";
+import {parseScenarioMetadata} from "../../src/scenarioMetadata.js";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -21,6 +23,7 @@ function fixture({ reduced = false, fail = false } = {}) {
   const state = { entry: 'selection', scenario: 'deadline', sessionId: null, threads: null, dialogue: null, near: null };
   const instance = { dispose() { counts.disposes++; }, reset() { counts.resets++; } };
   const context = { state, office: null, officeStart: null, officeGeneration: 0, officeCancel: null, entryFade: null,
+    getScenario: async () => publicScenario(defaultRegistry.getScenario("deadline")), parseScenarioMetadata,
     $: get, escapeHtml: String, icon: () => '', refreshIcons() {}, updateScenario() {},
     cancelVoice() { counts.voices++; }, stopSpeech() { counts.speech++; },
     closeModal() { get('#modal-root').children = []; },
@@ -41,15 +44,15 @@ function fixture({ reduced = false, fail = false } = {}) {
     load() { loadResolve({ createOffice(container, supplied) { counts.creates++; hooks = supplied; if (fail && counts.creates === 1) throw Error('WebGL failed'); return instance; } }); },
   };
 }
-for (const id of ['deadline', 'email', 'call']) test(`production selection briefs ${id} and Back returns to all three choices`, () => {
+for (const id of ['deadline', 'email', 'call']) test(`production selection briefs ${id} and Back returns to all three choices`, async () => {
   const f = fixture(); f.context.renderEntry();
   assert.equal((f.get('#scenario-cards').innerHTML.match(/data-entry-scenario=/g) || []).length, 3);
-  f.context.showBriefing(id); assert.equal(f.state.entry, 'briefing'); assert.equal(f.state.scenario, id);
+  f.context.showBriefing(id); await tick(); assert.equal(f.state.entry, 'briefing'); assert.equal(f.state.scenario, id);
   assert.match(f.get('#scenario-briefing').innerHTML, /Shubhankar, an employee/);
   assert.equal(f.counts.loads, 0); f.get('#briefing-back').onclick(); assert.equal(f.state.entry, 'selection');
 });
 test('Start defers one import and one scene, waits for successful onReady, then fades for 450 ms', async () => {
-  const f = fixture(); f.context.showBriefing('deadline'); const pending = f.context.startOffice();
+  const f = fixture(); f.context.showBriefing('deadline'); await tick(); const pending = f.context.startOffice();
   assert.equal(f.state.entry, 'loading'); assert.equal(f.context.document.body.classList.contains('office-mounted'), true);
   assert.equal(f.context.startOffice(), pending); assert.equal(f.counts.creates, 0);
   f.load(); await tick(); assert.equal(f.counts.creates, 1); assert.equal(f.state.entry, 'loading');

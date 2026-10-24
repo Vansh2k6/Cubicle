@@ -1,4 +1,4 @@
-// Supported, unpublished production package. DS04 alone changes the default.
+// Supported production package; default activation is owned by the server registry.
 import spec from "../../scenarios/missed_deadline.v2.json" with {type: "json"};
 import replies from "../../replies/missed_deadline.v2.en.json" with {type: "json"};
 import {normalizeScoringProfile} from "../../scoring/config.js";

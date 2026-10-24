@@ -8,6 +8,25 @@ import {publicScenario} from "../../services/api/scenarioRegistry.js";
 import {pkg, setup} from "../../scoring/tests/fixtures/deadlineV2Record.js";
 const metadata = publicScenario(pkg);
 const goals = (ids) => metadata.goals.map((g) => ({...g, status: ids.includes(g.id) ? "done" : "pending"}));
+test("Practice modal uses captured public deadline copy, escapes it and preserves other scenarios", () => {
+  const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
+  const handler = source.slice(source.indexOf('$("#office-context").onclick'), source.indexOf('$("#help").onclick'));
+  const nodes = new Map(); const $ = (id) => {if (!nodes.has(id)) nodes.set(id, {}); return nodes.get(id);};
+  let html;
+  const old = {title: "Original title", description: "Original briefing", goal: "Original objective"};
+  const state = {scenario: "deadline", scenarioMetadata: {...metadata, title: "Captured <portal>", briefing: "Captured & public", goals: [{label: "First objective"}, {label: "Second objective"}]}};
+  runInNewContext(handler, {$, state, scenarios: {deadline: old, email: old}, showModal: (_title, body) => {html = body;},
+    escapeHtml: (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"), showProgress() {}, renderPeople() {}});
+  $("#office-context").onclick();
+  assert.match(html, /Captured &lt;portal&gt;/); assert.match(html, /Captured &amp; public/);
+  assert.match(html, /First objective/); assert.ok(!html.includes("Second objective"));
+  for (const fact of pkg.spec.facts) assert.ok(!html.includes(fact.content.en));
+  // A captured older attempt keeps its own public copy instead of current defaults.
+  state.scenarioMetadata = {title: old.title, briefing: old.description, goals: [{label: old.goal}]};
+  $("#office-context").onclick(); assert.match(html, /Original briefing/);
+  state.scenario = "email"; $("#office-context").onclick(); assert.match(html, /Original objective/);
+  state.scenario = "deadline"; state.scenarioMetadata = null; $("#office-context").onclick(); assert.match(html, /Original title/);
+});
 test("public v2 guidance directs technical readiness to engineering/QA and external alignment to client/manager", () => {
   const initial = projectGuidance({...metadata, scenarioId: metadata.id, goals: goals([])});
   assert.match(initial.description, /Snehal/);

@@ -1,3 +1,4 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../server.js";
@@ -8,7 +9,7 @@ const wav = { audio: Buffer.from("RIFF"), mime: "audio/wav", provider: "local" }
 async function fixture(options = {}) {
   const calls = [];
   const provider = { transcribe: async () => ({ text: "Hello.", duration_ms: 1000 }), synthesize: async (input) => { calls.push(input); return wav; } };
-  const { server } = createServer({ voiceConfig: config, voiceProviders: [provider], ...options });
+  const { server } = createServer({ registry: legacyRegistry, voiceConfig: config, voiceProviders: [provider], ...options });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   const request = async (path, body) => fetch(base + path, { method: body === undefined ? "GET" : "POST", headers: body === undefined ? {} : { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });

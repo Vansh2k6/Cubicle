@@ -1,3 +1,4 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { promisify } from "node:util";
@@ -6,7 +7,7 @@ import { createServer } from "../server.js";
 import { smart, trap } from "../../../evals/scriptedPaths.mjs";
 const exec = promisify(execFile);
 let server, base;
-test.before(async () => { ({ server } = createServer()); await new Promise((r) => server.listen(0, "127.0.0.1", r)); base = `http://127.0.0.1:${server.address().port}`; });
+test.before(async () => { ({ server } = createServer({registry: legacyRegistry})); await new Promise((r) => server.listen(0, "127.0.0.1", r)); base = `http://127.0.0.1:${server.address().port}`; });
 test.after(async () => { await new Promise((r) => server.close(r)); });
 const post = async (path, body) => { const res = await fetch(base + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); return { status: res.status, body: await res.json() }; };
 test("End is idempotent and rejects subsequent turns without exposing internals", async () => {

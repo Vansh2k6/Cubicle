@@ -8,7 +8,7 @@ import { endSession } from "../../engine/engine.js";
 import { FakeProvider } from "../../llm/fakeProvider.js";
 import { runBot, scenario, languageRuntime } from "../../evals/scriptedBot.mjs";
 import { smart, trap, ev } from "../../evals/scriptedPaths.mjs";
-import { createScenarioRegistry, defaultRegistry } from "../../services/api/scenarioRegistry.js";
+import { createScenarioRegistry, legacyRegistry } from "../../services/api/scenarioRegistry.js";
 const fixtures = JSON.parse(readFileSync(new URL("../../evals/fixtures/s1-07-synthetic-sessions.json", import.meta.url), "utf8")).paths;
 const finish = (record) => { endSession(record.session); return record; };
 for (const record of Object.values(fixtures)) finish(record);
@@ -160,7 +160,7 @@ test("coach chooses matching owner question and guards authored fallbacks", asyn
   assert.equal(samResult.moments[0].better_reply, scenario.facts.find((f) => f.id === "F3").unlock_question.en);
   const altered = structuredClone(scenario);
   altered.facts.find((f) => f.id === "F3").unlock_question.en = "The client cutoff is Friday.";
-  const pkg = createScenarioRegistry([{ ...defaultRegistry.getScenario("missed_deadline"), spec: altered }]).getScenario("missed_deadline");
+  const pkg = createScenarioRegistry([{ ...legacyRegistry.getScenario("missed_deadline"), spec: altered }]).getScenario("missed_deadline");
   const alteredRecord = structuredClone(finish(sam));
   alteredRecord.scenario = pkg.spec; alteredRecord.identity = alteredRecord.session.identity = pkg.identity;
   const guarded = await coachSession({ runtime: languageRuntime, record: alteredRecord, scenario: pkg.spec, runtime: {...languageRuntime, spec: pkg.spec, identity: pkg.identity}, provider: new FakeProvider([{ malformed: true }, { malformed: true }]).fn(), manifest });

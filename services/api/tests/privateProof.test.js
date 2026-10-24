@@ -2,13 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createServer } from "../server.js";
-import { createScenarioRegistry, defaultRegistry } from "../scenarioRegistry.js";
+import { createScenarioRegistry, legacyRegistry } from "../scenarioRegistry.js";
 import { privateProofInput, privateProofPolicy } from "./fixtures/privateProof.js";
 import { assembleDebrief } from "../../../scoring/debrief.js";
 import { renderDebrief } from "../../../src/debrief.js";
 import { scoreSession } from "../../../scoring/score.js";
 
-const makeRegistry = () => createScenarioRegistry([...defaultRegistry.allPackages(), privateProofInput()], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
+const makeRegistry = () => createScenarioRegistry([...legacyRegistry.allPackages(), privateProofInput()], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
 const start = async (options) => { const app = createServer(options); await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve)); return { app, base: `http://127.0.0.1:${app.server.address().port}` }; };
 async function request(base, path, body) {
   const res = await fetch(base + path, body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -46,7 +46,7 @@ test("crossed HTTP sessions retain exact private package and retry runtime after
     assert.equal(pinned.runtime.language, privateProofPolicy.language);
     assert.equal(pinned.runtime.rules.assistanceActor, null);
     const altered = privateProofInput(); altered.spec.title += " changed";
-    selected = createScenarioRegistry([...defaultRegistry.allPackages(), altered], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
+    selected = createScenarioRegistry([...legacyRegistry.allPackages(), altered], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
     assert.notEqual(selected.getScenario("private_email_proof").identity.contentHash, pinned.pkg.identity.contentHash);
     const turns = [
       [p, "proof_observer", "I take responsibility and give an honest status."],
@@ -90,7 +90,7 @@ test("crossed HTTP sessions retain exact private package and retry runtime after
     assert.equal(app.resolveSessionContext(proof.body.session_id), pinned);
     const historical = JSON.parse(readFileSync(new URL("../../../evals/fixtures/s1-07-synthetic-sessions.json", import.meta.url), "utf8")).paths.smart;
     historical.session.ended = true;
-    const historicalDebrief = await assembleDebrief({ record: historical, scenario: defaultRegistry.getScenario("deadline").spec });
+    const historicalDebrief = await assembleDebrief({ record: historical, scenario: legacyRegistry.getScenario("deadline").spec });
     assert.equal(historicalDebrief.deterministic.points, 60);
     for (const body of [initial, retried, legacyFeedback, { status: historicalDebrief.status, debrief: historicalDebrief }]) {
       const html = renderDebrief(body);

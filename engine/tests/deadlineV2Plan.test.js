@@ -5,7 +5,7 @@ import {createSession, applyTurn, commitDelivery, canonicalState} from "../engin
 import {validateScenario, publicScenario} from "../scenarioValidator.js";
 import {loadDeadlineV2EngineContext} from "../../services/api/deadlineV2EngineContext.js";
 import {planSlots, planEvidence} from "../../services/api/deadlineV2EnginePolicy.js";
-import {createScenarioRegistry, defaultRegistry} from "../../services/api/scenarioRegistry.js";
+import {createScenarioRegistry, legacyRegistry} from "../../services/api/scenarioRegistry.js";
 import {createOfflineProviders} from "../../services/api/offlineProviders.js";
 import {scoreSession, createScoreRecord} from "../../scoring/score.js";
 
@@ -70,9 +70,9 @@ for (const route of ["full", "phased"]) test(`${route} closes within 20 with cro
   assert.equal(scoreSession(createScoreRecord(s, {turns: []}, context.spec, context.scoringProfile)).metrics.goals.points, 30);
 });
 
-test("strict v2 authoring and engine identity; default registry and providers remain old/unplayable", () => {
+test("strict v2 authoring and engine identity; legacy registry stays v1 and engine-only contexts stay unplayable", () => {
   assert.equal(validateScenario(context.spec).ok, true);
-  assert.equal(defaultRegistry.getScenario("missed_deadline").spec.version, 1);
+  assert.equal(legacyRegistry.getScenario("missed_deadline").spec.version, 1);
   assert.throws(() => createOfflineProviders(context), /./);
   assert.throws(() => createScenarioRegistry([context]), /./);
   const pub = JSON.stringify(publicScenario(context.spec));

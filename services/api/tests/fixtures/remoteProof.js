@@ -1,7 +1,7 @@
 // Private CN01 contact evidence only; the production registry does not import it.
 import { privateProofInput, privateProofPolicy } from "./privateProof.js";
 import { FIXED_CAST, PHONE_BINDING } from "../../../../shared/presentation.js";
-import { createScenarioRegistry, defaultRegistry } from "../../scenarioRegistry.js";
+import { createScenarioRegistry, legacyRegistry } from "../../scenarioRegistry.js";
 
 export function remoteProofInput() {
   const input = privateProofInput();
@@ -22,5 +22,5 @@ export function remoteProofInput() {
 }
 
 export function remoteProofRegistry(input = remoteProofInput()) {
-  return createScenarioRegistry([...defaultRegistry.allPackages(), input], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
+  return createScenarioRegistry([...legacyRegistry.allPackages(), input], { privatePolicies: { [privateProofPolicy.id]: privateProofPolicy } });
 }

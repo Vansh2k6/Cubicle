@@ -1,8 +1,9 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../server.js";
 const servers = [];
-const launch = async (options) => { const { server } = createServer(options); servers.push(server); await new Promise((r) => server.listen(0, "127.0.0.1", r)); return `http://127.0.0.1:${server.address().port}`; };
+const launch = async (options) => { const { server } = createServer({registry: legacyRegistry, ...options}); servers.push(server); await new Promise((r) => server.listen(0, "127.0.0.1", r)); return `http://127.0.0.1:${server.address().port}`; };
 test.after(async () => { await Promise.all(servers.map((s) => new Promise((r) => s.close(r)))); });
 const request = async (base, path, body) => { const res = await fetch(base + path, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }); return { status: res.status, body: await res.json() }; };
 const create = async (base, sliders) => { const r = await request(base, "/sessions", { scenario_id: "deadline", ...(sliders ? { sliders } : {}) }); return `/sessions/${encodeURIComponent(r.body.session_id)}`; };

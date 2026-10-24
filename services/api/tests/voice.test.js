@@ -1,3 +1,4 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../server.js";
@@ -7,12 +8,12 @@ import { SessionStore } from "../../../engine/store.js";
 let captured; const original = SessionStore.prototype.create;
 SessionStore.prototype.create = function (...args) { captured = original.apply(this, args); return captured; };
 let server, base;
-test.before(async () => { ({ server } = createServer({ voiceConfig: { enabled: true, sttChain: ["local"], localUrl: "http://127.0.0.1:9", localToken: "x", sttTimeoutMs: 30 }, voiceProviders: [createFakeVoiceProvider()] })); await new Promise((r) => server.listen(0, "127.0.0.1", r)); base = `http://127.0.0.1:${server.address().port}`; });
+test.before(async () => { ({ server } = createServer({ registry: legacyRegistry, voiceConfig: { enabled: true, sttChain: ["local"], localUrl: "http://127.0.0.1:9", localToken: "x", sttTimeoutMs: 30 }, voiceProviders: [createFakeVoiceProvider()] })); await new Promise((r) => server.listen(0, "127.0.0.1", r)); base = `http://127.0.0.1:${server.address().port}`; });
 test.after(async () => { SessionStore.prototype.create = original; server.closeAllConnections(); await new Promise((r) => server.close(r)); });
 async function create() { return encodeURIComponent((await (await fetch(`${base}/sessions`, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({scenario_id:"deadline"}) })).json()).session_id); }
-test("voice is disabled by default", async () => { const x=createServer(); await new Promise(r=>x.server.listen(0,"127.0.0.1",r)); const r=await fetch(`http://127.0.0.1:${x.server.address().port}/sessions/no/voice/stt`,{method:"POST"}); assert.equal(r.status,404); await new Promise(r=>x.server.close(r)); });
+test("voice is disabled by default", async () => { const x=createServer({registry: legacyRegistry}); await new Promise(r=>x.server.listen(0,"127.0.0.1",r)); const r=await fetch(`http://127.0.0.1:${x.server.address().port}/sessions/no/voice/stt`,{method:"POST"}); assert.equal(r.status,404); await new Promise(r=>x.server.close(r)); });
 test("voice status exposes only configured STT capability", async () => {
-  const disabled = createServer();
+  const disabled = createServer({registry: legacyRegistry});
   await new Promise((resolve) => disabled.server.listen(0, "127.0.0.1", resolve));
   const disabledUrl = `http://127.0.0.1:${disabled.server.address().port}/voice/status`;
   try {
@@ -23,7 +24,7 @@ test("voice status exposes only configured STT capability", async () => {
   } finally { await new Promise((resolve) => disabled.server.close(resolve)); }
 
   let providerCalls = 0;
-  const statusOnly = createServer({ voiceConfig: { enabled: true, sttChain: ["local"] },
+  const statusOnly = createServer({ registry: legacyRegistry, voiceConfig: { enabled: true, sttChain: ["local"] },
     voiceProviders: [{ transcribe: async () => { providerCalls++; throw new Error("must not run"); } }] });
   await new Promise((resolve) => statusOnly.server.listen(0, "127.0.0.1", resolve));
   try {
@@ -50,7 +51,7 @@ test("STT rate limits and unknown sessions", async () => { const id=await create
 import { request as httpRequest } from "node:http";
 
 async function fixture(options = {}) {
-  const app = createServer({ voiceConfig: { enabled: true, sttChain: ["local"],
+  const app = createServer({ registry: legacyRegistry, voiceConfig: { enabled: true, sttChain: ["local"],
     sttTimeoutMs: 30, localUrl: "http://127.0.0.1:9", localToken: "test" },
     voiceProviders: [createFakeVoiceProvider()], ...options });
   await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));

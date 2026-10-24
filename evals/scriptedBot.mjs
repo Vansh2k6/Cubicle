@@ -1,9 +1,9 @@
 // Reusable offline full-pipeline bot runner. All inputs are synthetic.
-import { defaultRegistry } from "../services/api/scenarioRegistry.js";
+import { legacyRegistry } from "../services/api/scenarioRegistry.js";
 import * as engine from "../engine/sc01Compatibility.js";
 import { createConversation, runTurn, publicResponse } from "../llm/pipeline.js";
 import { npcFn } from "../services/api/offlineProviders.js";
-const pkg = defaultRegistry.getScenario("missed_deadline");
+const pkg = legacyRegistry.getScenario("missed_deadline");
 export const scenario = pkg.spec;
 export const languageRuntime = Object.freeze({scenarioId: pkg.spec.id, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules, language: pkg.policy.language, identity: pkg.identity, spec: pkg.spec});
 export const scoringProfile = pkg.scoringProfile;

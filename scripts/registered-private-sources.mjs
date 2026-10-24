@@ -1,18 +1,17 @@
-import { defaultRegistry, createScenarioRegistry } from "../services/api/scenarioRegistry.js";
+import { defaultRegistry, legacyRegistry, createScenarioRegistry } from "../services/api/scenarioRegistry.js";
 import { privateProofInput, privateProofPolicy } from "../services/api/tests/fixtures/privateProof.js";
 import { remoteProofInput } from "../services/api/tests/fixtures/remoteProof.js";
-import {deadlineV2PackageInput} from "../services/api/deadlineV2Package.js";
 
 // Tooling-only registration: production server never imports this module.
 const fixtures = createScenarioRegistry([...defaultRegistry.allPackages(), privateProofInput(), remoteProofInput()], {
   privatePolicies: { [privateProofPolicy.id]: privateProofPolicy },
 });
-const unpublished = createScenarioRegistry([deadlineV2PackageInput()]);
+
 export const scanRegistry = Object.freeze({
-  allPackages: () => [...fixtures.allPackages(), ...unpublished.allPackages()],
+  allPackages: () => [...fixtures.allPackages(), ...legacyRegistry.allPackages()],
   getScenario: (id) => fixtures.getScenario(id),
   listScenarios: () => defaultRegistry.listScenarios(),
-  publishedPackages: () => defaultRegistry.allPackages(),
+  publishedPackages: () => [...defaultRegistry.allPackages(), ...legacyRegistry.allPackages()],
 });
 
 export function registeredPrivateNeedles(registry) {

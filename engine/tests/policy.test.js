@@ -5,8 +5,8 @@ import * as core from "../engine.js";
 import * as compat from "../sc01Compatibility.js";
 import { createScoreRecord, scoreSession } from "../../scoring/score.js";
 
-import { defaultRegistry } from "../../services/api/scenarioRegistry.js";
-const pkg = defaultRegistry.getScenario("missed_deadline");
+import { legacyRegistry } from "../../services/api/scenarioRegistry.js";
+const pkg = legacyRegistry.getScenario("missed_deadline");
 const recordFor = (session, convo) => { session.identity ??= pkg.identity; return createScoreRecord(session, convo, spec, pkg.scoringProfile); };
 
 const ev = (type, params = {}) => ({ type, params });

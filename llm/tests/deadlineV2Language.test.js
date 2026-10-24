@@ -2,7 +2,7 @@ import test from "node:test";
 import examples from "./fixtures/deadlineV2LanguageCases.json" with {type: "json"};
 import assert from "node:assert/strict";
 import * as engine from "../../engine/engine.js";
-import {createScenarioRegistry, defaultRegistry, publicScenario} from "../../services/api/scenarioRegistry.js";
+import {createScenarioRegistry, legacyRegistry, publicScenario} from "../../services/api/scenarioRegistry.js";
 import {deadlineV2PackageInput} from "../../services/api/deadlineV2Package.js";
 import {loadDeadlineV2EngineContext} from "../../services/api/deadlineV2EngineContext.js";
 import {createOfflineProviders} from "../../services/api/offlineProviders.js";
@@ -210,10 +210,10 @@ test("v2 relays corroborate known facts, distinguish false/uncertain claims and 
   assert.equal(extractDeadlineV2({text: "Vansh said half the module is done.", actorId: "maya"}).events.length, 0);
 });
 
-test("registry identity uses one recipe, stays unpublished by default, and rejects forged hooks/offline identities", () => {
+test("registry identity uses one recipe, preserves the explicit legacy registry, and rejects forged hooks/offline identities", () => {
   assert.deepEqual(loadDeadlineV2EngineContext().identity, pkg.identity);
-  assert.equal(defaultRegistry.getScenario("deadline").spec.version, 1);
-  assert.equal(defaultRegistry.listScenarios()[0].npcs.length, 3);
+  assert.equal(legacyRegistry.getScenario("deadline").spec.version, 1);
+  assert.equal(legacyRegistry.listScenarios()[0].npcs.length, 3);
   for (const mutate of [p => p.policy = {...p.policy, id: "unknown"}, p => p.policy = {...p.policy, language: {...p.policy.language}},
     p => p.policy = {...p.policy, offline: {classifyEvents: () => []}}, p => p.spec.npcs[0].role = "Changed",
     p => p.privateProof = true]) {
@@ -238,7 +238,7 @@ test("classifier/NPC context contains no other transcript, sealed facts, private
   assert.equal(runtime.language.canonCheck({text: "The implementation is already complete.", act: "coach"})[0].code, "canon_unverified_claim");
 });
 
-test("provenance and synthetic source scans include unpublished v2 without publishing duplicate ids", () => {
+test("provenance and synthetic source scans include both versions without publishing duplicate ids", () => {
   assert.equal(loadConfig({}).classifier.promptVersion, "v4"); assert.equal(loadConfig({}).npc.promptVersion, "v5");
   assert.equal(loadConfig({}).classifier.schemaVersion, 1); assert.equal(loadConfig({}).judge.promptVersion, "v2");
   assert.equal(scanRegistry.listScenarios().length, 1); assert.equal(scanRegistry.allPackages().length, 4);

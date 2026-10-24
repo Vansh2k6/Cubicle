@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {runInNewContext} from "node:vm";
 import {parseScenarioMetadata} from "../../src/scenarioMetadata.js";
 import {captureRun, createEndCoordinator} from "../../src/endCoordinator.js";
-import {publicScenario, defaultRegistry} from "../../services/api/scenarioRegistry.js";
+import {publicScenario, legacyRegistry} from "../../services/api/scenarioRegistry.js";
 import {remoteProofRegistry} from "../../services/api/tests/fixtures/remoteProof.js";
 import {startRemoteUiServer} from "../../services/api/tests/fixtures/remoteUiServer.js";
 const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
@@ -15,7 +15,7 @@ function fn(name) {
   return source.slice(start, next < 0 ? source.length : start + 1 + next).replaceAll("import.meta.env.VITE_PRESETS", "undefined");
 }
 const metadata = () => JSON.parse(JSON.stringify(publicScenario(remoteProofRegistry().getScenario("private_remote_proof"))));
-const legacyMetadata = () => JSON.parse(JSON.stringify(publicScenario(defaultRegistry.getScenario("deadline"))));
+const legacyMetadata = () => JSON.parse(JSON.stringify(publicScenario(legacyRegistry.getScenario("deadline"))));
 const tick = () => new Promise(setImmediate);
 function deferred() { let resolve, reject; const promise = new Promise((yes, no) => {resolve = yes; reject = no;}); return {promise, resolve, reject}; }
 function fixture(overrides = {}) {
@@ -43,7 +43,7 @@ function fixture(overrides = {}) {
     sendTurn: async () => ({npc_reply: "A guarded response.", public_state: {mood_label: "Calm", goals: []}}),
     ...overrides,
   };
-  const names = ["currentPeople", "personFor", "remoteContact", "physicalActorId", "renderPeople", "syncPeople", "loadScenarioMetadata", "freshThread", "threadsFor", "openConversation", "openTextConversation", "closeConversation", "startTextSession", "startRetrySession", "sendTextTurn", "resetTextRun", "officeHooks", "escapeHtml"];
+  const names = ["currentPeople", "personFor", "remoteContact", "physicalActorId", "renderPeople", "syncPeople", "loadScenarioMetadata", "freshThread", "threadsFor", "openConversation", "openTextConversation", "closeConversation", "startTextSession", "startRetrySession", "sendTextTurn", "resetTextRun", "officeHooks", "escapeHtml", "restartTextRun", "showBriefing"];
   runInNewContext(names.map(fn).join("\n"), context);
   return {context, state, nodes, calls, $, async ready() {await context.loadScenarioMetadata();}};
 }
@@ -63,6 +63,53 @@ test("public metadata preflight does no session work, parses the phone union, an
   assert.match(f.$(".people-list").innerHTML, /Retry contact details/); assert.equal(f.context.remoteContact(), undefined);
   assert.equal(f.context.physicalActorId("maya"), "maya");
   f.context.getScenario = async () => metadata(); await f.context.loadScenarioMetadata(); assert.equal(f.state.metadataStatus, "ready");
+});
+
+test("public briefing waits for metadata, escapes it, retries failure and ignores obsolete responses", async () => {
+  const wait = deferred(), f = fixture({getScenario: () => wait.promise});
+  f.context.scenarios = {deadline: {title: "Old", description: "Old briefing", goal: "Old goal"}, email: {title: "Email", description: "Email description", goal: "Email goal"}};
+  f.context.showSelection = () => {f.state.entry = "selection";};
+  f.context.startOffice = async () => {};
+  f.state.entry = "selection"; f.context.showBriefing("deadline");
+  assert.match(f.$("#scenario-briefing").innerHTML, /Loading/);
+  assert.ok(!f.$("#scenario-briefing").innerHTML.includes("entry-start"));
+  assert.equal(f.calls.creates, 0); assert.equal(f.calls.plays, 0);
+  wait.resolve({...metadata(), title: "Portal <test>", briefing: "Public & approved"}); await tick();
+  assert.match(f.$("#scenario-briefing").innerHTML, /Portal &lt;test&gt;/);
+  assert.match(f.$("#scenario-briefing").innerHTML, /Public &amp; approved/);
+  assert.match(f.$("#scenario-briefing").innerHTML, /entry-start/);
+  f.state.entry = "selection"; f.context.getScenario = async () => {throw Error("offline");};
+  f.context.showBriefing("deadline"); await tick();
+  assert.match(f.$("#scenario-briefing").innerHTML, /briefing-retry/);
+  f.context.getScenario = async () => metadata(); f.$("#briefing-retry").onclick(); await tick();
+  assert.match(f.$("#scenario-briefing").innerHTML, /entry-start/);
+  const stale = deferred(); f.context.getScenario = () => stale.promise; f.state.entry = "selection";
+  f.context.showBriefing("deadline"); f.state.entry = "selection"; f.context.showBriefing("email");
+  stale.resolve(metadata()); await tick(); assert.match(f.$("#scenario-briefing").innerHTML, /Email description/);
+});
+
+test("explicit retries preserve captured metadata and source id through settings and failed creation", async () => {
+  const sent = [], f = fixture({createSession: async (...args) => {sent.push(args); throw Error("offline");}});
+  await f.ready();
+  const old = legacyMetadata(); let setup;
+  f.context.openSettings = (...args) => {setup = args;};
+  f.context.restartTextRun(true, "deadline", {}, "ended-old", old);
+  assert.equal(f.state.previousSessionId, "ended-old");
+  assert.equal(f.context.remoteContact(), undefined); assert.equal(setup[2], "ended-old");
+  const gets = f.calls.gets; await f.context.loadScenarioMetadata(); assert.equal(f.calls.gets, gets);
+  Object.assign(f.context, {PRESETS: {}, presetsEnabled: () => false, settingsPreview: () => "Shared settings", presetName: () => "Custom", presetSettings: () => null,
+    showModal() {f.context.closeConversation(); f.state.paused = true;}});
+  runInNewContext(fn("openSettings"), f.context);
+  f.context.openSettings({}, null); await tick();
+  assert.equal(f.calls.gets, gets);
+  assert.ok(f.$("#setup-content").innerHTML.includes(old.briefing));
+  f.$("#setup-start").onclick(); await tick(); assert.equal(sent.at(-1)[2], "ended-old");
+  f.context.restartTextRun(false, "deadline", {}, "ended-old", old); await tick();
+  assert.equal(sent.at(-1)[2], "ended-old"); assert.equal(f.state.sessionId, null);
+  f.state.near = "maya"; f.context.openConversation(); f.context.startTextSession(); await tick();
+  assert.equal(sent.at(-1)[2], "ended-old");
+  f.context.resetTextRun(); await tick(); assert.equal(f.state.previousSessionId, null);
+  assert.equal(f.context.remoteContact().id, "client");
 });
 
 test("late metadata cannot replace a bound session, reset run or selected scenario", async () => {

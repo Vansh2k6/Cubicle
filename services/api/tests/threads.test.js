@@ -1,3 +1,4 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 // services/api/tests/threads.test.js — P3a offline tests (node:test).
 // Threads, goal checklist/next-step mapping, and knowledge silos across the
 // three NPCs. Fake (stub) providers only; no network beyond localhost, no keys.
@@ -58,11 +59,11 @@ function goalsById(goals) {
 }
 
 test.before(async () => {
-  const a = createServer({ debug: false });
+  const a = createServer({ registry: legacyRegistry, debug: false });
   await new Promise((r) => a.server.listen(0, r));
   plain = a;
   base = `http://localhost:${a.server.address().port}`;
-  const b = createServer({ debug: true });
+  const b = createServer({ registry: legacyRegistry, debug: true });
   await new Promise((r) => b.server.listen(0, r));
   dbg = b;
   debugBase = `http://localhost:${b.server.address().port}`;

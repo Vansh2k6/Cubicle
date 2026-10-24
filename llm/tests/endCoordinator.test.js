@@ -33,7 +33,7 @@ test("a stale turn/create response cannot mutate a new run", async () => {
   const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
   assert.ok(source.includes("const data = await sendTurn(sessionId, npcId, text, key)"));
   assert.ok(source.includes("if (!current()) return;"));
-  assert.ok(source.includes("function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null)"));
+  assert.ok(source.includes("function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null)"));
   assert.ok(source.includes("const current = captureRun(state);"));
   assert.ok(source.includes("if (!current() || state.threads !== threads || state.sessionId) return;"));
 });

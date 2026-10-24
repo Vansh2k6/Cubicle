@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createScenarioRegistry, defaultRegistry, publicScenario } from "../scenarioRegistry.js";
+import { createScenarioRegistry, legacyRegistry, publicScenario } from "../scenarioRegistry.js";
 import { createStore, fetch as fetchFallback, clearMemory } from "../../../replies/fallbackStore.js";
 import { createServer } from "../server.js";
 import { createOfflineProviders } from "../offlineProviders.js";
 import { SessionStore } from "../../../engine/store.js";
 
 function packageInput() {
-  const { spec, replies, scoringProfile, policy } = defaultRegistry.getScenario("deadline");
+  const { spec, replies, scoringProfile, policy } = legacyRegistry.getScenario("deadline");
   return { ...structuredClone({ spec, replies, scoringProfile, policy: { id: policy.id, version: policy.version, rules: policy.rules }, aliases: ["deadline"] }), policy: { ...policy, rules: structuredClone(policy.rules) } };
 }
 
@@ -18,12 +18,12 @@ function reverseKeys(value) {
 }
 
 test("SC-01 registry preserves aliases and projects only public metadata", () => {
-  const pkg = defaultRegistry.getScenario("missed_deadline");
-  assert.equal(defaultRegistry.getScenario("deadline"), pkg);
-  assert.equal(defaultRegistry.getScenario("unknown"), null);
+  const pkg = legacyRegistry.getScenario("missed_deadline");
+  assert.equal(legacyRegistry.getScenario("deadline"), pkg);
+  assert.equal(legacyRegistry.getScenario("unknown"), null);
   assert.ok(Object.isFrozen(pkg) && Object.isFrozen(pkg.spec) && /^[a-f0-9]{64}$/.test(pkg.identity.contentHash));
-  assert.equal(JSON.stringify(pkg.identity), JSON.stringify(defaultRegistry.getScenario("deadline").identity));
-  const catalog = defaultRegistry.listScenarios();
+  assert.equal(JSON.stringify(pkg.identity), JSON.stringify(legacyRegistry.getScenario("deadline").identity));
+  const catalog = legacyRegistry.listScenarios();
   assert.deepEqual(catalog, [publicScenario(pkg)]);
   const text = JSON.stringify(catalog);
   for (const privateKey of ["facts", "triggers", "leak_keywords", "commitment_model", "contentHash", "scoringProfile"]) assert.equal(text.includes(privateKey), false);
@@ -62,7 +62,7 @@ test("content hash ignores recursive object key order but detects authored data 
 });
 
 test("registry rejects altered scoring, policy, legacy bindings, and replies", () => {
-  const base = defaultRegistry.getScenario("deadline");
+  const base = legacyRegistry.getScenario("deadline");
   const rejects = (change) => { const input = packageInput(); change(input); assert.throws(() => createScenarioRegistry([input]), /invalid|incompatible/); };
   rejects((x) => { x.spec.scoring.version++; });
   rejects((x) => { x.spec.goals[0].weight++; x.spec.goals[1].weight--; });
@@ -76,11 +76,11 @@ test("registry rejects altered scoring, policy, legacy bindings, and replies", (
 });
 
 test("HTTP catalogue and detail expose only allowed public fields and reject unknown IDs", async () => {
-  const app = createServer();
+  const app = createServer({registry: legacyRegistry});
   await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
   try {
     const base = `http://127.0.0.1:${app.server.address().port}`;
-    const pkg = defaultRegistry.getScenario("deadline");
+    const pkg = legacyRegistry.getScenario("deadline");
     const catalog = await fetch(base + "/scenarios");
     assert.equal(catalog.status, 200);
     const items = await catalog.json();
@@ -118,11 +118,11 @@ test("offline providers reject unsupported scenario, policy, version, and locale
     change(pkg);
     assert.throws(() => createOfflineProviders(pkg), /unsupported offline scenario package/);
   }
-  assert.throws(() => createOfflineProviders(defaultRegistry.getScenario("deadline"), { locale: "fr" }), /unsupported offline scenario package/);
+  assert.throws(() => createOfflineProviders(legacyRegistry.getScenario("deadline"), { locale: "fr" }), /unsupported offline scenario package/);
 });
 
 test("unsupported session binding fails before store creation or provider fallback", async () => {
-  const unsupported = { ...defaultRegistry.getScenario("deadline"), policy: { id: "unsupported", version: 1 } };
+  const unsupported = { ...legacyRegistry.getScenario("deadline"), policy: { id: "unsupported", version: 1 } };
   let creates = 0;
   let providerCalls = 0;
   const originalCreate = SessionStore.prototype.create;
@@ -157,8 +157,8 @@ test("fallback stores are scope-bound and never rotate across package hashes", (
 });
 
 test("session context retains the bound immutable package", async () => {
-  let current = defaultRegistry.getScenario("deadline");
-  const registry = { getScenario: () => current, listScenarios: () => defaultRegistry.listScenarios() };
+  let current = legacyRegistry.getScenario("deadline");
+  const registry = { getScenario: () => current, listScenarios: () => legacyRegistry.listScenarios() };
   let captured = null; const capturedRuntimes = [];
   const app = createServer({ registry, debriefAssembler: async ({ record, runtime }) => { captured = record; capturedRuntimes.push(runtime); return { status: "partial", moments: [], breakdown: [], deterministic: { points: 0 }, judged: { points: 0 } }; } });
   await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
@@ -168,7 +168,7 @@ test("session context retains the bound immutable package", async () => {
     const body = await response.json();
     assert.equal(response.status, 200, JSON.stringify(body));
     assert.deepEqual(body.scenario, JSON.parse(JSON.stringify(publicScenario(current))));
-    const pkg = defaultRegistry.getScenario("deadline");
+    const pkg = legacyRegistry.getScenario("deadline");
     current = null;
     assert.equal(app.resolveSessionContext("unknown"), null);
     assert.equal(app.resolveSessionContext(body.session_id).pkg, pkg);

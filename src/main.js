@@ -302,9 +302,10 @@ function updatePublicGuidance() {
 }
 function updateScenario() {
   let s = scenarios[state.scenario];
+  const metadata = state.scenario === "deadline" ? state.scenarioMetadata : null;
   const title = $("#scenario-title");
-  if (title) title.textContent = s.title;
-  $("#scenario-description").textContent = s.description;
+  if (title) title.textContent = metadata?.title || s.title;
+  $("#scenario-description").textContent = metadata?.briefing || s.description;
   $("#objective-text").textContent = s.goal;
   if (state.scenario === "deadline") updatePublicGuidance();
   else {
@@ -329,14 +330,38 @@ function showBriefing(id) {
   state.scenarioMetadata = null;
   state.scenario = id;
   $("#scenario").value = id;
-  const s = scenarios[id], briefing = $("#scenario-briefing");
+  const generation = state.metadataGeneration = (state.metadataGeneration || 0) + 1;
+  const briefing = $("#scenario-briefing");
   briefing.hidden = false;
-  briefing.innerHTML = `<h2>${escapeHtml(s.title)}</h2><p>${escapeHtml(s.description)}</p><dl><div><dt>Your role</dt><dd>Shubhankar, an employee</dd></div><div><dt>Your objective</dt><dd>${escapeHtml(s.goal)}</dd></div></dl><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="entry-start" type="button">Start your day ${icon("arrow-right")}</button></div>`;
   $("#scenario-cards").hidden = true;
-  $("#briefing-back").onclick = showSelection;
-  $("#entry-start").onclick = () => { updateScenario(); startOffice().catch(() => {}); };
-  refreshIcons();
+  const current = () => state.entry === "briefing" && state.scenario === id && state.metadataGeneration === generation;
+  const render = (metadata) => {
+    if (!current()) return;
+    const s = scenarios[id];
+    briefing.innerHTML = `<h2>${escapeHtml(metadata?.title || s.title)}</h2><p>${escapeHtml(metadata?.briefing || s.description)}</p><dl><div><dt>Your role</dt><dd>Shubhankar, an employee</dd></div><div><dt>Your objective</dt><dd>${escapeHtml(metadata ? metadata.goals[0]?.label || s.goal : s.goal)}</dd></div></dl><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="entry-start" type="button">Start your day ${icon("arrow-right")}</button></div>`;
+    $("#briefing-back").onclick = showSelection;
+    $("#entry-start").onclick = () => { updateScenario(); startOffice().catch(() => {}); };
+    refreshIcons();
+  };
+  if (id !== "deadline") { render(null); return; }
+  const load = () => {
+    if (!current()) return;
+    briefing.innerHTML = '<p role="status">Loading this practice…</p><button class="secondary-button" id="briefing-back" type="button">Back</button>';
+    $("#briefing-back").onclick = showSelection;
+    return getScenario("deadline").then((data) => {
+      if (!current()) return;
+      state.scenarioMetadata = parseScenarioMetadata(data);
+      render(state.scenarioMetadata);
+    }).catch(() => {
+      if (!current()) return;
+      briefing.innerHTML = '<p role="alert">Could not load this practice. Retry when ready.</p><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="briefing-retry" type="button">Retry</button></div>';
+      $("#briefing-back").onclick = showSelection;
+      $("#briefing-retry").onclick = load;
+    });
+  };
+  load();
 }
+
 function showSelection() {
   officeGeneration++;
   officeCancel?.(); officeCancel = null;
@@ -628,7 +653,7 @@ function syncPeople() {
 }
 function loadScenarioMetadata() {
   const generation = state.metadataGeneration = (state.metadataGeneration || 0) + 1;
-  if (state.entry !== "office" || state.scenario !== "deadline" || state.sessionId) { syncPeople(); return; }
+  if (state.entry !== "office" || state.scenario !== "deadline" || state.sessionId || state.previousSessionId) { syncPeople(); return; }
   const scenario = state.scenario;
   state.metadataStatus = "loading";
   syncPeople();
@@ -685,7 +710,7 @@ function startTextSession() {
   state.startingSession = true;
   state.text.loadError = null;
   renderTextDialogue();
-  createSession("deadline", state.appliedSettings || DEFAULT_SLIDERS).then(
+  createSession("deadline", state.appliedSettings || DEFAULT_SLIDERS, state.previousSessionId).then(
     (data) => {
       if (!current()) return;
       const metadata = data.scenario ? parseScenarioMetadata(data.scenario) : null;
@@ -1008,8 +1033,8 @@ function openDebrief(sessionId, historical = false) {
       actions.innerHTML = `<button class="primary-button" id="try-again">Try again</button><button class="secondary-button" id="try-settings">Try again with new settings</button>`;
       (box.querySelector("[data-debrief-actions]") || box).append(actions);
       const attemptSettings = latest.settings?.maya || state.appliedSettings || DEFAULT_SLIDERS;
-      $("#try-again").onclick = () => restartTextRun(false, attemptScenario, attemptSettings);
-      $("#try-settings").onclick = () => restartTextRun(true, attemptScenario, attemptSettings);
+      $("#try-again").onclick = () => restartTextRun(false, attemptScenario, attemptSettings, sessionId, latestPacket.scenario);
+      $("#try-settings").onclick = () => restartTextRun(true, attemptScenario, attemptSettings, sessionId, latestPacket.scenario);
     }
     const check = $("#feedback-refresh");
     if (check) check.onclick = () => { disableFeedbackControl(check); poll(); };
@@ -1062,14 +1087,15 @@ function completeScenario() {
   };
   refreshIcons();
 }
-function resetTextRun(scenarioId = state.scenario) {
+function resetTextRun(scenarioId = state.scenario, metadata = null) {
   closeConversation();
-  state.scenarioMetadata = null;
-  state.metadataStatus = null;
+  state.scenarioMetadata = metadata;
+  state.metadataStatus = metadata ? "ready" : null;
   state.metadataGeneration = (state.metadataGeneration || 0) + 1;
   state.scenario = scenarioId;
   $("#scenario").value = scenarioId;
   state.sessionId = null;
+  state.previousSessionId = null;
   state.threads = null;
   state.sharedGoals = [];
   state.sharedHint = "";
@@ -1080,15 +1106,15 @@ function resetTextRun(scenarioId = state.scenario) {
   state.appliedSettings = null;
   office?.reset();
   updateScenario();
-  loadScenarioMetadata();
+  if (metadata) syncPeople(); else loadScenarioMetadata();
 }
-function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null) {
+function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null) {
   const threads = threadsFor();
   const thread = resumeNpc ? threads[resumeNpc] : null;
   const current = captureRun(state);
   state.startingSession = true;
   if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) renderTextDialogue();
-  createSession("deadline", sliders).then((data) => {
+  createSession("deadline", sliders, previousSessionId).then((data) => {
     if (!current() || state.threads !== threads || state.sessionId) return;
     const metadata = data.scenario ? parseScenarioMetadata(data.scenario) : null;
     if (typeof data.session_id !== "string" || !data.session_id) throw new Error("Could not read this practice session.");
@@ -1115,7 +1141,7 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, r
     toast("Could not start a fresh conversation. Find Snehal and retry.");
   });
 }
-function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
+function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null) {
   const resumeAnchor = personFor(resumeNpc)?.sceneAnchor || (Object.hasOwn(people, resumeNpc) ? resumeNpc : null);
   const draft = { ...initial };
   const showPresets = presetsEnabled(import.meta.env.VITE_PRESETS);
@@ -1155,32 +1181,39 @@ function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null) {
         state.text = threadsFor()[resumeNpc];
         $("#talk-prompt").classList.add("hidden");
       }
-      startRetrySession(draft, resumeNpc);
+      startRetrySession(draft, resumeNpc, previousSessionId);
       toast(resumeNpc ? "Settings fixed. Preparing your conversation…" : "Settings fixed for this attempt. Find Snehal to begin.");
     };
   };
-  getScenario("deadline").then(render, () => {
+  const details = previousSessionId ? Promise.resolve(state.scenarioMetadata) : getScenario("deadline");
+  details.then(render, () => {
     if (!current()) return;
     box.innerHTML = '<div class="turn-error" role="alert"><p>Could not load this practice.</p><button class="secondary-button" id="setup-retry">Retry</button></div>';
     const retry = $("#setup-retry");
-    if (retry) retry.onclick = () => openSettings(draft, resumeNpc);
+    if (retry) retry.onclick = () => openSettings(draft, resumeNpc, previousSessionId);
   });
 }
-function restartTextRun(withSettings, scenarioId = state.scenario, settings = state.appliedSettings || DEFAULT_SLIDERS) {
+function restartTextRun(withSettings, scenarioId = state.scenario, settings = state.appliedSettings || DEFAULT_SLIDERS, previousSessionId = null, publicMetadata = null) {
   const previous = settings;
   closeModal();
-  resetTextRun(scenarioId);
+  let metadata = null;
+  if (previousSessionId && !publicMetadata) { toast("Could not read the original practice. Reopen its feedback and retry."); return; }
+  if (previousSessionId && publicMetadata) {
+    try { metadata = parseScenarioMetadata(publicMetadata); } catch { toast("Could not read the original practice. Reopen its feedback and retry."); return; }
+  }
+  resetTextRun(scenarioId, metadata);
+  state.previousSessionId = previousSessionId;
   if (scenarioId !== "deadline") {
     toast("Fresh scenario ready. Find Snehal to begin again.");
     return;
   }
   if (!withSettings) {
     state.appliedSettings = { ...previous };
-    startRetrySession(previous);
+    startRetrySession(previous, null, previousSessionId);
     toast("Preparing a fresh conversation. Find Snehal to begin again.");
     return;
   }
-  openSettings(previous);
+  openSettings(previous, null, previousSessionId);
 }
 function attemptLabel(attempt) {
   return `${new Date(attempt.date).toLocaleDateString()} · ${displayAttemptScore(attempt)}`;
@@ -1264,7 +1297,8 @@ $("#end-practice-dialog").addEventListener("close", () => {
 });
 $("#office-context").onclick = () => {
   const s = scenarios[state.scenario];
-  showModal("Your practice", `<h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.description)}</p><p>${escapeHtml(s.goal)}</p><button class="secondary-button" id="context-progress">My progress</button><button class="secondary-button" id="context-settings">Conversation settings</button><button class="secondary-button" id="context-restart">Restart scenario</button><div id="context-people"></div>`);
+  const metadata = state.scenario === "deadline" ? state.scenarioMetadata : null;
+  showModal("Your practice", `<h3>${escapeHtml(metadata?.title || s.title)}</h3><p>${escapeHtml(metadata?.briefing || s.description)}</p><p>${escapeHtml(metadata?.goals[0]?.label || s.goal)}</p><button class="secondary-button" id="context-progress">My progress</button><button class="secondary-button" id="context-settings">Conversation settings</button><button class="secondary-button" id="context-restart">Restart scenario</button><div id="context-people"></div>`);
   $("#context-progress").onclick = showProgress;
   $("#context-settings").onclick = () => {
     const settings = state.appliedSettings || DEFAULT_SLIDERS;

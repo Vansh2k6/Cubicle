@@ -260,7 +260,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           send(res, 409, { error: "feedback retry is unavailable", ...debriefBody(existing) }); return;
         }
         const job = beginDebrief(session, !!debriefMatch[2]);
-        send(res, job.status === "pending" ? 202 : 200, debriefBody(job)); return;
+        send(res, job.status === "pending" ? 202 : 200, {...debriefBody(job), scenario: publicScenario(contexts.get(session.id).pkg)}); return;
       }
       if (req.method === "GET" && path === "/scenarios") { send(res, 200, registry.listScenarios()); return; }
       // GET /scenarios/{id} — briefing + visible goals only (R-03/R-08).
@@ -278,7 +278,18 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
       if (req.method === "POST" && path === "/sessions") {
         const body = await readBody(req);
         const sid = body && body.scenario_id;
-        const pkg = registry.getScenario(sid);
+        let pkg = registry.getScenario(sid);
+        if (Object.hasOwn(body || {}, "previous_session_id")) {
+          const previousId = body.previous_session_id;
+          const previous = typeof previousId === "string" && previousId ? store.getState(previousId) : null;
+          const captured = previous && contexts.get(previousId);
+          if (!previous?.ended || !captured || !isRegisteredPackage(captured.pkg) ||
+              previous.identity !== captured.pkg.identity || previous.scenario_id !== captured.pkg.spec.id ||
+              ![captured.pkg.spec.id, captured.pkg.spec.id === "missed_deadline" ? "deadline" : captured.pkg.spec.id].includes(sid)) {
+            send(res, 400, {error: "invalid previous_session_id", retryable: false}); return;
+          }
+          pkg = captured.pkg;
+        }
         if (!pkg) {
           send(res, 400, { error: "unknown scenario_id" });
           return;

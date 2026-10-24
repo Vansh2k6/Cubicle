@@ -1,3 +1,4 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
@@ -21,7 +22,7 @@ function fixture() {
   return { root, dist };
 }
 async function launch(staticHandler = null) {
-  const { server } = createServer({ debug: false, staticHandler });
+  const { server } = createServer({ registry: legacyRegistry, debug: false, staticHandler });
   servers.push(server);
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
   return server.address().port;
