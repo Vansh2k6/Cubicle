@@ -1,6 +1,7 @@
 // Scenario validator for S1-01 missed_deadline (pure engine code, stdlib only).
 // Static schema import only: no network, provider or filesystem dependency.
 import schema from "../scenarios/missed_deadline.schema.json" with { type: "json" };
+import schemaV2 from "../scenarios/missed_deadline.v2.schema.json" with { type: "json" };
 
 const TAXONOMY = new Set([
   "asked_deadline_flexibility",
@@ -192,7 +193,8 @@ export function validateScenario(spec, { privateProof = false } = {}) {
     }
   }
 
-  const shape = privateProof ? structuredClone(schema) : schema;
+  const deadlineV2 = spec.id === "missed_deadline" && spec.version === 2 && !privateProof;
+  const shape = privateProof ? structuredClone(schema) : deadlineV2 ? schemaV2 : schema;
   if (privateProof) {
     delete shape.properties.id.const;
     delete shape.properties.version.const;
@@ -211,6 +213,24 @@ export function validateScenario(spec, { privateProof = false } = {}) {
   const npcIds = new Set(npcs.map((n) => n && n.id));
   const goalIds = new Set(goals.map((g) => g && g.id));
   const factIds = new Set(facts.map((f) => f && f.id));
+  if (deadlineV2) {
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    if (!same(npcs.map((n) => n.id), ["maya", "jordan", "sam", "client"]) ||
+        !same(facts.map((f) => [f.id, f.owner, f.weight]), [["F1", "maya", 5], ["F2", "jordan", 6], ["F3", "sam", 4], ["F4", "client", 5]]) ||
+        !same(goals.map((g) => [g.id, g.weight]), [["G1", 10], ["G2", 10], ["G3", 10]]) ||
+        !same(goals.map((g) => [g.done_when, g.requires, g.visible, g.required]), [
+          [["event:took_ownership", "event:gave_honest_status"], [], true, true],
+          [["event:confirmed_next_steps"], [], true, true],
+          [["event:proposed_plan", "event:confirmed_next_steps", "event:recapped_agreement"], ["G1", "G2"], true, true],
+        ])) err(errors, "BAD_V2_BINDING", "$", "unsupported v2 actors, facts or goal conditions");
+    if (spec.end?.max_turns !== 20 || spec.canon?.public?.launch_day !== 3 || spec.commitment_model?.unassisted_min_day !== 3 || spec.commitment_model?.assisted_min_day !== 3 || spec.commitment_model?.assistance_requires?.length !== 0 || spec.commitment_model?.agreement_npc !== "maya") err(errors, "BAD_V2_BINDING", "$", "unsupported v2 clock or commitment bounds");
+    if (spec.clock?.day !== 0 || spec.clock?.advance_on_turn !== false || spec.canon?.public?.original_due_day !== -1 ||
+        spec.commitment_model?.latest_day_from !== "canon.public.launch_day" ||
+        !same(beats, [{act: "press_for_date", id: "B2", npc: "maya", when: "turn>=4 and no_commitment"},
+          {act: "callback_commitment", id: "B3", npc: "maya", when: "commitment_made and turns_since_commitment>=3"}]) ||
+        !deepEqual(spec.scoring?.penalties, {unrealistic_commitment: 8, contradicted_commitment: 4, inaccurate_relay: 3}) ||
+        !deepEqual(spec.scoring?.bands, [{minimum: 85, label: "Excellent"}, {minimum: 70, label: "Strong"}, {minimum: 50, label: "Developing"}, {minimum: 0, label: "Needs work"}])) err(errors, "BAD_V2_BINDING", "$", "unsupported v2 timing or scoring constants");
+  }
 
   // Unique ids across npc/goal/fact/beat lists.
   for (const [list, label] of [[npcs, "npcs"], [goals, "goals"], [facts, "facts"], [beats, "beats"]]) {

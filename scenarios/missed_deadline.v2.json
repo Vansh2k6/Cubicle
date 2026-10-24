@@ -1,0 +1,369 @@
+{
+  "beats": [
+    {
+      "act": "press_for_date",
+      "id": "B2",
+      "npc": "maya",
+      "when": "turn>=4 and no_commitment"
+    },
+    {
+      "act": "callback_commitment",
+      "id": "B3",
+      "npc": "maya",
+      "when": "commitment_made and turns_since_commitment>=3"
+    }
+  ],
+  "briefing": {
+    "en": "The onboarding portal handover is overdue since yesterday; its public launch is Friday (day 3). The package covers submission, reliable confirmation, automatic routing, and dashboard."
+  },
+  "canon": {
+    "public": {
+      "project_status": "overdue onboarding portal handover",
+      "original_due_day": -1,
+      "launch_day": 3,
+      "launch_label": "Friday",
+      "scope": [
+        "submission",
+        "reliable_confirmation",
+        "routing",
+        "dashboard"
+      ]
+    },
+    "private": {}
+  },
+  "clock": {
+    "advance_on_turn": false,
+    "day": 0
+  },
+  "commitment_model": {
+    "agreement_npc": "maya",
+    "assistance_requires": [],
+    "assisted_min_day": 3,
+    "unassisted_min_day": 3,
+    "latest_day_from": "canon.public.launch_day"
+  },
+  "end": {
+    "max_turns": 20
+  },
+  "facts": [
+    {
+      "id": "F1",
+      "owner": "maya",
+      "weight": 5,
+      "content": {
+        "en": "You wrote that routing was included. Vansh had only raised it as a possible improvement; it was not estimated or agreed."
+      },
+      "triggers": [
+        "asked_background",
+        "asked_why_urgent"
+      ],
+      "leak_keywords": {
+        "en": [
+          "routing",
+          "included",
+          "possible improvement",
+          "estimated",
+          "agreed"
+        ]
+      },
+      "unlock_question": {
+        "en": "What had actually been agreed about routing?"
+      },
+      "paraphrase_questions": {
+        "en": [
+          "What exactly did I promise on routing?",
+          "Why is this handover urgent?"
+        ]
+      }
+    },
+    {
+      "id": "F2",
+      "owner": "jordan",
+      "weight": 6,
+      "content": {
+        "en": "The submission and storage piece is reusable, but that is all. Friday needs a reserved pair for the fix and QA; otherwise we can discuss core Friday with routing and dashboard followed up Monday."
+      },
+      "triggers": [
+        "asked_for_help"
+      ],
+      "leak_keywords": {
+        "en": [
+          "submission",
+          "storage",
+          "reserved pair",
+          "QA",
+          "Monday",
+          "dashboard"
+        ]
+      },
+      "unlock_question": {
+        "en": "What capacity and sequencing did Vansh need?"
+      },
+      "paraphrase_questions": {
+        "en": [
+          "What can we reuse?",
+          "Can you reserve help for this plan?"
+        ]
+      }
+    },
+    {
+      "id": "F3",
+      "owner": "sam",
+      "weight": 4,
+      "content": {
+        "en": "The success message can appear before the save is acknowledged. We need to fix and verify save, failure and retry on either route."
+      },
+      "triggers": [
+        "asked_impact",
+        "asked_advice"
+      ],
+      "leak_keywords": {
+        "en": [
+          "success message",
+          "save acknowledgement",
+          "failed save",
+          "failure",
+          "retry"
+        ]
+      },
+      "unlock_question": {
+        "en": "What must be fixed and verified before either route?"
+      },
+      "paraphrase_questions": {
+        "en": [
+          "What could make release unsafe?",
+          "What should QA verify?"
+        ]
+      }
+    },
+    {
+      "id": "F4",
+      "owner": "client",
+      "weight": 5,
+      "content": {
+        "en": "I asked about the dashboard because I thought submission and confirmation were already done. For Friday we need core business functionality and a receipt the customer can trust. Client operations can manually route only with instructions, a named owner and a Monday follow-up."
+      },
+      "triggers": [
+        "asked_expectation"
+      ],
+      "leak_keywords": {
+        "en": [
+          "trustworthy receipt",
+          "manual route",
+          "instructions",
+          "owner",
+          "Monday follow-up",
+          "dashboard"
+        ]
+      },
+      "unlock_question": {
+        "en": "What would client operations need for a manual route?"
+      },
+      "paraphrase_questions": {
+        "en": [
+          "What does the client need Friday?",
+          "Could operations manually route?"
+        ]
+      }
+    }
+  ],
+  "goals": [
+    {
+      "id": "G1",
+      "visible": true,
+      "required": true,
+      "weight": 10,
+      "label": "Own the late handover and honest status",
+      "done_when": [
+        "event:took_ownership",
+        "event:gave_honest_status"
+      ],
+      "requires": []
+    },
+    {
+      "id": "G2",
+      "visible": true,
+      "required": true,
+      "weight": 10,
+      "label": "Establish capacity and QA plan",
+      "done_when": [
+        "event:confirmed_next_steps"
+      ],
+      "requires": []
+    },
+    {
+      "id": "G3",
+      "visible": true,
+      "required": true,
+      "weight": 10,
+      "label": "Correct routing promise and form agreement",
+      "done_when": [
+        "event:proposed_plan",
+        "event:confirmed_next_steps",
+        "event:recapped_agreement"
+      ],
+      "requires": [
+        "G1",
+        "G2"
+      ]
+    }
+  ],
+  "id": "missed_deadline",
+  "locales": [
+    "en"
+  ],
+  "npcs": [
+    {
+      "default_sliders": {
+        "assertiveness": 50,
+        "forthcomingness": 50,
+        "patience": 50,
+        "warmth": 50
+      },
+      "id": "maya",
+      "name": "Snehal Mane",
+      "persona": "Direct and fair manager responsible for approving the portal handover plan.",
+      "public_context": "Snehal manages the overdue onboarding portal handover.",
+      "role": "manager",
+      "topics": [
+        "proposed_plan",
+        "proposed_scope_cut",
+        "proposed_phased_delivery",
+        "confirmed_next_steps",
+        "recapped_agreement",
+        "committed_deadline",
+        "took_ownership",
+        "gave_honest_status",
+        "asked_background",
+        "asked_why_urgent"
+      ]
+    },
+    {
+      "default_sliders": {
+        "assertiveness": 50,
+        "forthcomingness": 50,
+        "patience": 50,
+        "warmth": 50
+      },
+      "id": "jordan",
+      "name": "Vansh Singh",
+      "persona": "Practical engineer who reserves capacity only for a clear implementation plan.",
+      "public_context": "Vansh is the engineer for the onboarding portal.",
+      "role": "engineer",
+      "topics": [
+        "proposed_plan",
+        "proposed_scope_cut",
+        "proposed_phased_delivery",
+        "confirmed_next_steps",
+        "recapped_agreement",
+        "committed_deadline",
+        "took_ownership",
+        "gave_honest_status",
+        "asked_for_help"
+      ]
+    },
+    {
+      "default_sliders": {
+        "assertiveness": 50,
+        "forthcomingness": 50,
+        "patience": 50,
+        "warmth": 50
+      },
+      "id": "sam",
+      "name": "Prathamesh Surwase",
+      "persona": "Careful QA and release engineer who requires a concrete fix and verification plan.",
+      "public_context": "Prathamesh handles QA and release verification for the portal.",
+      "role": "QA/release engineer",
+      "topics": [
+        "proposed_plan",
+        "proposed_scope_cut",
+        "proposed_phased_delivery",
+        "confirmed_next_steps",
+        "recapped_agreement",
+        "committed_deadline",
+        "took_ownership",
+        "gave_honest_status",
+        "asked_impact",
+        "asked_advice"
+      ]
+    },
+    {
+      "default_sliders": {
+        "assertiveness": 50,
+        "forthcomingness": 50,
+        "patience": 50,
+        "warmth": 50
+      },
+      "id": "client",
+      "name": "Rohan Mehta",
+      "persona": "Clear client operations lead who checks business needs and gives explicit consent to a specific plan.",
+      "public_context": "Rohan represents client operations for the Friday portal launch.",
+      "role": "Client Operations Lead",
+      "topics": [
+        "proposed_plan",
+        "proposed_scope_cut",
+        "proposed_phased_delivery",
+        "confirmed_next_steps",
+        "recapped_agreement",
+        "committed_deadline",
+        "took_ownership",
+        "gave_honest_status",
+        "asked_expectation"
+      ]
+    }
+  ],
+  "player": {
+    "id": "alex",
+    "name": "Shubhankar Parsewar",
+    "role": "employee"
+  },
+  "scoring": {
+    "version": 3,
+    "weights": {
+      "goals": 30,
+      "hidden_facts": 20,
+      "integrity": 15,
+      "relationship": 10,
+      "rubric": 25
+    },
+    "penalties": {
+      "unrealistic_commitment": 8,
+      "contradicted_commitment": 4,
+      "inaccurate_relay": 3
+    },
+    "bands": [
+      {
+        "minimum": 85,
+        "label": "Excellent"
+      },
+      {
+        "minimum": 70,
+        "label": "Strong"
+      },
+      {
+        "minimum": 50,
+        "label": "Developing"
+      },
+      {
+        "minimum": 0,
+        "label": "Needs work"
+      }
+    ],
+    "relationship_population": "all_scenario_npcs"
+  },
+  "title": "Missed an onboarding portal handover",
+  "version": 2,
+  "plan_model": {
+    "version": 1,
+    "primaryDay": 3,
+    "followUpDay": 6,
+    "actors": {
+      "engineering": "jordan",
+      "qa": "sam",
+      "external": "client",
+      "manager": "maya",
+      "instructions": "alex",
+      "manual": "client_operations"
+    }
+  }
+}

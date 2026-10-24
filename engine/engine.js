@@ -1,7 +1,7 @@
 // engine/engine.js — P1 pure turn engine (ESM, ZERO imports).
 // Pure function of (state, events, scenario-model). No network, no model
 // calls, no clock reads, no randomness. Acts are ids only; local user-text
-// evidence validates relays. No generated NPC prose is produced or inspected.
+// evidence validates relays and supported plans. No generated NPC prose is produced or inspected.
 //
 // R-16 zero-import rule: this file takes no imports, so the numeric
 // constants below MIRROR engine/config.js (authoritative source). Keep the
@@ -105,8 +105,177 @@ function needRuntime(runtime, session) {
       ["commitmentBounds", "goalCandidates", "pressureCandidates", "relayAccuracy"].some((name) => typeof runtime.engine?.[name] !== "function") ||
       (session.identity && (session.identity.scenarioId !== runtime.scenarioId || session.identity.policyId !== runtime.policyId || session.identity.policyVersion !== runtime.policyVersion)) ||
       (session.engine_policy && (session.engine_policy.id !== runtime.policyId || session.engine_policy.version !== runtime.policyVersion ||
-        stableStringify(session.model.policy_rules) !== stableStringify(runtime.rules)))) throw new Error("missing or mismatched engine runtime");
+        stableStringify(session.model.policy_rules) !== stableStringify(runtime.rules))) ||
+      (session.engine_policy?.proof_version === 2 && stableStringify(session.identity) !== stableStringify(runtime.identity)) ||
+      (session.engine_policy?.proof_version === 2 && (runtime.schemaVersion !== 2 || typeof runtime.engine.planEvidence !== "function"))) throw new Error("missing or mismatched engine runtime");
   return runtime;
+}
+
+const PLAN_KEYS = ["route", "primary", "followUp", "manual", "engineering", "qa"];
+function exactKeys(value, keys) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) &&
+    Object.keys(value).sort().join() === keys.slice().sort().join();
+}
+function planSlots(plan) {
+  return Object.fromEntries(PLAN_KEYS.map((key) => [key, plan[key]]));
+}
+function normalizedPlan(session, input) {
+  if (!exactKeys(input, PLAN_KEYS) || !["full", "phased"].includes(input.route)) throw new Error("invalid plan slots");
+  const m = session.model.plan_model, a = m.actors, full = input.route === "full";
+  const expected = {route: input.route,
+    primary: {day: m.primaryDay, scope: full ? ["submission", "reliable_confirmation", "routing", "dashboard"] : ["submission", "reliable_confirmation"]},
+    followUp: full ? null : {day: m.followUpDay, scope: ["routing", "dashboard"]},
+    manual: full ? null : {owner: a.manual, instructionsOwner: a.instructions, instructionsDueDay: m.primaryDay},
+    engineering: {actorId: a.engineering, reservation: full ? "pair_before_launch" : "followup_by_day6"},
+    qa: {actorId: a.qa, fix: "await_save_ack", checks: ["save_success", "save_failure", "retry"]}};
+  // Scope/check lists are sets; unknown fields and duplicate entries still fail.
+  const sorted = (v) => Array.isArray(v) ? v.map(sorted).sort((x, y) => stableStringify(x).localeCompare(stableStringify(y)))
+    : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, sorted(x)])) : v;
+  if (stableStringify(sorted(input)) !== stableStringify(sorted(expected))) throw new Error("invalid plan slots");
+  return expected;
+}
+function currentPlanCommitment(session) {
+  return session.commitments.filter((c) => c.status === "active" && !c.unrealistic).pop() || null;
+}
+function planSource(session, sourceId, actorId, types) {
+  const [source] = sourceEvents(session, [sourceId], actorId);
+  if (source.turn_id !== session.turn || !types.includes(source.type) || source.allocation !== "none") throw new Error("invalid plan source");
+  return source;
+}
+function deliveredEvidence(session, sourceId, revision) {
+  const source = session.events_log.find((e) => e.source_id === sourceId);
+  if (!source || !Object.hasOwn(session.npcs, source.npc_id) || source.delivered !== true ||
+      (revision !== undefined && source.plan_revision !== revision)) throw new Error("invalid delivered plan evidence");
+  return {source_id: source.source_id, turn_id: source.turn_id, actor_id: source.npc_id,
+    ...(revision === undefined ? {} : {revision}), delivered: true};
+}
+function planProof(session, sources, commitment, actors, types) {
+  if (!sources.length || new Set(sources).size !== sources.length) throw new Error("duplicate plan evidence");
+  const evidence = sources.map((id) => deliveredEvidence(session, id, commitment?.plan.revision));
+  if (evidence.some((e, i) => e.actor_id !== actors[i] || !types[i].includes(session.events_log.find((row) => row.source_id === e.source_id).type))) throw new Error("invalid goal plan authority");
+  if (evidence.some((e) => session.events_log.find((row) => row.source_id === e.source_id).allocation !== "none")) throw new Error("allocated plan evidence");
+  for (const e of evidence) session.events_log.find((row) => row.source_id === e.source_id).allocation = "goals";
+  return {source_ids: sources.slice(), evidence, ...(commitment ? {commitment_id: commitment.id,
+    plan_id: commitment.plan.generatedPlanId, revision: commitment.plan.revision} : {})};
+}
+function planReady(session, plan) {
+  const a = session.model.plan_model.actors;
+  return plan?.delivered === true && plan.approvals[a.engineering] && plan.approvals[a.qa] &&
+    plan.correction?.routing_was_unapproved === true && plan.approvals[a.external] && plan.approvals[a.manager];
+}
+function preparePlanEvidence(session, runtime, actorId, text) {
+  const c = currentPlanCommitment(session), plan = c?.plan;
+  const events = session.events_log.filter((e) => e.turn_id === session.turn && e.npc_id === actorId)
+    .map(({type, params, source_id}) => ({type, params, sourceId: source_id}));
+  const input = deepClone({text: String(text || ""), actorId, turnId: session.turn, events,
+    activePlan: plan ? {id: plan.generatedPlanId, revision: plan.revision, slots: planSlots(plan), delivered: plan.delivered,
+      approvals: plan.approvals, correction: plan.correction, recaps: plan.recaps} : null,
+    publicCanon: session.model.public_canon, actorBindings: session.model.plan_model.actors});
+  const result = runtime.engine.planEvidence(freeze(input));
+  if (!exactKeys(result, ["proposal", "acknowledgements", "recap"]) || !Array.isArray(result.acknowledgements)) throw new Error("invalid plan evidence result");
+  const out = deepClone(result), used = new Set();
+  const use = (candidate, types) => {
+    if (used.has(candidate.sourceId)) throw new Error("duplicate plan source");
+    used.add(candidate.sourceId);
+    return planSource(session, candidate.sourceId, actorId, types);
+  };
+  let proposal = null;
+  if (out.proposal !== null) {
+    if (!exactKeys(out.proposal, ["sourceId", "plan"])) throw new Error("invalid proposal evidence");
+    const row = use(out.proposal, ["proposed_plan", "proposed_scope_cut", "proposed_phased_delivery"]);
+    proposal = normalizedPlan(session, out.proposal.plan);
+    if (!exactKeys(row.params, ["plan"]) || stableStringify(normalizedPlan(session, row.params.plan)) !== stableStringify(proposal)) throw new Error("mismatched proposal evidence");
+    if (!c || c.target_day !== proposal.primary.day) {
+      // Preserve the existing date fault; a scope proposal cannot erase it or
+      // turn an unrealistic primary commitment into a valid agreement.
+      if (!session.commitments.some((entry) => entry.status === "active" && entry.unrealistic)) throw new Error("missing plan commitment");
+      proposal = null; out.proposal = null;
+    }
+  }
+  for (const ack of out.acknowledgements) {
+    if (!exactKeys(ack, ["sourceId", "revision", "ack"]) || !Number.isInteger(ack.revision)) throw new Error("invalid acknowledgement evidence");
+    const row = use(ack, ["confirmed_next_steps"]), a = session.model.plan_model.actors;
+    const actors = {engineering: [a.engineering], qa: [a.qa], correction: [a.external], approval: [a.external, a.manager]};
+    if (!Object.hasOwn(actors, ack.ack) || !actors[ack.ack].includes(actorId) || !exactKeys(row.params, ["plan_revision", "ack"]) ||
+        row.params.plan_revision !== ack.revision || row.params.ack !== ack.ack || !plan || ack.revision !== plan.revision) throw new Error("invalid acknowledgement authority");
+  }
+  if (new Set(out.acknowledgements.map((ack) => ack.ack)).size !== out.acknowledgements.length) throw new Error("duplicate acknowledgement kind");
+  if (out.recap !== null) {
+    if (!exactKeys(out.recap, ["sourceId", "revision", "plan"]) || !Number.isInteger(out.recap.revision)) throw new Error("invalid recap evidence");
+    const row = use(out.recap, ["recapped_agreement"]), a = session.model.plan_model.actors;
+    if (![a.external, a.manager].includes(actorId) || !plan || out.recap.revision !== plan.revision ||
+        !exactKeys(row.params, ["plan_revision", "plan"]) || row.params.plan_revision !== out.recap.revision ||
+        stableStringify(normalizedPlan(session, row.params.plan)) !== stableStringify(planSlots(plan)) ||
+        stableStringify(normalizedPlan(session, out.recap.plan)) !== stableStringify(planSlots(plan))) throw new Error("invalid recap authority");
+  }
+  if (proposal) {
+    const sourceId = out.proposal.sourceId;
+    if (!plan || stableStringify(planSlots(plan)) !== stableStringify(proposal)) {
+      if (plan) (c.plan_history ||= []).push(deepClone(plan));
+      c.plan = {generatedPlanId: "P" + c.id, existingCommitmentId: c.id, revision: (plan?.revision || 0) + 1,
+        ...proposal, delivered: false, proposal_sources: [sourceId],
+        proposal_evidence: {source_id: sourceId, turn_id: session.turn, actor_id: actorId, revision: (plan?.revision || 0) + 1, delivered: false},
+        correction: null, approvals: {}, recaps: {}};
+      c.accepted_with = null; c.recap_turn_id = null;
+      // G2 is a one-time achievement; its prior proof is immutable history.
+      if (session.goals.G3.status === "done") throw new Error("revision after final agreement");
+    } else if (!c.plan.proposal_sources.includes(sourceId)) c.plan.proposal_sources.push(sourceId);
+  }
+  const active = c?.plan, stage = {proposal: out.proposal?.sourceId || null, acknowledgements: [], recap: null, ownership: []};
+  // A new material proposal cannot carry old-revision acknowledgements with it.
+  if (active?.delivered && (!proposal || stableStringify(proposal) === stableStringify(planSlots(plan)))) {
+    stage.acknowledgements = out.acknowledgements.filter((ack) => ack.revision === active.revision &&
+      (["engineering", "qa", "correction"].includes(ack.ack) || !!(active.approvals[session.model.plan_model.actors.engineering] && active.approvals[session.model.plan_model.actors.qa] && active.correction)));
+    if (out.recap && planReady(session, active)) stage.recap = out.recap;
+  }
+  if (actorId === session.model.plan_model.actors.manager && session.goals.G1.status !== "done") {
+    const ownership = events.filter((e) => ["took_ownership", "gave_honest_status"].includes(e.type));
+    if (ownership.filter((e) => e.type === "took_ownership").length === 1 && ownership.filter((e) => e.type === "gave_honest_status").length === 1) stage.ownership = ownership.map((e) => e.sourceId);
+  }
+  stage.commitmentId = c?.id || null; stage.revision = active?.revision || null;
+  return stage;
+}
+function finalRecap(session, stage, actorId) {
+  const p = currentPlanCommitment(session)?.plan, a = session.model.plan_model.actors;
+  return !!(stage.recap && planReady(session, p) && session.goals.G1.status === "done" && session.goals.G2.status === "done" &&
+    [a.external, a.manager].every((actor) => actor === actorId || p.recaps[actor]));
+}
+function deliverPlanEvidence(session, st, opts) {
+  const stage = st.planEvidence, c = session.commitments.find((entry) => entry.id === stage.commitmentId && entry.status === "active"), p = c?.plan;
+  if (!opts.delivered || !(st.closingAllowed ? opts.closingExpressed : opts.agreementExpressed) ||
+      (stage.revision !== null && (!p || p.revision !== stage.revision))) return;
+  const mark = (id) => {
+    const row = planSource(session, id, st.npcId, ["proposed_plan", "proposed_scope_cut", "proposed_phased_delivery", "confirmed_next_steps", "recapped_agreement", "took_ownership", "gave_honest_status"]);
+    row.delivered = true; if (p) row.plan_revision = p.revision;
+    return deliveredEvidence(session, id, p?.revision);
+  };
+  if (stage.ownership.length) {
+    stage.ownership.forEach(mark);
+    const ordered = ["took_ownership", "gave_honest_status"].map((type) => stage.ownership.find((id) => session.events_log.find((e) => e.source_id === id).type === type));
+    session.goals.G1 = {status: "done", turn_id: session.turn, proof: planProof(session, ordered, null,
+      [st.npcId, st.npcId], [["took_ownership"], ["gave_honest_status"]])};
+  }
+  if (!p) return;
+  if (stage.proposal) { p.delivered = true; if (!p.proposal_evidence.delivered) p.proposal_evidence = mark(stage.proposal); }
+  for (const ack of stage.acknowledgements) {
+    const key = st.npcId;
+    if (ack.ack === "correction") p.correction ||= {routing_was_unapproved: true, evidence: {ackBy: st.npcId, ...mark(ack.sourceId)}};
+    else if (!p.approvals[key]) p.approvals[key] = mark(ack.sourceId);
+  }
+  if (stage.recap && !p.recaps[st.npcId]) p.recaps[st.npcId] = mark(stage.recap.sourceId);
+  const a = session.model.plan_model.actors;
+  if (session.goals.G2.status !== "done" && p.approvals[a.engineering] && p.approvals[a.qa]) {
+    session.goals.G2 = {status: "done", turn_id: session.turn, proof: planProof(session, [p.approvals[a.engineering].source_id, p.approvals[a.qa].source_id], c,
+      [a.engineering, a.qa], [["confirmed_next_steps"], ["confirmed_next_steps"]])};
+  }
+  if (st.closingAllowed && planReady(session, p) && p.recaps[a.external] && p.recaps[a.manager] && session.goals.G1.status === "done" && session.goals.G2.status === "done") {
+    const sources = [p.proposal_evidence, p.correction.evidence, p.approvals[a.external], p.approvals[a.manager], p.recaps[a.external], p.recaps[a.manager]].map((e) => e.source_id);
+    const proof = planProof(session, sources, c, [p.proposal_evidence.actor_id, a.external, a.external, a.manager, a.external, a.manager],
+      [["proposed_plan", "proposed_scope_cut", "proposed_phased_delivery"], ["confirmed_next_steps"], ["confirmed_next_steps"], ["confirmed_next_steps"], ["recapped_agreement"], ["recapped_agreement"]]);
+    proof.prerequisite_evidence = [p.approvals[a.engineering], p.approvals[a.qa]].map((e) => deliveredEvidence(session, e.source_id, p.revision));
+    session.goals.G3 = {status: "done", turn_id: session.turn, proof};
+    c.accepted_with = a.manager; c.recap_turn_id = session.turn;
+  }
 }
 
 function policyResult(session, runtime, operation, extra = {}) {
@@ -238,6 +407,11 @@ function reevaluateCommitments(session, runtime) {
 export function createSession(scenario, opts) {
   const o = opts || {};
   const runtime = needRuntime(o.runtime, { scenario_id: scenario.id });
+  const planMode = runtime.schemaVersion === 2;
+  if ((scenario.plan_model && !planMode) || (planMode && (runtime.policyId !== "deadline-v2" || runtime.policyVersion !== 1 || scenario.version !== 2 ||
+      !scenario.plan_model || typeof runtime.engine.planEvidence !== "function" ||
+      runtime.identity?.schemaVersion !== 2 || runtime.identity?.scoringVersion !== 3 ||
+      stableStringify(scenario) !== stableStringify(runtime.spec)))) throw new Error("unsupported plan engine context");
   const seed = o.seed ?? 1;
   const locale = o.locale || (scenario.locales && scenario.locales[0]) || "en";
   const globalSliders = o.sliders || {};
@@ -291,7 +465,8 @@ export function createSession(scenario, opts) {
     id: scenario.id + "#s" + seed,
     scenario_id: scenario.id,
     scenario_version: scenario.version,
-    engine_policy: { id: runtime.policyId, version: runtime.policyVersion, proof_version: 1 },
+    engine_policy: { id: runtime.policyId, version: runtime.policyVersion, proof_version: planMode ? 2 : 1 },
+    ...(planMode ? {identity: deepClone(runtime.identity)} : {}),
     locale,
     seed,
     customisation,
@@ -313,6 +488,7 @@ export function createSession(scenario, opts) {
     endReason: null,
     model: {
       policy_rules: deepClone(runtime.rules),
+      ...(planMode ? {plan_model: deepClone(scenario.plan_model), public_canon: deepClone(scenario.canon.public)} : {}),
       facts: scenario.facts.map((f) => ({
         id: f.id,
         owner: f.owner,
@@ -462,6 +638,10 @@ function applyDraft(session, npc_id, events, opts) {
       const target = day + 0;
       const { min, cutoff, assist } = boundsFor(session, runtime, npc_id, list);
       const realistic = target >= min && target <= cutoff;
+      if (session.model.plan_model && currentPlanCommitment(session)?.target_day === target) {
+        session.events_log.push({turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none"});
+        continue;
+      }
       const id = "C" + (session.commitments.length + 1);
       const prior = session.commitments.filter((c) => c.status === "active").pop() || null;
       if (prior) prior.status = "superseded";
@@ -486,7 +666,7 @@ function applyDraft(session, npc_id, events, opts) {
         },
         unrealistic: !realistic,
         accepted_with: null,
-        pending_acceptance: realistic && npc_id === session.model.commitment_model.agreement_npc,
+        pending_acceptance: !session.model.plan_model && realistic && npc_id === session.model.commitment_model.agreement_npc,
         recap_turn_id: null,
         supersedes: prior ? prior.id : null,
       };
@@ -507,7 +687,7 @@ function applyDraft(session, npc_id, events, opts) {
       const active = session.commitments.filter(
         (c) => c.status === "active" && c.accepted_with,
       ).pop();
-      if (active && npc_id === session.model.commitment_model.agreement_npc && session.model.goals.filter((g) => g.done_when.includes("date_mutually_agreed")).some((g) => g.requires.every((id) => session.goals[id]?.status === "done"))) {
+      if (!session.model.plan_model && active && npc_id === session.model.commitment_model.agreement_npc && session.model.goals.filter((g) => g.done_when.includes("date_mutually_agreed")).some((g) => g.requires.every((id) => session.goals[id]?.status === "done"))) {
         active.pending_recap_turn = t;
       }
       session.events_log.push({ turn_id: t, npc_id, type, params, source_id: sourceId, allocation: "none" });
@@ -517,7 +697,8 @@ function applyDraft(session, npc_id, events, opts) {
   }
 
   // 4. Policies nominate; core verifies declared conditions and allocates proof.
-  captureGoals(session, runtime, npc_id, list);
+  const planEvidence = session.model.plan_model ? preparePlanEvidence(session, runtime, npc_id, o.text) : null;
+  if (!planEvidence) captureGoals(session, runtime, npc_id, list);
 
   // 5. Eligible reveals (trigger fired + forthcomingness gate passed).
   const eligible = [];
@@ -581,7 +762,11 @@ function applyDraft(session, npc_id, events, opts) {
           // (visible:false) never gate ending or closing.
           const required = session.model.goals.filter((g) => g.required && g.visible);
           const allDone = required.length > 0 && required.every((g) => session.goals[g.id] && ["done", "pending_delivery"].includes(session.goals[g.id].status));
-          if (allDone) {
+          if (planEvidence && finalRecap(session, planEvidence, npc_id)) {
+            act = "close_positive";
+          } else if (planEvidence && (planEvidence.proposal || planEvidence.acknowledgements.length || planEvidence.recap || planEvidence.ownership.length)) {
+            act = "accept_plan";
+          } else if (!planEvidence && allDone) {
             act = "close_positive";
           } else if (relayValidated) {
             act = "acknowledge_relay";
@@ -615,6 +800,8 @@ function applyDraft(session, npc_id, events, opts) {
         : session.commitments.some((c) => c.pending_recap_turn === t)
           ? { factId: null, agreementCommitmentId: null, closingAllowed: true, npcId: npc_id, turnId: t } : null;
   }
+  if (planEvidence && ["accept_plan", "close_positive"].includes(act)) session.staged = {
+    factId: null, npcId: npc_id, turnId: t, planEvidence, closingAllowed: act === "close_positive"};
   if (act === "callback_commitment" && b3fire) {
     b3fire.callbackFired = true;
     if (session.beats[callback.beatId]) {
@@ -669,6 +856,17 @@ function deliverDraft(session, turn_id, opts) {
   const delivered = !!(opts && opts.delivered);
   const st = session.staged;
   if (!st || st.turnId !== turn_id) return session;
+  if (st.planEvidence) {
+    deliverPlanEvidence(session, st, opts);
+    session.staged = null;
+    const required = session.model.goals.filter((g) => g.required && g.visible);
+    if (required.length && required.every((g) => session.goals[g.id]?.status === "done")) {
+      session.ended = true; session.endReason = "goals_complete";
+    }
+    const snapshot = deepClone(session); delete snapshot.snapshots;
+    if (session.snapshots.length) session.snapshots[session.snapshots.length - 1] = snapshot;
+    return session;
+  }
   if (delivered) {
     for (const c of session.commitments) {
       if (c.status !== "active") continue;
