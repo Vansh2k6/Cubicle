@@ -1,0 +1,681 @@
+{
+  "schema_version": 1,
+  "classifier_prompt_version": "v4",
+  "npc_prompt_version": "v5",
+  "content_version": 2,
+  "scoring_version": 3,
+  "live_eval_status": "NOT RUN",
+  "note": "Authored expected semantics; offline fake-provider checks do not measure live model recall or precision.",
+  "cases": [
+    {
+      "id": "proposed_plan-1",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "Let's deliver submission, reliable confirmation, routing and dashboard Friday. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_plan-2",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "Can we ship submission, reliable confirmation, routing and dashboard by Friday. Jordan will reserve the pair for Friday. Sam will fix confirmation to wait for save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_plan-3",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "I propose finish submission, reliable confirmation, routing and dashboard Friday; Prathamesh will await save acknowledgement and verify retry, failure and success; Vansh will reserve a pair for Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_plan-4",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "By Friday, deliver dashboard, routing, reliable confirmation and submission. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and verify save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_plan-5",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "Vansh Singh will reserve the pair for Friday; Sam will await save ack and verify save success, failure and retry; deliver submission, reliable confirmation, routing and dashboard Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_plan-6",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "Let's ship submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_plan-7",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "I propose deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions by Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_plan-8",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "By Friday, ship reliable confirmation and submission. On Monday, deliver dashboard and routing. Client operations will handle manual routing; Alex will write instructions by Friday. Vansh will reserve the follow-up for Monday. Sam will wait for the save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_plan-9",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "Can we complete submission and reliable confirmation Friday. Dashboard and routing will ship Monday. Client operations will manually route; I will provide instructions Friday. Jordan will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_plan-10",
+      "event": "proposed_plan",
+      "actorId": "maya",
+      "text": "I suggest deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; Alex will send instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and verify retry, failure and success.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_scope_cut-11",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "Let's deliver submission, reliable confirmation, routing and dashboard Friday. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_scope_cut-12",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "Can we ship submission, reliable confirmation, routing and dashboard by Friday. Jordan will reserve the pair for Friday. Sam will fix confirmation to wait for save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_scope_cut-13",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "I propose finish submission, reliable confirmation, routing and dashboard Friday; Prathamesh will await save acknowledgement and verify retry, failure and success; Vansh will reserve a pair for Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_scope_cut-14",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "By Friday, deliver dashboard, routing, reliable confirmation and submission. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and verify save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_scope_cut-15",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "Vansh Singh will reserve the pair for Friday; Sam will await save ack and verify save success, failure and retry; deliver submission, reliable confirmation, routing and dashboard Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_scope_cut-16",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "Let's ship submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_scope_cut-17",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "I propose deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions by Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_scope_cut-18",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "By Friday, ship reliable confirmation and submission. On Monday, deliver dashboard and routing. Client operations will handle manual routing; Alex will write instructions by Friday. Vansh will reserve the follow-up for Monday. Sam will wait for the save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_scope_cut-19",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "Can we complete submission and reliable confirmation Friday. Dashboard and routing will ship Monday. Client operations will manually route; I will provide instructions Friday. Jordan will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_scope_cut-20",
+      "event": "proposed_scope_cut",
+      "actorId": "maya",
+      "text": "I suggest deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; Alex will send instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and verify retry, failure and success.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_phased_delivery-21",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "Let's deliver submission, reliable confirmation, routing and dashboard Friday. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_phased_delivery-22",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "Can we ship submission, reliable confirmation, routing and dashboard by Friday. Jordan will reserve the pair for Friday. Sam will fix confirmation to wait for save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_phased_delivery-23",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "I propose finish submission, reliable confirmation, routing and dashboard Friday; Prathamesh will await save acknowledgement and verify retry, failure and success; Vansh will reserve a pair for Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_phased_delivery-24",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "By Friday, deliver dashboard, routing, reliable confirmation and submission. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and verify save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_phased_delivery-25",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "Vansh Singh will reserve the pair for Friday; Sam will await save ack and verify save success, failure and retry; deliver submission, reliable confirmation, routing and dashboard Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "proposed_phased_delivery-26",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "Let's ship submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_phased_delivery-27",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "I propose deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions by Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_phased_delivery-28",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "By Friday, ship reliable confirmation and submission. On Monday, deliver dashboard and routing. Client operations will handle manual routing; Alex will write instructions by Friday. Vansh will reserve the follow-up for Monday. Sam will wait for the save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_phased_delivery-29",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "Can we complete submission and reliable confirmation Friday. Dashboard and routing will ship Monday. Client operations will manually route; I will provide instructions Friday. Jordan will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "proposed_phased_delivery-30",
+      "event": "proposed_phased_delivery",
+      "actorId": "maya",
+      "text": "I suggest deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; Alex will send instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and verify retry, failure and success.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "committed_deadline-31",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "Let's deliver submission, reliable confirmation, routing and dashboard Friday. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "committed_deadline-32",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "Can we ship submission, reliable confirmation, routing and dashboard by Friday. Jordan will reserve the pair for Friday. Sam will fix confirmation to wait for save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "committed_deadline-33",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "I propose finish submission, reliable confirmation, routing and dashboard Friday; Prathamesh will await save acknowledgement and verify retry, failure and success; Vansh will reserve a pair for Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "committed_deadline-34",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "By Friday, deliver dashboard, routing, reliable confirmation and submission. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and verify save success, failure and retry.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "committed_deadline-35",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "Vansh Singh will reserve the pair for Friday; Sam will await save ack and verify save success, failure and retry; deliver submission, reliable confirmation, routing and dashboard Friday.",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "committed_deadline-36",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "Let's ship submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "committed_deadline-37",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "I propose deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions by Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "committed_deadline-38",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "By Friday, ship reliable confirmation and submission. On Monday, deliver dashboard and routing. Client operations will handle manual routing; Alex will write instructions by Friday. Vansh will reserve the follow-up for Monday. Sam will wait for the save acknowledgement and check save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "committed_deadline-39",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "Can we complete submission and reliable confirmation Friday. Dashboard and routing will ship Monday. Client operations will manually route; I will provide instructions Friday. Jordan will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "committed_deadline-40",
+      "event": "committed_deadline",
+      "actorId": "maya",
+      "text": "I suggest deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; Alex will send instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and verify retry, failure and success.",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "recapped_agreement-41",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "To recap: Let's deliver submission, reliable confirmation, routing and dashboard Friday. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "recapped_agreement-42",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "Let me recap: Can we ship submission, reliable confirmation, routing and dashboard by Friday. Jordan will reserve the pair for Friday. Sam will fix confirmation to wait for save acknowledgement and check save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "recapped_agreement-43",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "To summarize: I propose finish submission, reliable confirmation, routing and dashboard Friday; Prathamesh will await save acknowledgement and verify retry, failure and success; Vansh will reserve a pair for Friday.",
+      "activeRoute": "full",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "recapped_agreement-44",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "In summary: By Friday, deliver dashboard, routing, reliable confirmation and submission. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and verify save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "recapped_agreement-45",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "Recap: Vansh Singh will reserve the pair for Friday; Sam will await save ack and verify save success, failure and retry; deliver submission, reliable confirmation, routing and dashboard Friday.",
+      "activeRoute": "full",
+      "expectedPlanRoute": "full"
+    },
+    {
+      "id": "recapped_agreement-46",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "To recap: Let's ship submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "activeRoute": "phased",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "recapped_agreement-47",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "Let me recap: I propose deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; I will provide instructions by Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "activeRoute": "phased",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "recapped_agreement-48",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "To summarize: By Friday, ship reliable confirmation and submission. On Monday, deliver dashboard and routing. Client operations will handle manual routing; Alex will write instructions by Friday. Vansh will reserve the follow-up for Monday. Sam will wait for the save acknowledgement and check save success, failure and retry.",
+      "activeRoute": "phased",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "recapped_agreement-49",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "In summary: Can we complete submission and reliable confirmation Friday. Dashboard and routing will ship Monday. Client operations will manually route; I will provide instructions Friday. Jordan will reserve capacity for Monday. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "activeRoute": "phased",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "recapped_agreement-50",
+      "event": "recapped_agreement",
+      "actorId": "client",
+      "text": "Recap: I suggest deliver submission and reliable confirmation Friday. Routing and dashboard will follow Monday. Client operations will manually route; Alex will send instructions Friday. Vansh will reserve capacity for Monday. Prathamesh will await save acknowledgement and verify retry, failure and success.",
+      "activeRoute": "phased",
+      "expectedPlanRoute": "phased"
+    },
+    {
+      "id": "confirmed_next_steps-51",
+      "event": "confirmed_next_steps",
+      "actorId": "jordan",
+      "text": "I will reserve a pair before launch.",
+      "activeRoute": "full",
+      "expectedAck": "engineering"
+    },
+    {
+      "id": "confirmed_next_steps-52",
+      "event": "confirmed_next_steps",
+      "actorId": "jordan",
+      "text": "Please reserve the pair for Friday.",
+      "activeRoute": "full",
+      "expectedAck": "engineering"
+    },
+    {
+      "id": "confirmed_next_steps-53",
+      "event": "confirmed_next_steps",
+      "actorId": "jordan",
+      "text": "Can you reserve a pair for Friday?",
+      "activeRoute": "full",
+      "expectedAck": "engineering"
+    },
+    {
+      "id": "confirmed_next_steps-54",
+      "event": "confirmed_next_steps",
+      "actorId": "jordan",
+      "text": "Could you reserve the pair before launch?",
+      "activeRoute": "full",
+      "expectedAck": "engineering"
+    },
+    {
+      "id": "confirmed_next_steps-55",
+      "event": "confirmed_next_steps",
+      "actorId": "jordan",
+      "text": "I reserve a pair before launch.",
+      "activeRoute": "full",
+      "expectedAck": "engineering"
+    },
+    {
+      "id": "confirmed_next_steps-56",
+      "event": "confirmed_next_steps",
+      "actorId": "sam",
+      "text": "I will await save acknowledgement and verify save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedAck": "qa"
+    },
+    {
+      "id": "confirmed_next_steps-57",
+      "event": "confirmed_next_steps",
+      "actorId": "sam",
+      "text": "Please wait for the save acknowledgement and test retry, save failure and save success.",
+      "activeRoute": "full",
+      "expectedAck": "qa"
+    },
+    {
+      "id": "confirmed_next_steps-58",
+      "event": "confirmed_next_steps",
+      "actorId": "sam",
+      "text": "Can you fix confirmation to wait for save acknowledgement and check save success, failure and retry?",
+      "activeRoute": "full",
+      "expectedAck": "qa"
+    },
+    {
+      "id": "confirmed_next_steps-59",
+      "event": "confirmed_next_steps",
+      "actorId": "sam",
+      "text": "Could you await save acknowledgment and verify retry, success and failure?",
+      "activeRoute": "full",
+      "expectedAck": "qa"
+    },
+    {
+      "id": "confirmed_next_steps-60",
+      "event": "confirmed_next_steps",
+      "actorId": "sam",
+      "text": "I await save ack and verify save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedAck": "qa"
+    },
+    {
+      "id": "confirmed_next_steps-61",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "Routing was unapproved.",
+      "activeRoute": "full",
+      "expectedAck": "correction"
+    },
+    {
+      "id": "confirmed_next_steps-62",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "I must correct my routing promise: routing was unapproved.",
+      "activeRoute": "full",
+      "expectedAck": "correction"
+    },
+    {
+      "id": "confirmed_next_steps-63",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "I promised routing without agreement.",
+      "activeRoute": "full",
+      "expectedAck": "correction"
+    },
+    {
+      "id": "confirmed_next_steps-64",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "My routing promise was unapproved.",
+      "activeRoute": "full",
+      "expectedAck": "correction"
+    },
+    {
+      "id": "confirmed_next_steps-65",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "Routing was only a suggestion, not an agreed commitment.",
+      "activeRoute": "full",
+      "expectedAck": "correction"
+    },
+    {
+      "id": "confirmed_next_steps-66",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "Can you accept this plan? Let's deliver submission, reliable confirmation, routing and dashboard Friday. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and test save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedAck": "approval"
+    },
+    {
+      "id": "confirmed_next_steps-67",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "Please approve the current revision. Can we ship submission, reliable confirmation, routing and dashboard by Friday. Jordan will reserve the pair for Friday. Sam will fix confirmation to wait for save acknowledgement and check save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedAck": "approval"
+    },
+    {
+      "id": "confirmed_next_steps-68",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "Does this plan work for you? I propose finish submission, reliable confirmation, routing and dashboard Friday; Prathamesh will await save acknowledgement and verify retry, failure and success; Vansh will reserve a pair for Friday.",
+      "activeRoute": "full",
+      "expectedAck": "approval"
+    },
+    {
+      "id": "confirmed_next_steps-69",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "Will the current plan work for you? By Friday, deliver dashboard, routing, reliable confirmation and submission. Vansh will reserve a pair before launch. Prathamesh will await save acknowledgement and verify save success, failure and retry.",
+      "activeRoute": "full",
+      "expectedAck": "approval"
+    },
+    {
+      "id": "confirmed_next_steps-70",
+      "event": "confirmed_next_steps",
+      "actorId": "client",
+      "text": "Are you happy to accept this plan? Vansh Singh will reserve the pair for Friday; Sam will await save ack and verify save success, failure and retry; deliver submission, reliable confirmation, routing and dashboard Friday.",
+      "activeRoute": "full",
+      "expectedAck": "approval"
+    },
+    {
+      "id": "asked_background-71",
+      "event": "asked_background",
+      "actorId": "client",
+      "text": "What exactly did I promise on routing?"
+    },
+    {
+      "id": "asked_background-72",
+      "event": "asked_background",
+      "actorId": "client",
+      "text": "What had actually been agreed about routing?"
+    },
+    {
+      "id": "asked_background-73",
+      "event": "asked_background",
+      "actorId": "client",
+      "text": "What did we agree about routing?"
+    },
+    {
+      "id": "asked_background-74",
+      "event": "asked_background",
+      "actorId": "client",
+      "text": "What is the background to routing?"
+    },
+    {
+      "id": "asked_background-75",
+      "event": "asked_background",
+      "actorId": "client",
+      "text": "How did routing get included?"
+    },
+    {
+      "id": "asked_why_urgent-76",
+      "event": "asked_why_urgent",
+      "actorId": "client",
+      "text": "Why is this handover urgent?"
+    },
+    {
+      "id": "asked_why_urgent-77",
+      "event": "asked_why_urgent",
+      "actorId": "client",
+      "text": "Why the rush?"
+    },
+    {
+      "id": "asked_why_urgent-78",
+      "event": "asked_why_urgent",
+      "actorId": "client",
+      "text": "Why is Friday important?"
+    },
+    {
+      "id": "asked_why_urgent-79",
+      "event": "asked_why_urgent",
+      "actorId": "client",
+      "text": "Why is the launch urgent?"
+    },
+    {
+      "id": "asked_why_urgent-80",
+      "event": "asked_why_urgent",
+      "actorId": "client",
+      "text": "What makes this urgent?"
+    },
+    {
+      "id": "asked_for_help-81",
+      "event": "asked_for_help",
+      "actorId": "client",
+      "text": "What can we reuse?"
+    },
+    {
+      "id": "asked_for_help-82",
+      "event": "asked_for_help",
+      "actorId": "client",
+      "text": "What's left and can you help?"
+    },
+    {
+      "id": "asked_for_help-83",
+      "event": "asked_for_help",
+      "actorId": "client",
+      "text": "What capacity do you have?"
+    },
+    {
+      "id": "asked_for_help-84",
+      "event": "asked_for_help",
+      "actorId": "client",
+      "text": "Can you reserve help for this plan?"
+    },
+    {
+      "id": "asked_for_help-85",
+      "event": "asked_for_help",
+      "actorId": "client",
+      "text": "What help is available?"
+    },
+    {
+      "id": "asked_impact-86",
+      "event": "asked_impact",
+      "actorId": "client",
+      "text": "What could go wrong?"
+    },
+    {
+      "id": "asked_impact-87",
+      "event": "asked_impact",
+      "actorId": "client",
+      "text": "What could make release unsafe?"
+    },
+    {
+      "id": "asked_impact-88",
+      "event": "asked_impact",
+      "actorId": "client",
+      "text": "What should QA verify?"
+    },
+    {
+      "id": "asked_impact-89",
+      "event": "asked_impact",
+      "actorId": "client",
+      "text": "What must we fix and verify?"
+    },
+    {
+      "id": "asked_impact-90",
+      "event": "asked_impact",
+      "actorId": "client",
+      "text": "What is the release risk?"
+    },
+    {
+      "id": "asked_expectation-91",
+      "event": "asked_expectation",
+      "actorId": "client",
+      "text": "What does the client need Friday?"
+    },
+    {
+      "id": "asked_expectation-92",
+      "event": "asked_expectation",
+      "actorId": "client",
+      "text": "What do you actually need Friday?"
+    },
+    {
+      "id": "asked_expectation-93",
+      "event": "asked_expectation",
+      "actorId": "client",
+      "text": "Could operations manually route?"
+    },
+    {
+      "id": "asked_expectation-94",
+      "event": "asked_expectation",
+      "actorId": "client",
+      "text": "What would client operations need?"
+    },
+    {
+      "id": "asked_expectation-95",
+      "event": "asked_expectation",
+      "actorId": "client",
+      "text": "What are your expectations?"
+    }
+  ]
+}

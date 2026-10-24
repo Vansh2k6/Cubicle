@@ -1,3 +1,4 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 // services/api/tests/threads.test.js — P3a offline tests (node:test).
 // Threads, goal checklist/next-step mapping, and knowledge silos across the
 // three NPCs. Fake (stub) providers only; no network beyond localhost, no keys.
@@ -8,7 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "../server.js";
 import { nextHintFor, projectGoals } from "../../../llm/pipeline.js";
-import * as engine from "../../../engine/engine.js";
+import * as engine from "../../../engine/sc01Compatibility.js";
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const scenario = JSON.parse(readFileSync(join(dir, "..", "..", "..", "scenarios", "missed_deadline.json"), "utf8"));
@@ -18,9 +19,9 @@ const F2_KEYS = ["reusable", "module", "afternoon"];
 const F3_KEYS = ["heads-up", "headsup", "same-day", "same day"];
 
 const HINT = {
-  maya: "Talk to Maya about the missed deadline.",
-  jordan: "Check in with Jordan about what's left.",
-  plan: "Go back to Maya and agree a plan.",
+  maya: "Talk to Snehal about the missed deadline.",
+  jordan: "Check in with Vansh about what's left.",
+  plan: "Go back to Snehal and agree a plan.",
   done: "Nice work — wrap up and reflect on the conversation.",
 };
 
@@ -58,11 +59,11 @@ function goalsById(goals) {
 }
 
 test.before(async () => {
-  const a = createServer({ debug: false });
+  const a = createServer({ registry: legacyRegistry, debug: false });
   await new Promise((r) => a.server.listen(0, r));
   plain = a;
   base = `http://localhost:${a.server.address().port}`;
-  const b = createServer({ debug: true });
+  const b = createServer({ registry: legacyRegistry, debug: true });
   await new Promise((r) => b.server.listen(0, r));
   dbg = b;
   debugBase = `http://localhost:${b.server.address().port}`;
@@ -234,7 +235,7 @@ test("public-state allowlist holds for every npc", async () => {
   for (const [npc, text, key] of lines) {
     const r = await turn(base, sid, npc, text, key);
     assert.equal(r.status, 200);
-    assert.deepEqual(Object.keys(r.data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id"].sort());
+    assert.deepEqual(Object.keys(r.data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id", "speech"].sort());
     assert.deepEqual(
       Object.keys(r.data.public_state).sort(),
       ["ended", "goals", "mood_label", "next_hint", "npc_availability"].sort(),

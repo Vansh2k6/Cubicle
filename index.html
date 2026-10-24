@@ -74,35 +74,35 @@
           People in the office
         </div>
         <div class="people-list">
-          <button class="person" data-person="maya" title="Find Maya Chen">
+          <button class="person" data-person="maya" title="Find Snehal Mane">
             <span class="avatar purple"
               ><span class="avatar-head"></span><span class="avatar-body"></span
             ></span>
-            <span><strong>Maya Chen</strong><small>Your manager</small></span>
+            <span><strong>Snehal Mane</strong><small>Your manager</small></span>
             <span class="person-status"></span>
           </button>
-          <button class="person" data-person="jordan" title="Find Jordan Lee">
+          <button class="person" data-person="jordan" title="Find Vansh Singh">
             <span class="avatar peach"
               ><span class="avatar-head"></span><span class="avatar-body"></span
             ></span>
-            <span><strong>Jordan Lee</strong><small>Your teammate</small></span>
+            <span><strong>Vansh Singh</strong><small>Your teammate</small></span>
             <span class="person-status"></span>
           </button>
-          <button class="person" data-person="sam" title="Find Sam Taylor">
+          <button class="person" data-person="sam" title="Find Prathamesh Surwase">
             <span class="avatar sage"
               ><span class="avatar-head"></span><span class="avatar-body"></span
             ></span>
             <span
-              ><strong>Sam Taylor</strong><small>People & culture</small></span
+              ><strong>Prathamesh Surwase</strong><small>People & culture</small></span
             >
             <span class="person-status"></span>
           </button>
         </div>
         <div class="sidebar-bottom">
           <button id="profile" class="profile">
-            <span class="profile-avatar">A</span>
+            <span class="profile-avatar">SP</span>
             <span
-              ><strong>Alex Morgan</strong
+              ><strong>Shubhankar Parsewar</strong
               ><small>Playing as an employee</small></span
             >
             <i data-lucide="chevrons-up-down"></i>
@@ -117,13 +117,18 @@
           </div>
           <div class="topbar-right">
             <span class="practice-pill"><span></span>Practice mode</span>
-            <button id="help" class="icon-button" aria-label="Help">
-              <i data-lucide="circle-help"></i>
-            </button>
-            <span class="top-avatar">A</span>
+
+            <span class="top-avatar">SP</span>
           </div>
         </header>
         <div class="main-content">
+          <section id="entry-screen" class="entry-screen" aria-labelledby="entry-title">
+            <a class="brand entry-brand" href="/" aria-label="Cubicle home"><span class="brand-mark" aria-hidden="true">c</span>cubicle</a><div class="entry-intro"><h1 id="entry-title" tabindex="-1">Choose a workplace moment</h1><p>Step into a short conversation, try your approach, and return whenever you want to practise again.</p></div>
+            <div id="scenario-cards" class="scenario-cards" aria-live="polite"></div>
+            <section id="scenario-briefing" class="scenario-briefing" hidden aria-live="polite"></section>
+            <div id="entry-loading" class="entry-loading" hidden role="status" aria-live="polite">Preparing your office…</div>
+            <div id="entry-error" class="entry-error" hidden role="alert"></div>
+          </section>
           <div class="page-heading">
             <div>
               <h1 id="scenario-title">Missed a project deadline</h1>
@@ -136,21 +141,6 @@
               <i data-lucide="rotate-ccw"></i><span>Restart scenario</span>
             </button>
           </div>
-          <section class="below-game" aria-label="Current objective">
-            <div class="next-step">
-              <span class="step-icon"
-                ><i data-lucide="message-square-text"></i
-              ></span>
-              <div>
-                <h2 id="next-heading">Say hello to Maya</h2>
-                <p id="next-description">
-                  Walk up to your manager and press <kbd>E</kbd> to start the
-                  conversation.
-                </p>
-              </div>
-              <span class="step-number">01 <span>/ 03</span></span>
-            </div>
-          </section>
           <section class="game-card" aria-label="Interactive 3D office">
             <div class="game-top">
               <div class="office-title">
@@ -165,6 +155,11 @@
                 <span class="scene-tag"
                   ><i data-lucide="users"></i> 3 colleagues</span
                 >
+                <button id="office-context" class="secondary-button" type="button">Practice</button>
+                <button id="help" class="icon-button" aria-label="Help">
+              <i data-lucide="circle-help"></i>
+            </button>
+                <button id="office-menu" class="secondary-button office-menu" type="button">Menu</button>
                 <button
                   id="sound"
                   class="icon-button"
@@ -183,6 +178,21 @@
                 </button>
               </div>
             </div>
+          <details class="below-game"><summary>Next step</summary>
+            <div class="next-step">
+              <span class="step-icon"
+                ><i data-lucide="message-square-text"></i
+              ></span>
+              <div>
+                <h2 id="next-heading">Say hello to Snehal</h2>
+                <p id="next-description">
+                  Walk up to your manager and press <kbd>E</kbd> to start the
+                  conversation.
+                </p>
+              </div>
+              <span class="step-number">01 <span>/ 03</span></span>
+            </div>
+          </details>
             <div
               id="game-viewport"
               tabindex="0"
@@ -200,7 +210,7 @@
                 >
               </div>
               <button class="talk-prompt hidden" id="talk-prompt">
-                <kbd>E</kbd><span>Talk to <strong>Maya</strong></span
+                <kbd>E</kbd><span>Talk to <strong>Snehal</strong></span
                 ><i data-lucide="message-circle"></i>
               </button>
               <div class="map">
@@ -267,7 +277,7 @@
             <div class="game-footer">
               <span
                 ><span class="status-dot"></span> You’re playing as
-                <strong>Alex, the employee</strong></span
+                <strong>Shubhankar, the employee</strong></span
               >
               <div>
                 <span
@@ -283,6 +293,13 @@
       </main>
     </div>
     <div id="modal-root"></div>
+    <dialog id="end-practice-dialog" class="end-practice-dialog" aria-labelledby="end-practice-title">
+      <form method="dialog">
+        <h2 id="end-practice-title">End this practice and return to the menu?</h2>
+        <p>Your current conversation will be cleared. Saved progress stays on this device.</p>
+        <div><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" value="confirm">End practice</button></div>
+      </form>
+    </dialog>
     <div id="toast" role="status"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

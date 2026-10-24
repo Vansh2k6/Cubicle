@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-22",
+  "kind": "Actual rendered-heading trace during W, D, A direction changes",
+  "baseline": {
+    "max_degrees_per_frame": 180,
+    "largest_turn_frame_ms": 16.8
+  },
+  "candidate": {
+    "samples": 240,
+    "turn_frames": 49,
+    "max_degrees_per_frame": 59.4388758582625,
+    "largest_change_frame_ms": 16.69999999999891
+  },
+  "limitations": "Temporary local development instrumentation; fixed synthetic keyboard sequence. No microphone, transcript or Groq calls. Visual motion check, not full V4 concurrent speech acceptance."
+}

@@ -138,7 +138,10 @@ test("publicScenario leaks nothing private", () => {
 
 test("validator imports nothing network-related", () => {
   const src = readFileSync(join(root, "..", "scenarioValidator.js"), "utf8");
-  assert.deepEqual(src.match(/^import .*$/gm), ['import schema from "../scenarios/missed_deadline.schema.json" with { type: "json" };'], "only static scenario data may be imported");
+  assert.deepEqual(src.match(/^import .*$/gm), [
+    'import schema from "../scenarios/missed_deadline.schema.json" with { type: "json" };',
+    'import schemaV2 from "../scenarios/missed_deadline.v2.schema.json" with { type: "json" };',
+  ], "only static scenario data may be imported");
   assert.ok(!/\brequire\s*\(/.test(src), "validator must not use require");
   const low = src.toLowerCase();
   for (const banned of ["openai", "node:net", "node:http", "from \"net\"", "from \"http\""]) {

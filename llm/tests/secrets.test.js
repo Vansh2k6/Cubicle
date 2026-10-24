@@ -11,6 +11,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "reports", ".opencode"]);
 const SKIP_FILES = new Set(["package-lock.json"]);
 const rootEnv = join(root, ".env");
+const localInstallDirs = new Set([join(root, "voice-sidecar", ".venv"), join(root, "voice-sidecar", "models")]);
 
 // A user-local root .env is deliberately ignored by the content scan. Every
 // other file, including nested .env files, remains in scope.
@@ -32,6 +33,7 @@ function walk(dir, out) {
   for (const name of readdirSync(dir)) {
     if (SKIP_DIRS.has(name) || SKIP_FILES.has(name)) continue;
     const p = join(dir, name);
+    if (localInstallDirs.has(p)) continue; // Exactly the ignored model/runtime artifacts, never sidecar source.
     const st = statSync(p);
     if (st.isDirectory()) walk(p, out);
     else if (st.isFile() && st.size < 512 * 1024 && !excludedFromContentScan(p)) out.push(p);
@@ -76,7 +78,7 @@ function checkExample(text) {
     const separator = t.indexOf("=");
     const name = t.slice(0, separator);
     const value = t.slice(separator + 1);
-    const allowed = { LLM_PROVIDER: "offline", LLM_MAX_CALLS: "40", LLM_MAX_TOKENS_TOTAL: "60000", LLM_TPM_LIMIT: "6000", CLASSIFIER_MODEL: "openai/gpt-oss-20b", NPC_MODEL: "qwen/qwen3.8-27b", JUDGE_MODEL: "openai/gpt-oss-120b", COACH_MODEL: "openai/gpt-oss-120b", CLASSIFIER_REASONING_EFFORT: "low", NPC_REASONING_EFFORT: "none", JUDGE_REASONING_EFFORT: "low", COACH_REASONING_EFFORT: "low" };
+    const allowed = { LLM_PROVIDER: "offline", LLM_MAX_CALLS: "40", LLM_MAX_TOKENS_TOTAL: "60000", LLM_TPM_LIMIT: "6000", CLASSIFIER_MODEL: "openai/gpt-oss-20b", NPC_MODEL: "qwen/qwen3.8-27b", JUDGE_MODEL: "openai/gpt-oss-120b", COACH_MODEL: "openai/gpt-oss-120b", CLASSIFIER_REASONING_EFFORT: "low", NPC_REASONING_EFFORT: "none", JUDGE_REASONING_EFFORT: "low", COACH_REASONING_EFFORT: "low", VOICE_ENABLED: "0", VITE_VOICE: "0", VOICE_STT_DEVICE: "auto", VOICE_STT_CHAIN: "local", VOICE_TTS_CHAIN: "local,browser", VOICE_LOCAL_URL: "http://127.0.0.1:8790", VOICE_STT_TIMEOUT_MS: "8000", VOICE_TTS_TIMEOUT_MS: "6000" };
     assert.ok(separator > 0 && /^[A-Z_]+$/.test(name), "invalid environment variable name");
     assert.ok(value === (allowed[name] || ""), `unapproved default for ${name}`);
   }
@@ -130,4 +132,15 @@ test("effective ignore guard rejects a later root .env unignore", () => {
     assert.ok(verified.startsWith(tempPrefix), "fixture cleanup escaped its temporary directory");
     rmSync(fixture, { recursive: true, force: true });
   }
+});
+
+test("local install exclusions are exact, ignored directories; voice sources remain scanned", () => {
+  for (const name of [".venv", "models"]) {
+    const path = join(root, "voice-sidecar", name);
+    assert.equal(localInstallDirs.has(path), true);
+    assert.equal(localInstallDirs.has(join(root, "other", name)), false);
+    execFileSync("git", ["check-ignore", "-q", "--no-index", "--", "voice-sidecar/" + name + "/"], { cwd: root, stdio: "ignore" });
+  }
+  assert.equal(localInstallDirs.has(join(root, "voice-sidecar", "server.py")), false);
+  assert.equal(excludedFromContentScan(join(root, "voice-sidecar", ".env")), false);
 });

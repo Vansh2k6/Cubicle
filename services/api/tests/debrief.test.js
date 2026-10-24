@@ -1,8 +1,9 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../server.js";
 const servers = [];
-const launch = async (options) => { const { server } = createServer(options); servers.push(server); await new Promise((r) => server.listen(0, "127.0.0.1", r)); return `http://127.0.0.1:${server.address().port}`; };
+const launch = async (options) => { const { server } = createServer({registry: legacyRegistry, ...options}); servers.push(server); await new Promise((r) => server.listen(0, "127.0.0.1", r)); return `http://127.0.0.1:${server.address().port}`; };
 test.after(async () => { await Promise.all(servers.map((s) => new Promise((r) => s.close(r)))); });
 const request = async (base, path, body) => { const res = await fetch(base + path, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }); return { status: res.status, body: await res.json() }; };
 const create = async (base, sliders) => { const r = await request(base, "/sessions", { scenario_id: "deadline", ...(sliders ? { sliders } : {}) }); return `/sessions/${encodeURIComponent(r.body.session_id)}`; };
@@ -59,7 +60,7 @@ test("automatic max-turn ending starts one debrief without changing the turn all
   const path = await create(base); let response;
   for (let i = 0; i < 20; i++) response = await request(base, path + "/turn", { npc_id: "jordan", text: "Hello.", idempotencyKey: `greet-${i}` });
   assert.equal(response.body.ended, true);
-  assert.deepEqual(Object.keys(response.body).sort(), ["npc_reply", "public_state", "ended", "end_reason", "turn_id"].sort());
+  assert.deepEqual(Object.keys(response.body).sort(), ["npc_reply", "public_state", "ended", "end_reason", "turn_id", "speech"].sort());
   await ready(base, path); await request(base, path + "/end", {});
   assert.equal(calls, 1);
 });

@@ -320,16 +320,28 @@ Runs asynchronously; the UI polls or subscribes. Judge: temp 0, JSON, quality-on
 - Constraint: `better_reply` uses only information the user had (R-25). Performance runs are marked as *illustrative* and never alter the score.
 - **S1 minimum**: debrief shows one improved response as text.
 
-## 13. Voice **[S1 stretch → S2]**
+## 13. Voice **[S1 stretch → S2; D-35 Accepted]**
+
+V1 implements the opt-in local STT server boundary and operator scripts. V2 adds gated recording and editable draft confirmation; V3 supplies turn-scoped NPC playback. V4 adds stored-coaching Listen and health/recovery; its candidate verification is tracked separately. Voice defaults off. See voice-sidecar/README.md and plans/VOICE_V2_STATUS.md for scope and verification limitations. Under D-36, auto device selection prefers warmed CUDA/float16 with CPU/int8 fallback; explicit CUDA fails honestly.
+
+English only. Voice is off by default behind server `VOICE_ENABLED=1` and client `VITE_VOICE=1`; a user must explicitly enable it. Typed input remains permanently available.
 
 ```
-Mic → (push-to-talk) → STT → editable transcript → normal turn pipeline
-NPC text → TTS (per-NPC voice, locale) → audio stream → player (mutable)
+push-to-talk → MediaRecorder → POST /sessions/{id}/voice/stt → editable transcript
+→ confirmed text → existing normal turn pipeline → committed guarded NPC reply
+→ speech descriptor → nonblocking server prefetch → id-scoped fetch → playback
 ```
-- `SpeechProvider` interface: `transcribe(audio, locale)`, `synthesize(text, voice, locale)`. Providers are swappable; none are validated yet.
-- S1: push-to-talk, user edits transcript before sending (R-42). TTS optional.
-- S2: streaming STT, per-NPC voices, barge-in, audio cache, latency target < 2.5 s to first audio.
-- Scoring uses the confirmed text only (R-23). Audio not retained by default (R-54).
+
+- Server interface: `SpeechProvider.transcribe({audio, mime, signal}) → {text, duration_ms, provider}` and `SpeechProvider.synthesize({text, voice, signal}) → {audio: Buffer, mime, provider}`. The initial approved local sidecar uses faster-whisper `small.en` for STT and Piper by default for TTS; Kokoro is deferred unless the human asks. Cloud is a future adapter only and is not implemented by D-35.
+- STT ends in an editable draft. Only user-confirmed text enters the normal turn, transcript, scoring, and quote-validation paths (R-21/R-23).
+- `GET /voice/status` returns only `{enabled:boolean, stt:boolean, tts_mode:"server"|"browser"|"none"}`. Configured enablement is separate from current readiness. A shared 500ms bounded health probe is deduplicated, memoized for five seconds while healthy, and retried on demand after exponential one-to-thirty-second failure backoff. An unavailable/invalid health response disables local speech; an incomplete voice map disables TTS only. Providers without health (offline fakes) retain capability-based behavior. The client offers Retry voice when unavailable, preserving typed drafts/focus and existing consent. No response exposes sidecar credentials, paths, models or session state; health performs no inference. Recording permission is requested only after an explicit recording action. Close, send, End, reset, blur, hidden page or thread replacement cancels the current recording/upload; stale results cannot replace a changed draft or a new conversation.
+- V3 TTS runs only after the guarded NPC line has committed, including a guarded fallback. It never delays the text response or alters engine state, disclosure credit, scoring, or visible text. The server caches at most eight in-memory, turn-id-scoped audio jobs per session; end and server close abort and discard them.
+- The turn response may expose only `speech: { available: boolean, turn_id: string, mode: "server" | "browser" | "none" }`. It carries no text, labels, facts, voice identifiers, acts, or guard data.
+- Audio is fetched only through private, session-and-id-scoped routes for an already committed NPC turn or stored guarded debrief reply. No route accepts client-provided synthesis text. Browser `SpeechRecognition` is not local STT; browser `speechSynthesis` is only a last-resort local TTS mode.
+- V4 Listen uses `GET /sessions/{id}/debrief/moments/{moment_id}/audio` for an ended session and settled stored debrief only. IDs are server-owned revision/index strings. The server voices exactly the stored historically guarded `better_reply` with `alex_coach`, never client text/voice/query parameters. Feedback retry aborts/invalidates the separate eight-entry coach cache and old IDs. Voice-off debrief JSON remains unchanged. Modal Voice/Sounds controls require opt-in/unmuted state; Listen unlocks during its click and cancels on close, feedback retry, new run, blur, hidden tab or mute. The single playback instance owns unlock state; persisted consent alone does not unlock audio.
+- `voice:latency` forces offline LLM selection before importing the API, runs 20–50 synthetic confirmation/guarded-turn/local-audio cycles against its own loopback API, and records p50/p95 STT, guarded text, endpoint first byte/total, added voice and speech-end-to-first-audio separately. WAV/text stay in memory; reports contain timing/hardware metadata only. Prefetch overlaps the text response, and endpoint timing describes that measurement boundary. Scene frame sampling is NOT RUN until measured independently; local-primary/cloud decisions remain subject to D-35.
+- Audio stays in memory only and is omitted from logs, snapshots, session dumps, progress summaries, and debug traces. NPC audio is dropped on session end; coaching audio is generated only after end, invalidated on feedback retry and dropped on process close. Neither cache enters persistent session state (R-54/R-66). Opaque session IDs are the only session identifier shared with a provider (R-53).
+- S2 retains streaming STT, barge-in, language-matched voices, and the <2.5 s first-audio target.
 
 ## 14. Localisation **[S2]**
 
@@ -398,6 +410,8 @@ WS   /sessions/{id}/stream                -> NPC text/audio streaming           
 | **Total p50 / p95** | **S1: < 3.5 s / < 5 s** (D-23); **S2: < 2 s / < 3 s**, fixed-line p50 < 0.5 s |
 
 Totals are targets, not measured guarantees; individual rows are typical-stage budgets, not additive percentile promises. Measure from submit through complete guarded reply delivery, including retries/fallbacks; report sample count, provider/model, warm/cold conditions and fallback rate. S1 levers: short outputs, prompt trimming and model routing; stored normal replies, trained tiers and streaming are S2. Provider/models are selected in D-28; live measurements remain deferred.
+
+Voice timing is measured separately: STT duration, TTS time-to-first-byte and total, and speech-end to first-audio. Voice measurements never merge into the guarded text-turn p50/p95 above; D-35's local-primary decision is pending a demo-laptop result of about 1.5 s or less p50 for added STT plus TTS-first-byte latency and no measured scene stutter.
 
 ## 20. Observability and evaluation
 
@@ -484,3 +498,33 @@ The client stores only sanitized attempt summaries in `cubicle-progress`: date, 
 ### NPC fallback diagnostics
 
 An NPC gateway fallback bypasses generation regeneration and enters the existing guarded authored fallback path, so it cannot earn delivery, reveal, agreement, or closing credit. The API writes one internal terminal event for that executed fallback using only a validated public NPC id, a fixed failure category, and an optional validated HTTP status; no prompt, user text, provider body, headers, credentials, or private guard reason is logged or added to the public response.
+
+### Scenario-foundation target contract (D-37; not implemented by this document)
+
+The target shared runtime is a static server registry of immutable packages `{spec, replies, scoringProfile, policy}`. Policy has stable identity/version, pure readonly engine proposals (`commitmentBounds`, `goalCandidates`, `pressureCandidates`, `relayAccuracy`) and language operations (`publicCanonLines`, `normalizeCommitment`, `canonCheck`). Core validates actor, fact, goal, supported event, source IDs, ownership and goal/fact disjointness, then alone owns mutation, IDs, credit, staged/committed delivery, priority and ending. Policies cannot write state, authorize leaks, or grant broad permissions.
+
+Sessions bind exact package references and serializable identity `{schema, content, policy, scoring, hash}`; functions remain outside JSON. Ended score records retain their full private record. Old SC-01 records use only an explicit known-profile compatibility path and never replay under current/unknown rules. `GET /scenarios` will expose a public allowlist catalogue; existing scenario/session routes preserve aliases and bind all work to the selected package. The public projection never receives private root canon. The normalized scoring profile comes from one authored source; structural extraction preserves SC-01 scoring version2 constants and debrief shape, with optional additive identity metadata only. This is a target contract, not a claim that the registry, proof package, or migration exists.
+
+### SF-02 engine/evidence subset (accepted offline 2026-10-24)
+
+The API/pipeline passes the pinned package runtime explicitly to core; existing direct SC-01 callers use a bounded compatibility adapter. Core validation retains reference and declared-pressure eligibility checks and transaction rollback; hooks remain readonly. Goal proof and delivered outcomes are captured for modern scoring, which uses the captured scenario, normalized profile and package identity; bounded known legacy records remain supported. SC-01 values, story, scoring version2, smart/trap 60/7, penalties, bands and relationship population are unchanged. Language-policy migration and the private proof/integration package remain SF-03/SF-04 work, so this does not complete the target contract or any demo gate.
+
+### SF-03 language/metadata subset (accepted offline 2026-10-24)
+
+The modern runtime now binds public-canon, commitment-normalization and canon-check hooks before providers, while core leak/ownership checks still protect another actor's facts even if user-known. Date aliases/multi-date clarification, bounded F2 supported spans, historical coaching, session-pinned debrief/retry, stale metadata clearing and public guidance are package-bound. Public presentation is limited to the existing maya/jordan/sam anchor IDs and approved voice IDs. No locale, scenario, voice-cast, phone or UI redesign is introduced. Private-proof scanning and final integration remain SF-04 work.
+
+### SF-04 proof/integration subset (accepted offline 2026-10-24)
+
+The runtime supports a private synthetic proof fixture through an explicit private-policy allowlist; the default registry remains SC-01. `allPackages` scanning covers registered private packages, while private fixture numbers remain test-only and are not production scenario approvals. The final offline suite initially failed only on public reply-label scanner false positives: its 345/345 unit and 74/74 API suites passed. After review of the scanner-only correction, affected tests and default/voice scans passed with zero hits; the full suite was not rerun. Stage 1 acceptance and live, browser, physical microphone/speaker and performance verification remain pending. The existing 546.70 kB office chunk warning persists.
+
+### D-38 target extension (planned, not implemented)
+
+Package presentation may expose an ordinary NPC as a registered remote phone contact. Physical output remains `{id,name,role,sceneAnchor,voiceId}`. Remote output is exactly `{id,name,role,contactMode:"phone",voiceId}` and omits `sceneAnchor`; private bindings validate one remote and at most three distinct physical anchors. Remote actors keep ordinary package identity/state/thread/pipeline; contact mode is presentation only. The existing commitment ledger remains authoritative. Schema-v2 `plan_model` adds a revision attached to that commitment with stable `{source_id,turn_id,actor_id,revision,delivered}` approval/recap evidence. Policy-only `accept_plan` stages a validated, user-text-supported slot acknowledgement after pressure/reveal and before generic replies; it cannot be classifier-approved and final closing priority stays unchanged. This target introduces no client entity, phone session/service, WebRTC, new taxonomy or global follow-up deadline.
+
+The exact target wire, closed model, optional schema-v2 `engine.planEvidence` input/output, cross-actor core proof and slice boundaries live in the master's [DS-01 implementation boundary](../plans/CLIENT_AND_DEADLINE_IMPLEMENTATION.md#ds-01-implementation-boundary-approved-target-contract-2026-10-24). That reviewed pure operation may receive raw prose and detached minimal public/current-plan projections, alongside the existing relay operation; other legacy policy projections remain unchanged. Core retains all IDs, authority checks, transaction rollback, delivery and source allocation. A valid material proposal immediately activates an undelivered revision and clears approvals/recaps: fallback cannot restore old-plan finalization. Same-current-slot retries reuse that revision. DS-01 exposes only an unplayable validated engine context; DS-02 completes strict production registration, DS-03 adds exact new-proof scoring, and DS-04 alone changes the default. No application implementation or passing verification is implied by this contract amendment.
+
+### D-38 implemented retry/public metadata boundary (DS-04)
+
+`POST /sessions` optionally accepts `previous_session_id` alongside the existing `scenario_id` and sliders. An explicit retry requires an ended source session in this API process, its registered captured package and exact identity binding, and a matching canonical scenario ID or its known `deadline` alias. It creates fresh state under that captured package even if the current registry has changed. Unknown, malformed, active or mismatched sources fail closed; no client-supplied identity/hash, new route or persistent restore mechanism is added. Fresh practice and ordinary in-progress restart use the current default.
+
+Ended `GET /sessions/{id}/debrief` and successful feedback-retry packets additionally expose `scenario: publicScenario(capturedPackage)` (including pending job packets), with only existing approved public fields. The client retains this public title/briefing/goals/cast for same/settings retries and historical attempts instead of fetching a newer package's metadata. Package policy, identity/hash, sealed facts and scoring internals are not part of that projection. Existing in-flight-final-turn pending and error paths retain their conservative handling. Full debriefs remain ended-only, server-held and unavailable after API-process loss; compact browser summaries retain their existing privacy boundary.

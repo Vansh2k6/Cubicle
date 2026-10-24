@@ -1,20 +1,25 @@
+import {resolveLanguage} from "../llm/languageContext.js";
 import { createScoreRecord, scoreSession } from "./score.js";
 import { judgeSession } from "./judge.js";
 import { coachSession } from "./coach.js";
 import { validateQuote } from "./quotes.js";
 import { CONFIG } from "./config.js";
 import { difficultyFor } from "../shared/settings.js";
-export const bandFor = (total, scenarioId = "missed_deadline") => CONFIG[scenarioId].bands.find((band) => total >= band.minimum)?.label || "Needs work";
+// Default bands support explicit legacy SC-01 direct callers; modern debriefs pass their captured profile.
+export const bandFor = (total, bands = CONFIG.missed_deadline.bands) => bands.find((band) => total >= band.minimum)?.label || "Needs work";
 const LABELS = { goals: "Goals", hidden_facts: "Hidden facts", integrity: "Integrity", relationship: "Relationship", rubric: "Communication quality" };
-export async function assembleDebrief({ record, scenario = record.scenario, providers = {}, manifest, previous = null }) {
+export async function assembleDebrief({ record, scenario = record.scenario, providers = {}, manifest, previous = null, runtime = undefined }) {
   if (!record.session.ended) throw Object.assign(new Error("End the session before requesting feedback"), { code: "NOT_ENDED" });
-  const snapshot = createScoreRecord(record.session, record.convo, scenario);
+  if (record.session.engine_policy && runtime === undefined) throw new Error("bound language runtime required");
+  resolveLanguage(scenario, runtime, record.session.locale || "en");
+  if (record.session.engine_policy && runtime && JSON.stringify(runtime.identity) !== JSON.stringify(record.session.identity)) throw new Error("debrief language identity mismatch");
+  const snapshot = createScoreRecord(record.session, record.convo, scenario, record.scoringProfile);
   const deterministic = scoreSession(snapshot);
   const [judge, coach] = await Promise.all([
     (previous?.judged?.status === "available" ? Promise.resolve({ dimensions: previous.judged.dimensions, source: "llm", manifestId: previous.manifest_id }) :
       judgeSession({ record: snapshot, provider: providers.judge, manifest })).catch(() => ({ dimensions: [], source: "fallback", manifestId: manifest?.id || null })),
     (previous?.coach_status === "available" ? Promise.resolve({ moments: previous.moments }) :
-      coachSession({ record: snapshot, provider: providers.coach, manifest })).catch(() => ({ moments: [{ general: true, turn_id: null, quote: null,
+      coachSession({ record: snapshot, runtime, provider: providers.coach, manifest })).catch(() => ({ moments: [{ general: true, turn_id: null, quote: null,
       what_went_well: "You can take this practice at your own pace.", what_happened: "Detailed coaching is unavailable.", why_it_matters: "A clear question helps you understand a next step.",
       better_reply: "What should I understand before proposing a next step?", source: "fallback", manifestId: manifest?.id || null }] })),
   ]);
@@ -32,7 +37,7 @@ export async function assembleDebrief({ record, scenario = record.scenario, prov
   const coachAvailable = moments.every((m) => m.source === "llm");
   const total = deterministic.deterministic + judged;
   const positives = [];
-  if (snapshot.session.goals.G1?.status === "done") positives.push("You took responsibility and shared an honest update.");
+  if (deterministic.metrics.goals.evidence.some((entry) => entry.source_id === "goal:G1" && entry.points > 0)) positives.push("You took responsibility and shared an honest update.");
   if (deterministic.metrics.hidden_facts.points > 0) positives.push("Your questions uncovered more context.");
   if (!positives.length) positives.push("You made time to practice a difficult conversation.");
   const priorities = deterministic.priorities.map((entry) => {
@@ -45,16 +50,16 @@ export async function assembleDebrief({ record, scenario = record.scenario, prov
   });
   return {
     session_id: snapshot.session.id, status: judgeAvailable && coachAvailable ? "ready" : "partial",
-    total, total_cap: 100, total_status: judgeAvailable ? "assessed" : "provisional", band: bandFor(total, scenario.id), bands: structuredClone(CONFIG[scenario.id].bands),
+    total, total_cap: 100, total_status: judgeAvailable ? "assessed" : "provisional", band: bandFor(total, snapshot.scoringProfile.bands), bands: structuredClone(snapshot.scoringProfile.bands),
     deterministic: { points: deterministic.deterministic, cap: 75 },
     judged: { points: judged, cap: 25, status: judgeAvailable ? "available" : "unavailable", dimensions },
     breakdown: Object.entries(deterministic.metrics).map(([id, metric]) => ({ id, label: LABELS[id], points: id === "rubric" ? judged : metric.points, cap: metric.cap, source: id === "rubric" ? "judged" : "deterministic" })),
     what_went_well: positives, timeline: deterministic.flags.map(withQuote), priorities,
     moments, coach_status: coachAvailable ? "available" : "unavailable",
-    missed_facts: scenario.facts.filter((f) => !snapshot.session.user_known.includes(f.id) || snapshot.session.facts[f.id]?.status !== "revealed")
+    missed_facts: scenario.facts.filter((f) => !deterministic.metrics.hidden_facts.evidence.some((entry) => entry.source_id === `fact:${f.id}` && entry.points > 0))
       .map((f) => ({ id: f.id, owner: f.owner, content: f.content.en, unlock_question: f.unlock_question.en })),
     weights: deterministic.weights, penalties: deterministic.penalties, scoring_version: deterministic.scoring_version,
-    settings: structuredClone(snapshot.session.customisation), difficulty: difficultyFor(snapshot.session.customisation?.maya), end_reason: snapshot.session.endReason,
+    settings: structuredClone(snapshot.session.customisation), difficulty: difficultyFor(snapshot.session.customisation?.[scenario.npcs[0]?.id]), end_reason: snapshot.session.endReason,
     manifest_id: judge.manifestId, manifest: manifest || null,
   };
 }

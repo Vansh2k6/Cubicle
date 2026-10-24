@@ -1,11 +1,25 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { scoreSession } from "../score.js";
-import { scenario, runBot } from "../../evals/scriptedBot.mjs";
+import { scoreSession, createScoreRecord } from "../score.js";
+import { scenario, scoringProfile, runBot, languageRuntime } from "../../evals/scriptedBot.mjs";
+import * as engine from "../../engine/engine.js";
 import { smart, trap, ev } from "../../evals/scriptedPaths.mjs";
 const fixtures = JSON.parse(readFileSync(new URL("../../evals/fixtures/s1-07-synthetic-sessions.json", import.meta.url), "utf8")).paths;
 const clone = (x) => structuredClone(x);
+// These authored event-list cases exercise core source allocation, independently of language interpretation.
+function coreRecord(steps) {
+  const session = engine.createSession(scenario, {runtime: languageRuntime, seed: 7});
+  session.identity = languageRuntime.identity;
+  const convo = {seq: 0, turns: []};
+  for (const [npcId, text, events] of steps) {
+    convo.turns.push({id: ++convo.seq, speaker: "user", npcId, text});
+    const {act} = engine.applyTurn(session, npcId, events, {runtime: languageRuntime, text});
+    convo.turns.push({id: ++convo.seq, speaker: "npc", npcId, text: "I hear you.", act});
+    engine.commitDelivery(session, session.turn, {runtime: languageRuntime, delivered: true});
+  }
+  return createScoreRecord(session, convo, scenario, scoringProfile);
+}
 test("hand-derived smart 60 and trap 7; rubric pending25", () => {
   for (const [name, expected] of [["smart", [30, 15, 15, 0, 60]], ["trap", [0, 0, 7, 0, 7]]]) {
     const result = scoreSession(fixtures[name], scenario);
@@ -44,7 +58,7 @@ test("only delivered snapshot facts count; debrief-only changes do not", () => {
 });
 test("relationship excludes goal ownership while independent apology can score", async () => {
   const { session, convo } = await runBot([["maya", "I own it and am honest. Sorry.", [ev("took_ownership"), ev("gave_honest_status"), ev("apologized")]]]);
-  const result = scoreSession({ session, convo }, scenario);
+  const result = scoreSession(createScoreRecord(session, convo, scenario, scoringProfile), scenario);
   assert.ok(Math.abs(result.metrics.relationship.points - 10 * 7 / 50 / 3) < 1e-12);
   assert.ok(result.excluded.some((e) => e.reason === "allocated_to_goals"));
   assert.ok(session.npcs.maya.mood > result.metrics.relationship.evidence[0].final);
@@ -85,7 +99,7 @@ test("standalone denial of same-NPC prior promise costs four; uncertainty/revisi
     const steps = prior ? [["maya", "I will deliver Friday.", [ev("committed_deadline", { day: 3 })]]] : [];
     steps.push([who, text, []]);
     const { session, convo } = await runBot(steps);
-    const result = scoreSession({ session, convo }, scenario);
+    const result = scoreSession(createScoreRecord(session, convo, scenario, scoringProfile), scenario);
     assert.equal(result.metrics.integrity.points, expected);
     assert.equal(result.flags.some((f) => f.type === "broken_promise"), expected === 11);
   }
@@ -114,13 +128,13 @@ test("start100 denominator is safe and a realistic revision avoids repeated pena
   source.session.npcs.sam.moodHistory[0] = 100;
   assert.equal(scoreSession(source, scenario).metrics.relationship.points, 0);
   const { session, convo } = await runBot([["maya", "I will deliver tomorrow.", [ev("committed_deadline", { day: 1 })]], ["maya", "I revise it to Friday.", [ev("committed_deadline", { day: 3 })]]]);
-  const result = scoreSession({ session, convo }, scenario);
+  const result = scoreSession(createScoreRecord(session, convo, scenario, scoringProfile), scenario);
   assert.equal(result.metrics.integrity.points, 7);
   assert.equal(result.metrics.goals.points, 0);
 });
 test("flags for pushback inaccurate-relay and ignored redirects come from code", async () => {
   const { session, convo } = await runBot([["maya", "Can you help?", [ev("asked_for_help")]], ["maya", "I disagree constructively.", [ev("pushed_back_constructively")]]]);
-  const result = scoreSession({ session, convo }, scenario);
+  const result = scoreSession(createScoreRecord(session, convo, scenario, scoringProfile), scenario);
   assert.ok(result.flags.some((f) => f.type === "ignored_npc_redirect" && f.turn_id === 2));
   assert.ok(result.flags.some((f) => f.type === "constructive_pushback" && f.user_turn_id === 3));
   const altered = clone(fixtures.smart);
@@ -129,7 +143,7 @@ test("flags for pushback inaccurate-relay and ignored redirects come from code",
 });
 
 test("registry plugins carry configured caps and frozen records retain scoring provenance", async () => {
-  const { createScoreRecord, METRIC_REGISTRY } = await import("../score.js");
+  const { METRIC_REGISTRY } = await import("../score.js");
   const record = createScoreRecord(fixtures.smart.session, fixtures.smart.convo, scenario);
   assert.equal(record.scenario.scoring.version, 2);
   const result = scoreSession(record);
@@ -157,18 +171,18 @@ test("goal evidence is causal and repeated ownership cannot add relationship cre
     ["maya", "I own it and report honestly.", [ev("took_ownership"), ev("gave_honest_status")]],
     ["maya", "I own it.", [ev("took_ownership")]],
   ]);
-  const result = scoreSession({ session, convo }, scenario);
+  const result = scoreSession(createScoreRecord(session, convo, scenario, scoringProfile), scenario);
   assert.ok(result.metrics.goals.evidence[0].evidence.every((e) => e.turn_id <= 1));
   assert.equal(result.metrics.relationship.points, 0);
   assert.ok(result.excluded.some((e) => e.reason === "repeated_goal_achievement"));
 });
 test("distinct denial fault is separately sourced from an unrealistic promise", async () => {
   const { session, convo } = await runBot([["maya", "I will deliver tomorrow.", [ev("committed_deadline", { day: 1 })]], ["maya", "I never promised a delivery date.", []]]);
-  const result = scoreSession({ session, convo }, scenario);
+  const result = scoreSession(createScoreRecord(session, convo, scenario, scoringProfile), scenario);
   assert.equal(result.metrics.integrity.points, 3);
   assert.deepEqual(result.metrics.integrity.evidence.slice(1).map((r) => r.source_id), ["commitment:C1", "commitment:C1:denial:2"]);
   const changed = clone(scenario); changed.scoring.penalties = { unrealistic_commitment: 9, contradicted_commitment: 4, inaccurate_relay: 3 };
-  assert.throws(() => scoreSession({ session, convo }, changed), /version or weights/);
+  assert.throws(() => scoreSession(createScoreRecord(session, convo, scenario, scoringProfile), changed), /version or weights/);
 });
 
 test("G3 evidence references the delivered active recap rather than an ignored earlier recap", async () => {
@@ -187,7 +201,7 @@ test("G3 evidence references the delivered active recap rather than an ignored e
   assert.equal(g3.evidence[0].user_turn_id, 11);
 });
 test("multiple commitments in one user turn bind distinct historical fault sources", async () => {
-  const record = await runBot([["maya", "I will deliver tomorrow. I revise that to Friday.", [ev("committed_deadline", { day: 1 }), ev("committed_deadline", { day: 3 })]]]);
+  const record = coreRecord([["maya", "I will deliver tomorrow. I revise that to Friday.", [ev("committed_deadline", { day: 1 }), ev("committed_deadline", { day: 3 })]]]);
   assert.notEqual(record.session.commitments[0].source_id, record.session.commitments[1].source_id);
   assert.equal(scoreSession(record, scenario).metrics.integrity.points, 7);
   for (const c of record.session.commitments) delete c.source_id;
@@ -218,14 +232,14 @@ test("per-goal and per-fact weights require a matching scoring contract version"
 });
 
 test("current and legacy provenance mirrors engine conflicting day-alias precedence", async () => {
-  const record = await runBot([["maya", "I will deliver tomorrow.", [ev("committed_deadline", { days: 1, day: 3 })]]]);
+  const record = coreRecord([["maya", "I will deliver tomorrow.", [ev("committed_deadline", { days: 1, day: 3 })]]]);
   assert.equal(record.session.commitments[0].target_day, 1);
   assert.equal(scoreSession(record, scenario).metrics.integrity.points, 7);
   delete record.session.commitments[0].source_id;
   assert.equal(scoreSession(record, scenario).metrics.integrity.points, 7);
 });
 test("denial chooses latest creation when multiple promises share one engine turn", async () => {
-  const record = await runBot([
+  const record = coreRecord([
     ["maya", "I will deliver tomorrow. I revise that to Friday.", [ev("committed_deadline", { day: 1 }), ev("committed_deadline", { day: 3 })]],
     ["maya", "I never promised a delivery date.", []],
   ]);

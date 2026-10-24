@@ -6,7 +6,7 @@ if (!npmExecPath) {
   process.exit(1);
 }
 
-const blockedPrefixes = ["LLM_", "GROQ_", "OPENAI_", "ANTHROPIC_"];
+const blockedPrefixes = ["LLM_", "GROQ_", "OPENAI_", "ANTHROPIC_", "VOICE_", "VITE_VOICE"];
 const blockedNames = new Set(["RUN_LIVE", "CUBICLE_DEBUG"]);
 const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => {
   const normalized = name.toUpperCase();

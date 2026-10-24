@@ -1,8 +1,16 @@
 # DESIGN.md — P2c free-text conversation panel
 
+## CN-02 phone contact extension (Operate)
+
+Preserve the current green-and-graphite immersive office and shared conversation shell. A small graphite desk phone sits on the existing shared island only when approved public scenario metadata declares one phone contact. Nearby E/context and the People list open that actor's ordinary thread; the People action reads “Call {name}”. No avatar, room, separate calling flow, automatic microphone permission, or new visual system.
+
+The existing 44px close control is named “Hang up call” for a phone thread. Escape/hangup cancels capture and playback while preserving the transcript; physical proximity changes do not disconnect a remote thread. A closed pending reply may finish in its thread without reopening the panel or playing audio. Metadata loading leaves physical colleagues usable; unavailable contact details show an inline Retry action. Names, roles and initials are escaped and long labels wrap. Restart, End and scenario/menu changes invalidate late run effects. Browser/narrow/device verification is pending reviewer handoff; no rendered-result claim is made here.
+
 **Surface:** the in-viewport conversation panel (`src/main.js` text mode + `src/api.js` + `src/debug.js`, styles in `src/style.css`).
 **Mode:** Operate — the visitor completes a task (a practice conversation). Scanability, consistency with the scripted panel, and native form expectations outrank expression.
 **Method:** Impeccable narrow refinement of the incumbent implementation (v4.1.1; owning playbooks `harden.md` + `operate.md`, floor `craft-floor.md`). Preserve the ivory interface, the office viewport, and keyboard-only operation. No quick-reply chips (D-12 unconfirmed — left out).
+
+**Current cast:** Shubhankar Parsewar (player), Snehal Mane (manager), Vansh Singh (teammate), and Prathamesh Surwase (People & culture). Historical design notes retain their original names where they describe past work.
 
 ## What changed and what did not
 
@@ -126,3 +134,21 @@ The debrief is a single-column, learning-first summary: one positive takeaway, o
 ## 2026-10-18 workspace surface revision
 
 The earlier ivory-and-purple interface record above is historical. The active interface direction is the green-and-graphite workspace contract in `docs/superpowers/specs/2026-10-18-taste-ui-design.md`: a `#f4f6f3` canvas, white panels, graphite text, and restrained deep-green actions. The office scene, all public/session contracts, native disclosures, transcript behavior, scoring presentation rules, and accessibility mechanics remain unchanged. This is a presentation-only revision; it makes no claim of runtime or browser verification.
+
+## S1-V2 voice extension (Operate)
+
+When both client and server voice flags are enabled, the existing graphite-and-green composer gains a compact Voice on/off control and a 44px microphone control. Voice stays off until the visitor explicitly enables it; recording is hold-to-talk with keyboard equivalents, an inline live status, and a 30-second cap. A transcript returns only as an editable draft in the existing input, then uses the unchanged typed Send path. Typed input remains available through unsupported, denied, cancelled, empty, and failed recording states. At narrow phone widths, the voice composer places the input on its own row and keeps the 44px controls together below it.
+
+## S1-V3 NPC speech extension (Operate)
+
+Committed NPC transcript bubbles remain the caption. When conversation sounds and Voice are both enabled, an NPC bubble with a server speech descriptor gains a 44px Replay control. Mute or Voice off disables playback immediately without hiding captions; a failed or unavailable audio fetch leaves the text alone. No new panel, color system, or motion language is introduced.
+
+Prathamesh playback uses 1.1× rate in both browser and local client playback; every other NPC remains at 1.0×.
+
+## S1-U1 immersive entry (Operate)
+
+The green-and-graphite workspace now begins with three centered scenario choices. Selecting one opens a short public briefing for Alex with a situation and objective; Back returns to the choices and Start your day loads the existing office. The office scene is deferred until that explicit action, while saved local progress and sound preference remain available across a fresh load.
+
+Once inside, the office occupies the full viewport. Menu, sounds, Help, fullscreen and Practice float over the scene; a closed Next step disclosure keeps guidance on demand. Practice reuses the established modal for public briefing, colleague markers, progress, restart and read-only settings. Editable settings remain in the existing first-conversation and retry setup flow. Menu uses a native confirmation dialog so cancelling keeps the current conversation, focus and voice state intact. Confirming ends only the local practice and returns to selection; it does not make a server End/debrief request. The conversation, caption and debrief surfaces retain their established behavior and presentation.
+
+The entry, briefing, loading, error and office states reuse the same white surface, graphite text, deep-green action and compact-radius vocabulary. The loading overlay stays over the final-size viewport until the first successful render. It then fades for 450 ms; reduced motion enters immediately. Failed construction or rendering disposes scene resources and offers Retry and Back. Scene visibility pauses simulation work while the office is hidden; the office retains its existing DPR and movement treatment.

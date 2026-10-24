@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-21T16:44:35.597Z",
+  "status": "measured",
+  "runs": 5,
+  "fixture": "Piper-generated fixed English line, memory-only",
+  "clip_ms": 4202,
+  "stt_model": "small.en",
+  "tts_engine": "piper",
+  "device": "cuda",
+  "compute_type": "float16",
+  "warm": true,
+  "scene_stutter": "NOT RUN",
+  "stt_ms": {
+    "p50": 249,
+    "p95": 268
+  },
+  "tts_ttfb_ms": {
+    "p50": 253,
+    "p95": 280
+  },
+  "tts_total_ms": {
+    "p50": 256,
+    "p95": 282
+  },
+  "added_ms": {
+    "p50": 521,
+    "p95": 537
+  },
+  "hardware": {
+    "platform": "win32",
+    "cpu": "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics",
+    "logical_cpus": 16,
+    "memory_mb": 15631
+  },
+  "limitations": "Synthetic local speech only; no microphone, browser, human accuracy or scene-load acceptance."
+}

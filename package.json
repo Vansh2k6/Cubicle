@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test \"engine/tests/*.test.js\" \"llm/tests/*.test.js\" \"scoring/tests/*.test.js\"",
+    "test": "node --test \"engine/tests/*.test.js\" \"llm/tests/*.test.js\" \"scoring/tests/*.test.js\" \"voice/tests/*.test.js\"",
     "test:engine": "node --test \"engine/tests/*.test.js\"",
     "test:api": "node --test \"services/api/tests/*.test.js\"",
     "api": "node services/api/server.js",
@@ -16,7 +16,11 @@
     "verify:offline": "node scripts/verify-offline.mjs",
     "harness": "node services/api/client.mjs",
     "bundle:scan": "node scripts/bundle-scan.mjs",
-    "llm:smoke": "node llm/smoke.mjs"
+    "llm:smoke": "node llm/smoke.mjs",
+    "voice:sidecar": "node scripts/voice-sidecar.mjs",
+    "voice:smoke": "node scripts/voice-smoke.mjs",
+    "voice:bench": "node scripts/voice-bench.mjs",
+    "voice:latency": "node scripts/voice-latency.mjs"
   },
   "keywords": [],
   "author": "",

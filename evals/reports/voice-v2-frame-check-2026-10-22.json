@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-22",
+  "kind": "local browser frame check after user reported movement lag",
+  "renderer": "ANGLE NVIDIA GeForce RTX 4050 Laptop GPU Direct3D11",
+  "idle": { "frames": 592, "seconds": 10, "p50_ms": 16.7, "p95_ms": 16.8, "over50ms": 0 },
+  "walking": { "frames": 590, "seconds": 10, "p50_ms": 16.7, "p95_ms": 16.9, "over50ms": 0 },
+  "voice_service": "GPU model warmed and idle; no speech inference during frame samples",
+  "limitations": "Temporary same-origin iframe around the actual app; parent animation-frame intervals. Does not measure physical input latency, microphone accuracy or concurrent STT/TTS scene-load acceptance. User-reported lag was not reproduced by this sample. No Groq calls."
+}

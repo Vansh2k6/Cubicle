@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import * as engine from "../../engine/engine.js";
+import * as engine from "../../engine/sc01Compatibility.js";
 import { runBot, scenario } from "../../evals/scriptedBot.mjs";
 import { smart, trap, ev } from "../../evals/scriptedPaths.mjs";
 
@@ -10,7 +10,7 @@ test("synthetic smart full pipeline completes goals with delivered F1/F2", async
   assert.deepEqual(session.user_known.sort(), ["F1", "F2"]);
   assert.equal(session.commitments.at(-1).accepted_with, "maya");
   assert.equal(session.events_log.filter((e) => e.allocation === "integrity").length, 0);
-  for (const r of results) assert.deepEqual(Object.keys(r.public).sort(), ["npc_reply", "public_state", "ended", "end_reason", "turn_id"].sort());
+  for (const r of results) assert.deepEqual(Object.keys(r.public).sort(), ["npc_reply", "public_state", "ended", "end_reason", "turn_id", "speech"].sort());
 });
 test("trap callback defers to Maya and never discloses private cutoff", async () => {
   const { session, results } = await runBot(trap);

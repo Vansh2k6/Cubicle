@@ -4,7 +4,7 @@ Two stages only: **Stage 1 — Demo** and **Stage 2 — Total implementation**. 
 Requirement IDs (FR-xx), rules (R-xx), decisions (D-xx) refer to `PRD.md`, `RULES.md`, `DECISIONS.md`.
 Mark items `[x]` when done. Work only inside the **current phase** (R-63).
 
-**Current phase:** S1-P7 acceptance pending. Implementation through S1-14 hardening is present: built-only loopback demo, offline gate and operator/exit plan. Fresh checks: 217 offline tests, 35 API tests, build/bundle scan; built-browser reset/debrief/progress checks. Live acceptance and tuning remain deferred under D-28; do not start Stage 2 or claim demo readiness. Presets are opt-in; voice is not shipped.
+**Current phase:** S1-P7 acceptance pending. Implementation through S1-14 hardening is present: built-only loopback demo, offline gate and operator/exit plan. Fresh checks: 217 offline tests, 35 API tests, build/bundle scan; built-browser reset/debrief/progress checks. Live acceptance and tuning remain deferred under D-28; do not start Stage 2 or claim demo readiness. Presets are opt-in; voice is not shipped. D-37 narrowly authorises the scenario-foundation documentation and its sequential shared-runtime work. D-38 narrowly authorises the reusable remote-contact and `missed_deadline` v2/scoring-v3 plan and sequential slices. Neither exception waives acceptance criteria, advances the phase, or marks any item accepted.
 
 Legend: **(stretch)** = only after the stage's core phases pass their exit criteria.
 
@@ -85,9 +85,13 @@ Legend: **(stretch)** = only after the stage's core phases pass their exit crite
 ## S1-P6 — Core sliders; optional presets and voice (after P0–P5 exits pass)
 - [x] P6.1 S1-13 accepted offline: Supportive, Direct, Impatient use D-32 vectors, populate editable sliders and derive the difficulty label. Opt-in VITE_PRESETS=1; default off.
 - [x] P6.2 **Round 2 core / P0:** S1-12 implemented and accepted offline: four shared sliders feed unchanged engine parameters and versioned NPC tone, fixed at start and shown with display-only difficulty in the debrief. Live low/high tone/guard comparison remains NOT RUN under D-28.
-- [ ] P6.3 Push-to-talk → STT → editable transcript → normal turn (D-19).
-- [ ] P6.4 Optional spoken NPC replies with mute; captions.
-- [ ] P6.5 Listen button on the improved reply (single voice is acceptable).
+- [ ] P6.3 Push-to-talk → STT → editable transcript → normal turn (D-19; D-35 Accepted; V1 local STT server, V2 client PTT).
+- [ ] P6.4 Optional spoken NPC replies with mute; captions (D-35 Accepted; V3 turn-scoped NPC TTS).
+- [ ] P6.5 Listen button on the improved reply (single voice is acceptable; D-35 Accepted; V4 hardening and Listen).
+
+Voice continuation (2026-10-22): V1 server boundary is accepted; V2 recording/confirmation and D-36 GPU preference are implemented and verified offline. See `plans/VOICE_V2_STATUS.md` and `evals/reports/S1-V2-gate.md`. P6.3 stays unchecked until its real browser/microphone acceptance is established; this implementation does not close Stage 1 live acceptance or V3/V4.
+
+V4 offline checkpoint accepted for root (2026-10-22): Sol approved the independently reviewed 25-file source manifest (fingerprint `ad2c6e781a671ecb7b36446aff10bfa8cb59d89e057338fdd038b7cd0209e6bd`) with no blockers. Luna's offline verification passed on that unchanged source manifest: 294/294 unit tests, 63/63 API tests, and default (5 artifacts) plus `VITE_VOICE=1` (6 artifacts) 81-needle scans with zero hits. Root's warmed 20-run local CUDA sidecar measurement reported 351/394 ms STT, 3/5 ms text, 190/207 ms TTS first byte and 546/590 ms speech-end-to-first-audio p50/p95. Root also checked local HTTP sidecar loss/recovery plus new NPC and ended-coaching Listen WAV responses. This does not establish browser, microphone, physical-speaker/unlock perception, narrow/full smart-path, or scene-load/stutter acceptance; P6.3–P6.5 stay unchecked. No Stage 1 live gate, demo-ready status, or local-primary/cloud decision is closed.
 
 **Exit:** same user script at low vs high patience gives clearly different mood trajectories and NPC tone; voice path works end-to-end or is hidden behind a flag.
 

@@ -11,7 +11,7 @@ import {
   commitDelivery,
   canonicalState,
   evaluateDoneWhen,
-} from "../engine.js";
+} from "../sc01Compatibility.js";
 import * as config from "../config.js";
 import { SessionStore } from "../store.js";
 

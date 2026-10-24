@@ -1,3 +1,4 @@
+import {legacyRegistry} from "../scenarioRegistry.js";
 // services/api/tests/api.test.js — P2c offline API contract tests (node:test).
 // Fake (stub) providers only; no network beyond localhost, no keys.
 import test from "node:test";
@@ -47,11 +48,11 @@ async function postTurn(baseUrl, sid, body) {
 }
 
 test.before(async () => {
-  const a = createServer({ debug: false });
+  const a = createServer({ registry: legacyRegistry, debug: false });
   await new Promise((r) => a.server.listen(0, r));
   plain = a;
   base = `http://localhost:${a.server.address().port}`;
-  const b = createServer({ debug: true });
+  const b = createServer({ registry: legacyRegistry, debug: true });
   await new Promise((r) => b.server.listen(0, r));
   dbg = b;
   debugBase = `http://localhost:${b.server.address().port}`;
@@ -133,7 +134,7 @@ test("turn allowlist: public keys only, no debug without flag, no sealed text", 
     idempotencyKey: "k-allow-1",
   });
   assert.equal(status, 200);
-  assert.deepEqual(Object.keys(data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id"].sort());
+  assert.deepEqual(Object.keys(data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id", "speech"].sort());
   assert.deepEqual(
     Object.keys(data.public_state).sort(),
     ["ended", "goals", "mood_label", "next_hint", "npc_availability"].sort(),

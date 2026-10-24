@@ -1,0 +1,10 @@
+{
+  "kind": "V2 automatic device selection and synthetic speech",
+  "device": "cuda",
+  "compute_type": "float16",
+  "warm": true,
+  "stt_ms": 495,
+  "tts_complete_ms": 257,
+  "transcript_nonempty": true,
+  "limitations": "One synthetic local sample; no microphone, scene-load or browser playback acceptance; no Groq calls."
+}

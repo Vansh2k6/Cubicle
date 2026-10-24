@@ -13,13 +13,31 @@ export function createOffice(container, hooks) {
       alpha: false,
       powerPreference: "high-performance",
     });
-  } catch {
-    const l = document.querySelector("#loading");
-    l.innerHTML =
-      "This office needs WebGL. Please enable hardware acceleration or open it in a modern browser.";
-    return { reset() {}, highlight() {}, setKey() {} };
+  } catch (error) {
+    throw new Error("This office needs WebGL. Enable hardware acceleration and try again.", { cause: error });
   }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const events = new AbortController();
+  let observer, frameId, disposed = false;
+  const ownedLabels = [];
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    cancelAnimationFrame(frameId);
+    events.abort();
+    observer?.disconnect();
+    ownedLabels.forEach((label) => label.remove());
+    scene.traverse((object) => {
+      object.geometry?.dispose();
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.forEach((material) => material?.dispose());
+      object.shadow?.map?.dispose();
+    });
+    renderer.dispose();
+    renderer.domElement.remove();
+  }
+  try {
+  // CSS-pixel rendering avoids fullscreen/scaled-display GPU cost.
+  renderer.setPixelRatio(1);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setClearColor("#e9eee7");
@@ -227,6 +245,15 @@ export function createOffice(container, hooks) {
   cyl(0.23, 0.1, 0.4, "#89a27d", -0.9, 1.84, -0.85, 5);
   chair(-0.45, 0.8, Math.PI);
   chair(1.35, 0.8, Math.PI);
+  // A desk object, not a character: enabled only by approved public contact metadata.
+  const phone = new THREE.Group();
+  phone.position.set(1.15, 1.52, -0.8);
+  scene.add(phone);
+  box(0.48, 0.1, 0.55, "#394b42", 0, 0.05, 0, phone);
+  box(0.42, 0.08, 0.13, "#26372f", 0, 0.16, -0.14, phone);
+  box(0.22, 0.015, 0.12, "#a8bcae", 0, 0.11, 0.04, phone);
+  for (let x of [-0.09, 0, 0.09]) for (let z of [0.15, 0.23]) box(0.055, 0.018, 0.04, "#c9d3c9", x, 0.11, z, phone);
+  phone.visible = false;
   // Lounge, coffee table, cabinet and tiny desk details.
   box(3.5, 0.025, 3.3, "#d4d6bf", -6.2, 0.045, 3.05);
   let sofa = new THREE.Group();
@@ -354,6 +381,7 @@ export function createOffice(container, hooks) {
     "#697079",
   );
   player.root.rotation.y = -0.65;
+  let targetYaw = player.root.rotation.y;
   const npcs = {
     maya: {
       ...character(
@@ -365,17 +393,17 @@ export function createOffice(container, hooks) {
         "#5d5969",
         true,
       ),
-      name: "Maya",
+      name: "Snehal",
       role: "Your manager",
     },
     jordan: {
       ...character(4.65, -1.6, "#c79463", "#3c332d", "#ba805c", "#626d62"),
-      name: "Jordan",
+      name: "Vansh",
       role: "Your teammate",
     },
     sam: {
       ...character(-4.5, 4.55, "#87a48d", "#b17d49", "#efc79a", "#758176"),
-      name: "Sam",
+      name: "Prathamesh",
       role: "People & culture",
     },
   };
@@ -402,11 +430,13 @@ export function createOffice(container, hooks) {
   nearRing.visible = false;
   const labels = document.querySelector("#scene-labels");
   const entries = { ...npcs, player: { ...player, name: "You", role: "" } };
+  const baselineLabels = Object.fromEntries(Object.entries(npcs).map(([id, p]) => [id, {name: p.name, role: p.role}]));
   for (let [id, p] of Object.entries(entries)) {
     let el = document.createElement("div");
     el.className = `npc-label ${id === "player" ? "player" : ""}`;
     el.innerHTML = `${id === "maya" ? '<span class="npc-marker">···</span>' : ""}<strong>${p.name}${id === "maya" ? ' <span class="npc-star">◆</span>' : ""}</strong>${p.role ? `<small>${p.role}</small>` : ""}`;
     labels.appendChild(el);
+    ownedLabels.push(el);
     p.label = el;
   }
   let width = 1,
@@ -414,6 +444,7 @@ export function createOffice(container, hooks) {
   function resize() {
     width = container.clientWidth;
     height = container.clientHeight;
+    if (!width || !height) return;
     renderer.setSize(width, height);
     const aspect = width / height;
     const vertical = Math.max(18, 27 / aspect);
@@ -423,7 +454,8 @@ export function createOffice(container, hooks) {
     camera.bottom = -vertical / 2;
     camera.updateProjectionMatrix();
   }
-  new ResizeObserver(resize).observe(container);
+  observer = new ResizeObserver(resize);
+  observer.observe(container);
   resize();
   let keys = new Set(),
     target = null,
@@ -440,7 +472,7 @@ export function createOffice(container, hooks) {
     );
   }
   window.addEventListener("keydown", (e) => {
-    if (isInput(e)) return;
+    if (isInput(e) || document.hidden || hooks.isVisible?.() === false || hooks.isPaused()) return;
     const k = e.key.toLowerCase();
     if (
       [
@@ -463,23 +495,24 @@ export function createOffice(container, hooks) {
       e.preventDefault();
       hooks.onTalk();
     }
-  });
-  window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+  }, { signal: events.signal });
+  window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()), { signal: events.signal });
   window.addEventListener("blur", () => {
     keys.clear();
     target = null;
-  });
+  }, { signal: events.signal });
   document.addEventListener("visibilitychange", () => {
     keys.clear();
     target = null;
+    player.root.rotation.y = targetYaw;
     last = performance.now();
-  });
+  }, { signal: events.signal });
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2(),
     floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
     hit = new THREE.Vector3();
   renderer.domElement.addEventListener("pointerdown", (e) => {
-    if (hooks.isPaused()) return;
+    if (document.hidden || hooks.isVisible?.() === false || hooks.isPaused()) return;
     container.focus({ preventScroll: true });
     const r = renderer.domElement.getBoundingClientRect();
     pointer.set(
@@ -493,7 +526,7 @@ export function createOffice(container, hooks) {
       Math.abs(hit.z) < 5.9
     )
       target = { x: hit.x, z: hit.z };
-  });
+  }, { signal: events.signal });
   function allowed(x, z) {
     if (x < -8.95 || x > 8.95 || z < -5.95 || z > 5.95) return false;
     if (
@@ -540,7 +573,7 @@ export function createOffice(container, hooks) {
       if (allowed(p.x, p.z + dz)) p.z += dz;
       if (Math.abs(p.x - beforeX) + Math.abs(p.z - beforeZ) < 0.001)
         target = null;
-      player.root.rotation.y = Math.atan2(dx, dz);
+      targetYaw = Math.atan2(dx, dz);
       walkTime += dt * 10;
       if (!moved) {
         moved = true;
@@ -572,6 +605,10 @@ export function createOffice(container, hooks) {
           min = d;
         }
       }
+      if (hooks.phoneContact?.() && !hooks.isPaused()) {
+        const distance = Math.hypot(p.x - 1.15, p.z + 0.8);
+        if (distance < min) next = "@phone";
+      }
     if (next !== near) {
       near = next;
       hooks.onNear(near);
@@ -579,8 +616,8 @@ export function createOffice(container, hooks) {
     } // end proximity block (always live, even while paused)
     nearRing.visible = !!near;
     if (near) {
-      nearRing.position.x = npcs[near].root.position.x;
-      nearRing.position.z = npcs[near].root.position.z;
+      nearRing.position.x = near === "@phone" ? 1.15 : npcs[near].root.position.x;
+      nearRing.position.z = near === "@phone" ? 0.65 : npcs[near].root.position.z;
     }
     playerRing.position.x = p.x;
     playerRing.position.z = p.z;
@@ -591,14 +628,29 @@ export function createOffice(container, hooks) {
   let ready = false;
   const projection = new THREE.Vector3();
   function frame(now) {
-    requestAnimationFrame(frame);
-    if (document.hidden) return;
+    if (disposed) return;
+    frameId = requestAnimationFrame(frame);
+    phone.visible = !!hooks.phoneContact?.() && hooks.isVisible?.() !== false && !document.hidden;
+    if (document.hidden || hooks.isVisible?.() === false) {
+      keys.clear();
+      target = null;
+      accumulator = 0;
+      last = now;
+      return;
+    }
     let delta = Math.min((now - last) / 1000, 0.08);
     last = now;
     accumulator += delta;
     while (accumulator >= 1 / 60) {
       step(1 / 60);
       accumulator -= 1 / 60;
+    }
+    if (!hooks.isPaused()) {
+      if (reducedMotion) player.root.rotation.y = targetYaw;
+      else {
+        const diff = Math.atan2(Math.sin(targetYaw - player.root.rotation.y), Math.cos(targetYaw - player.root.rotation.y));
+        player.root.rotation.y += diff * (1 - Math.exp(-24 * delta));
+      }
     }
     for (let p of Object.values(entries)) {
       projection.copy(p.root.position);
@@ -607,17 +659,35 @@ export function createOffice(container, hooks) {
       p.label.style.left = `${(projection.x * 0.5 + 0.5) * width}px`;
       p.label.style.top = `${(-projection.y * 0.5 + 0.5) * height}px`;
     }
-    renderer.render(scene, camera);
+    if (!width || !height) return;
+    try { renderer.render(scene, camera); }
+    catch (error) { dispose(); hooks.onError?.(error); return; }
     if (!ready) {
       ready = true;
       hooks.onReady();
     }
   }
-  requestAnimationFrame(frame);
+  frameId = requestAnimationFrame(frame);
   return {
+    dispose,
+    setPublicCast(cast) {
+      for (const [anchor, p] of Object.entries(npcs)) {
+        const actor = Array.isArray(cast) ? cast.find((entry) => entry.sceneAnchor === anchor) : null;
+        const name = actor && typeof actor.name === "string" ? actor.name : baselineLabels[anchor].name;
+        const role = actor && typeof actor.role === "string" ? actor.role : baselineLabels[anchor].role;
+        const strong = p.label.querySelector("strong"), small = p.label.querySelector("small");
+        strong.textContent = name;
+        if (anchor === "maya") {
+          const star = document.createElement("span"); star.className = "npc-star"; star.textContent = "◆";
+          strong.append(" ", star);
+        }
+        if (small) small.textContent = role;
+      }
+    },
     reset() {
       player.root.position.set(2.9, 0, 3.7);
       player.root.rotation.y = -0.65;
+      targetYaw = -0.65;
       keys.clear();
       target = null;
       near = null;
@@ -631,11 +701,18 @@ export function createOffice(container, hooks) {
       );
       setTimeout(() => npcs[id].label.classList.remove("highlight"), 7000);
     },
+    setSpeaking(id, speaking) {
+      npcs[id]?.label.classList.toggle("speaking", !!speaking);
+    },
     setKey(key, pressed) {
-      if (pressed) {
+      if (pressed && !document.hidden && hooks.isVisible?.() !== false && !hooks.isPaused()) {
         keys.add(key.toLowerCase());
         target = null;
       } else keys.delete(key.toLowerCase());
     },
   };
+  } catch (error) {
+    dispose();
+    throw error;
+  }
 }

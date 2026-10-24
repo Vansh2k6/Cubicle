@@ -1,0 +1,9 @@
+# Voice V3 status — 2026-10-22
+
+V3 adds turn-scoped, in-memory NPC speech prefetch after guarded delivery. The public turn projection exposes only an availability descriptor and the committed NPC conversation-row id; the audio route never accepts client text or voice parameters. Captions remain the transcript, and replay is opt-in through the existing conversation-sound and Voice controls.
+
+Independent review approved the final source. The offline gate passed with 282 unit and 58 API tests; default and sanitized `VITE_VOICE=1` bundle scans found zero forbidden needles (5 and 6 text artifacts respectively). The existing >500 kB bundle warning remains. Verification forced the LLM offline and made no Groq, cloud, or `.env` reads; no dependency was added.
+
+Root's local browser check used a warmed CUDA sidecar with four voices. One typed offline Maya turn produced 151,596 bytes of local TTS audio in 244 ms. Cached replay toggled the scene speaking state; mute, Escape, and End stopped it, captions remained, and Restart began fresh. Desktop (1280×900) and phone (390×844) views fit the 44px voice controls after normal panel scrolling, with no browser errors or warnings. This is one local sample, not a latency or real-device acceptance claim.
+
+P6.4 remains unchecked pending human/manual acceptance. Microphone recording and physical-speaker listening, a complete distinct-voice playthrough, V4 health/recovery/Listen work, 20-run latency measurement, and the scene performance gate remain pending. Graphics acceleration is already enabled; the remaining Chrome renderer cause is unresolved, and DPR-1's inherited correction does not support a full lag-fixed claim. `/voice/status` intentionally remains STT-only with `tts_mode: "none"`; V3 speech mode is per committed turn. No demo-ready claim is made.

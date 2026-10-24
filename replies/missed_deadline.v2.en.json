@@ -1,0 +1,726 @@
+{
+  "scenario": "missed_deadline",
+  "locale": "en",
+  "entries": [
+    {
+      "id": "maya-greet-v2",
+      "npc": "maya",
+      "act": "greet",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What would you like to discuss about the portal handover?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me where the handover stands and what you need to resolve."
+        }
+      ]
+    },
+    {
+      "id": "maya-react_freely-v2",
+      "npc": "maya",
+      "act": "react_freely",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What is the next concrete step you want to propose?"
+        },
+        {
+          "id": "two",
+          "text": "Please explain which part of the plan you want to discuss."
+        }
+      ]
+    },
+    {
+      "id": "maya-deflect_sealed-v2",
+      "npc": "maya",
+      "act": "deflect_sealed",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you ask a more specific question about that?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me which concern you want to understand."
+        }
+      ]
+    },
+    {
+      "id": "maya-fallback_clarify-v2",
+      "npc": "maya",
+      "act": "fallback_clarify",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you rephrase that so we can check the next step?"
+        },
+        {
+          "id": "two",
+          "text": "Please clarify what you are proposing before we make an agreement."
+        }
+      ]
+    },
+    {
+      "id": "maya-press_for_date-v2",
+      "npc": "maya",
+      "act": "press_for_date",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What can you commit to for the launch?"
+        },
+        {
+          "id": "two",
+          "text": "Please give me a concrete handover proposal."
+        }
+      ]
+    },
+    {
+      "id": "maya-redirect_to_npc-v2",
+      "npc": "maya",
+      "act": "redirect_to_npc",
+      "variants": [
+        {
+          "id": "one",
+          "text": "That needs the colleague responsible for that part."
+        },
+        {
+          "id": "two",
+          "text": "Please check that part with its owner."
+        }
+      ]
+    },
+    {
+      "id": "maya-callback_commitment-v2",
+      "npc": "maya",
+      "act": "callback_commitment",
+      "variants": [
+        {
+          "id": "one",
+          "text": "You made a handover promise earlier. How does the plan stand now?"
+        },
+        {
+          "id": "two",
+          "text": "Let us return to your earlier commitment. What has changed?"
+        }
+      ]
+    },
+    {
+      "id": "maya-accept_plan-v2",
+      "npc": "maya",
+      "act": "accept_plan",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us check the proposed responsibilities before treating them as agreed."
+        },
+        {
+          "id": "two",
+          "text": "Please confirm the part of this proposal you want me to consider."
+        }
+      ]
+    },
+    {
+      "id": "maya-close_positive-v2",
+      "npc": "maya",
+      "act": "close_positive",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us verify this recap against the current approvals before finishing."
+        },
+        {
+          "id": "two",
+          "text": "Please make sure this recap matches the plan each person accepted."
+        }
+      ]
+    },
+    {
+      "id": "maya-walkout-v2",
+      "npc": "maya",
+      "act": "walkout",
+      "variants": [
+        {
+          "id": "one",
+          "text": "We need to stop this conversation for now."
+        },
+        {
+          "id": "two",
+          "text": "Let us pause here before we continue."
+        }
+      ]
+    },
+    {
+      "id": "maya-acknowledge_relay-v2",
+      "npc": "maya",
+      "act": "acknowledge_relay",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Thank you for passing that on. What do you propose next?"
+        },
+        {
+          "id": "two",
+          "text": "I have heard what you reported. What needs to happen next?"
+        }
+      ]
+    },
+    {
+      "id": "maya-reveal-F1-v2",
+      "npc": "maya",
+      "act": "reveal_fact:F1",
+      "variants": [
+        {
+          "id": "one",
+          "text": "You wrote that routing was included. Vansh had only raised it as a possible improvement; it was not estimated or agreed."
+        },
+        {
+          "id": "two",
+          "text": "You wrote that routing was included. Vansh had only raised it as a possible improvement; it was not estimated or agreed."
+        }
+      ]
+    },
+    {
+      "id": "jordan-greet-v2",
+      "npc": "jordan",
+      "act": "greet",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What would you like to discuss about the portal handover?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me where the handover stands and what you need to resolve."
+        }
+      ]
+    },
+    {
+      "id": "jordan-react_freely-v2",
+      "npc": "jordan",
+      "act": "react_freely",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What is the next concrete step you want to propose?"
+        },
+        {
+          "id": "two",
+          "text": "Please explain which part of the plan you want to discuss."
+        }
+      ]
+    },
+    {
+      "id": "jordan-deflect_sealed-v2",
+      "npc": "jordan",
+      "act": "deflect_sealed",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you ask a more specific question about that?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me which concern you want to understand."
+        }
+      ]
+    },
+    {
+      "id": "jordan-fallback_clarify-v2",
+      "npc": "jordan",
+      "act": "fallback_clarify",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you rephrase that so we can check the next step?"
+        },
+        {
+          "id": "two",
+          "text": "Please clarify what you are proposing before we make an agreement."
+        }
+      ]
+    },
+    {
+      "id": "jordan-press_for_date-v2",
+      "npc": "jordan",
+      "act": "press_for_date",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What can you commit to for the launch?"
+        },
+        {
+          "id": "two",
+          "text": "Please give me a concrete handover proposal."
+        }
+      ]
+    },
+    {
+      "id": "jordan-redirect_to_npc-v2",
+      "npc": "jordan",
+      "act": "redirect_to_npc",
+      "variants": [
+        {
+          "id": "one",
+          "text": "That needs the colleague responsible for that part."
+        },
+        {
+          "id": "two",
+          "text": "Please check that part with its owner."
+        }
+      ]
+    },
+    {
+      "id": "jordan-callback_commitment-v2",
+      "npc": "jordan",
+      "act": "callback_commitment",
+      "variants": [
+        {
+          "id": "one",
+          "text": "You made a handover promise earlier. How does the plan stand now?"
+        },
+        {
+          "id": "two",
+          "text": "Let us return to your earlier commitment. What has changed?"
+        }
+      ]
+    },
+    {
+      "id": "jordan-accept_plan-v2",
+      "npc": "jordan",
+      "act": "accept_plan",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us check the proposed responsibilities before treating them as agreed."
+        },
+        {
+          "id": "two",
+          "text": "Please confirm the part of this proposal you want me to consider."
+        }
+      ]
+    },
+    {
+      "id": "jordan-close_positive-v2",
+      "npc": "jordan",
+      "act": "close_positive",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us verify this recap against the current approvals before finishing."
+        },
+        {
+          "id": "two",
+          "text": "Please make sure this recap matches the plan each person accepted."
+        }
+      ]
+    },
+    {
+      "id": "jordan-walkout-v2",
+      "npc": "jordan",
+      "act": "walkout",
+      "variants": [
+        {
+          "id": "one",
+          "text": "We need to stop this conversation for now."
+        },
+        {
+          "id": "two",
+          "text": "Let us pause here before we continue."
+        }
+      ]
+    },
+    {
+      "id": "jordan-acknowledge_relay-v2",
+      "npc": "jordan",
+      "act": "acknowledge_relay",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Thank you for passing that on. What do you propose next?"
+        },
+        {
+          "id": "two",
+          "text": "I have heard what you reported. What needs to happen next?"
+        }
+      ]
+    },
+    {
+      "id": "jordan-reveal-F2-v2",
+      "npc": "jordan",
+      "act": "reveal_fact:F2",
+      "variants": [
+        {
+          "id": "one",
+          "text": "The submission and storage piece is reusable, but that is all. Friday needs a reserved pair for the fix and QA; otherwise we can discuss core Friday with routing and dashboard followed up Monday."
+        },
+        {
+          "id": "two",
+          "text": "The submission and storage piece is reusable, but that is all. Friday needs a reserved pair for the fix and QA; otherwise we can discuss core Friday with routing and dashboard followed up Monday."
+        }
+      ]
+    },
+    {
+      "id": "sam-greet-v2",
+      "npc": "sam",
+      "act": "greet",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What would you like to discuss about the portal handover?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me where the handover stands and what you need to resolve."
+        }
+      ]
+    },
+    {
+      "id": "sam-react_freely-v2",
+      "npc": "sam",
+      "act": "react_freely",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What is the next concrete step you want to propose?"
+        },
+        {
+          "id": "two",
+          "text": "Please explain which part of the plan you want to discuss."
+        }
+      ]
+    },
+    {
+      "id": "sam-deflect_sealed-v2",
+      "npc": "sam",
+      "act": "deflect_sealed",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you ask a more specific question about that?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me which concern you want to understand."
+        }
+      ]
+    },
+    {
+      "id": "sam-fallback_clarify-v2",
+      "npc": "sam",
+      "act": "fallback_clarify",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you rephrase that so we can check the next step?"
+        },
+        {
+          "id": "two",
+          "text": "Please clarify what you are proposing before we make an agreement."
+        }
+      ]
+    },
+    {
+      "id": "sam-press_for_date-v2",
+      "npc": "sam",
+      "act": "press_for_date",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What can you commit to for the launch?"
+        },
+        {
+          "id": "two",
+          "text": "Please give me a concrete handover proposal."
+        }
+      ]
+    },
+    {
+      "id": "sam-redirect_to_npc-v2",
+      "npc": "sam",
+      "act": "redirect_to_npc",
+      "variants": [
+        {
+          "id": "one",
+          "text": "That needs the colleague responsible for that part."
+        },
+        {
+          "id": "two",
+          "text": "Please check that part with its owner."
+        }
+      ]
+    },
+    {
+      "id": "sam-callback_commitment-v2",
+      "npc": "sam",
+      "act": "callback_commitment",
+      "variants": [
+        {
+          "id": "one",
+          "text": "You made a handover promise earlier. How does the plan stand now?"
+        },
+        {
+          "id": "two",
+          "text": "Let us return to your earlier commitment. What has changed?"
+        }
+      ]
+    },
+    {
+      "id": "sam-accept_plan-v2",
+      "npc": "sam",
+      "act": "accept_plan",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us check the proposed responsibilities before treating them as agreed."
+        },
+        {
+          "id": "two",
+          "text": "Please confirm the part of this proposal you want me to consider."
+        }
+      ]
+    },
+    {
+      "id": "sam-close_positive-v2",
+      "npc": "sam",
+      "act": "close_positive",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us verify this recap against the current approvals before finishing."
+        },
+        {
+          "id": "two",
+          "text": "Please make sure this recap matches the plan each person accepted."
+        }
+      ]
+    },
+    {
+      "id": "sam-walkout-v2",
+      "npc": "sam",
+      "act": "walkout",
+      "variants": [
+        {
+          "id": "one",
+          "text": "We need to stop this conversation for now."
+        },
+        {
+          "id": "two",
+          "text": "Let us pause here before we continue."
+        }
+      ]
+    },
+    {
+      "id": "sam-acknowledge_relay-v2",
+      "npc": "sam",
+      "act": "acknowledge_relay",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Thank you for passing that on. What do you propose next?"
+        },
+        {
+          "id": "two",
+          "text": "I have heard what you reported. What needs to happen next?"
+        }
+      ]
+    },
+    {
+      "id": "sam-reveal-F3-v2",
+      "npc": "sam",
+      "act": "reveal_fact:F3",
+      "variants": [
+        {
+          "id": "one",
+          "text": "The success message can appear before the save is acknowledged. We need to fix and verify save, failure and retry on either route."
+        },
+        {
+          "id": "two",
+          "text": "The success message can appear before the save is acknowledged. We need to fix and verify save, failure and retry on either route."
+        }
+      ]
+    },
+    {
+      "id": "client-greet-v2",
+      "npc": "client",
+      "act": "greet",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What would you like to discuss about the portal handover?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me where the handover stands and what you need to resolve."
+        }
+      ]
+    },
+    {
+      "id": "client-react_freely-v2",
+      "npc": "client",
+      "act": "react_freely",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What is the next concrete step you want to propose?"
+        },
+        {
+          "id": "two",
+          "text": "Please explain which part of the plan you want to discuss."
+        }
+      ]
+    },
+    {
+      "id": "client-deflect_sealed-v2",
+      "npc": "client",
+      "act": "deflect_sealed",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you ask a more specific question about that?"
+        },
+        {
+          "id": "two",
+          "text": "Tell me which concern you want to understand."
+        }
+      ]
+    },
+    {
+      "id": "client-fallback_clarify-v2",
+      "npc": "client",
+      "act": "fallback_clarify",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Could you rephrase that so we can check the next step?"
+        },
+        {
+          "id": "two",
+          "text": "Please clarify what you are proposing before we make an agreement."
+        }
+      ]
+    },
+    {
+      "id": "client-press_for_date-v2",
+      "npc": "client",
+      "act": "press_for_date",
+      "variants": [
+        {
+          "id": "one",
+          "text": "What can you commit to for the launch?"
+        },
+        {
+          "id": "two",
+          "text": "Please give me a concrete handover proposal."
+        }
+      ]
+    },
+    {
+      "id": "client-redirect_to_npc-v2",
+      "npc": "client",
+      "act": "redirect_to_npc",
+      "variants": [
+        {
+          "id": "one",
+          "text": "That needs the colleague responsible for that part."
+        },
+        {
+          "id": "two",
+          "text": "Please check that part with its owner."
+        }
+      ]
+    },
+    {
+      "id": "client-callback_commitment-v2",
+      "npc": "client",
+      "act": "callback_commitment",
+      "variants": [
+        {
+          "id": "one",
+          "text": "You made a handover promise earlier. How does the plan stand now?"
+        },
+        {
+          "id": "two",
+          "text": "Let us return to your earlier commitment. What has changed?"
+        }
+      ]
+    },
+    {
+      "id": "client-accept_plan-v2",
+      "npc": "client",
+      "act": "accept_plan",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us check the proposed responsibilities before treating them as agreed."
+        },
+        {
+          "id": "two",
+          "text": "Please confirm the part of this proposal you want me to consider."
+        }
+      ]
+    },
+    {
+      "id": "client-close_positive-v2",
+      "npc": "client",
+      "act": "close_positive",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Let us verify this recap against the current approvals before finishing."
+        },
+        {
+          "id": "two",
+          "text": "Please make sure this recap matches the plan each person accepted."
+        }
+      ]
+    },
+    {
+      "id": "client-walkout-v2",
+      "npc": "client",
+      "act": "walkout",
+      "variants": [
+        {
+          "id": "one",
+          "text": "We need to stop this conversation for now."
+        },
+        {
+          "id": "two",
+          "text": "Let us pause here before we continue."
+        }
+      ]
+    },
+    {
+      "id": "client-acknowledge_relay-v2",
+      "npc": "client",
+      "act": "acknowledge_relay",
+      "variants": [
+        {
+          "id": "one",
+          "text": "Thank you for passing that on. What do you propose next?"
+        },
+        {
+          "id": "two",
+          "text": "I have heard what you reported. What needs to happen next?"
+        }
+      ]
+    },
+    {
+      "id": "client-reveal-F4-v2",
+      "npc": "client",
+      "act": "reveal_fact:F4",
+      "variants": [
+        {
+          "id": "one",
+          "text": "I asked about the dashboard because I thought submission and confirmation were already done. For Friday we need core business functionality and a receipt the customer can trust. Client operations can manually route only with instructions, a named owner and a Monday follow-up."
+        },
+        {
+          "id": "two",
+          "text": "I asked about the dashboard because I thought submission and confirmation were already done. For Friday we need core business functionality and a receipt the customer can trust. Client operations can manually route only with instructions, a named owner and a Monday follow-up."
+        }
+      ]
+    }
+  ]
+}
