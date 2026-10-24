@@ -1,5 +1,7 @@
 # Prototype status — 2026-10-25
 
+Latest repair and spend evidence: [REPAIR-GATE-2026-10-25.md](REPAIR-GATE-2026-10-25.md). Source `83b83f4`, reviewed/tested tree `fea4470a47d2ed37036e764ad5223f48a3fec4bc`: focused 95/95 and full offline gate PASS. Final live classifier probes 3/3 PASS; full live gameplay acceptance remains blocked. Cumulative Claude usage estimate $0.1072648; gameplay grant call cap exhausted at 350/350. Earlier results below are historical.
+
 Candidate: source commit `6c3816d9cbb95d09cafbb4a71cfa27534bd0a3c8`, tree `36b2b090639509362296fd883075150771559770`. Final offline gate: `npm run verify:offline` **PASS**; unit phase **PASS**; API **96/96**; build **PASS**; bundle scan checked 6 artifacts and 383 needles with 0 hits. Manifest SHA-256: `a82a9050da704f68514ce38e50a33092e0b38eb3446f447e4c4b97858ea52533`.
 
 ## Scope and implementation
