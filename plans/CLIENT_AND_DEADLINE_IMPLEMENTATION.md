@@ -75,6 +75,38 @@ Neither route earns a bonus. Unsupported date, wrong authority, unknown scope, o
 
 ## Ordered assignments
 
+### DS-01 implementation boundary (approved target contract, 2026-10-24)
+
+This section defines the bounded engine extension; it is not implementation or verification evidence. Legacy schema-v1 policies, goal proofs and score records remain unchanged. `engine.js`, `config.js` and `store.js` retain zero imports.
+
+**Event wire.** Existing `proposed_plan`, `proposed_scope_cut` and `proposed_phased_delivery` accept `params: {plan}` only, where `plan` contains exactly `{route,primary,followUp,manual,engineering,qa}` with the closed values above. The route aliases normalize to one proposal achievement, not separate credit. `confirmed_next_steps` accepts exactly `{plan_revision,ack}`, with a positive integer revision and `ack` in `engineering | qa | correction | approval`. `recapped_agreement` accepts exactly `{plan_revision,plan}`; its actual user text must restate the matching route and material slots. Bare “I recap” cannot qualify. IDs, revision counters, authority, delivered status and correction evidence are never supplied inside the proposed slots. Unknown keys, unsupported scopes/dates and uncorroborated parameters fail closed without plan mutation. `committed_deadline` retains its existing ledger meaning; day 6 is only the phased follow-up slot.
+
+**Pure semantic operation.** Only the explicitly supported schema-v2 policy may additionally implement:
+
+```js
+engine.planEvidence({
+  text, actorId, turnId,
+  events: [{type, params, sourceId}],
+  activePlan, publicCanon, actorBindings
+}) -> {
+  proposal: null | {sourceId, plan},
+  acknowledgements: [{sourceId, revision, ack}],
+  recap: null | {sourceId, revision, plan}
+}
+```
+
+Inputs are detached, deeply read-only values. `activePlan` contains only current closed slots, core identity/revision and delivered proposal/approval/recap evidence; it omits history, raw past prose, facts, `user_known` and private canon. `publicCanon` contains approved public canon only; `actorBindings` contains the closed authority bindings below. This operation and the existing relay operation are the only policy operations receiving raw user prose. It checks supporting text for every material slot, acknowledgement and actual recap; classifier output is merely a proposal. The result is a typed nomination, not a mutation or permission grant. Core checks source existence, current turn/actor, supported event type, distinct source IDs, exact closed slot schema, revision, authority, dependencies and allocation. Invalid hook output rolls back the transaction. No arbitrary expression language, new event taxonomy or generic DSL is introduced.
+
+**Private authored model.** Schema v2 adds a closed `plan_model` with `{version:1,primaryDay:3,followUpDay:6,actors:{engineering:"jordan",qa:"sam",external:"client",manager:"maya",instructions:"alex",manual:"client_operations"}}`. Route slots must match the FULL/PHASED shapes above exactly. This model is private, content-hashed, identity-pinned and copied into session model data; functions never serialize. Actor roles displayed in the UI grant no authority. No direct or indirect fact-discovery condition is permitted for any goal.
+
+**Revision lifecycle.** Choose immediate activation as undelivered. A valid, text-supported material proposal attaches a new revision to the existing active commitment, with core-generated plan ID/revision and the original proposal/source history retained. It immediately clears current correction/approvals/recaps and blocks G3/closing. The new proposal evidence has `delivered:false`; only the selected guarded acknowledgement can commit it as delivered. Fallback or a higher-priority reveal/pressure act leaves the revision unacknowledged and cannot restore the old revision as finalizable. Repeating the same current canonical slots reuses that revision; it may nominate a fresh retry source without rewriting the original proposal history or earning duplicate credit. A genuinely different material proposal creates a new revision even when it repeats a historical shape. Malformed, unsupported or text-uncorroborated proposals do not mutate the current revision. Day 3 stays the existing commitment's primary target; Monday never becomes a global deadline or second commitment type.
+
+Core stages approval/correction/recap candidates only for the current revision and commits them only after the appropriate guarded `accept_plan` or final `close_positive` reply. `accept_plan` sits after higher-priority pressure/reveal handling and before generic replies for this policy only; existing final closing priority and legacy act ordering remain intact. A failed fallback grants no proposal-delivery, approval, agreement, recap or goal credit. A reserved pair/follow-up is a plan agreement, never proof that implementation or QA work has already happened.
+
+**Cross-actor goal proof.** Schema-v2 goal proof captures `{source_ids,evidence:[{source_id,turn_id,actor_id,revision,delivered:true}],commitment_id,plan_id,revision}` for plan-based goals; G1 carries its delivered source evidence without invented plan IDs/revision. Every evidence entry must resolve to the core event log and committed delivery, with exact actor/revision and no duplicate allocation. G1 requires distinct delivered Maya ownership/status sources. G2 requires distinct delivered Jordan engineering and Sam QA sources and is awarded once; reconfirmation is not another achievement. G3 captures distinct delivered proposal, client correction, client/Maya approval and matching client/Maya recap sources on the current revision. Its current delivered technical approval prerequisites are referenced separately, never included in G3's allocated score sources or awarded again. Completed G2 remains earned across revisions, while G3 requires renewed current technical approvals. The four fact trigger sets remain disjoint from all goal sources, and neither known nor delivered facts authorize a goal.
+
+**Slice availability.** DS-01 authors/validates the v2 spec, schema, replies, normalized profile and an explicitly known production-policy engine-context loader/test seam. This is not `privateProof` registration, a public catalogue entry or a playable package. Until DS-02 supplies complete supported language/offline hooks, session creation for this context is unsupported and fails closed; there is no deny-all placeholder pretending to be a working language adapter and no legacy fallback. DS-02 adds the strict complete production-package allowlist branch. DS-04 alone changes the default package binding. DS-01 captures trustworthy cross-actor proof and verifies historical scoring compatibility; the existing scorer must reject the new schema-v2/v3 proof until DS-03 implements its exact consumption. DS-01 must not claim the new package is already scorable or playable.
+
 1. **CP-00 contract and baseline** — freeze public/engine/package shapes, tests and a manifest before runtime work.
 2. **CN-01 remote actor and API** — implement reusable remote metadata/contact selection and shared interaction lifecycle without migrating SC-02/03.
 3. **CN-02 phone and conversation** — attach client entry at the work island and apply cancellation/staleness/accessibility tests.

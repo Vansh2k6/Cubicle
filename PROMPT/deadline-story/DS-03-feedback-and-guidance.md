@@ -16,6 +16,8 @@ DS-01/DS-02, D-38, [master plan](../../plans/CLIENT_AND_DEADLINE_IMPLEMENTATION.
 
 Use the existing scorer and debrief layout with the captured v3 package identity/profile. Show deterministic goal/fact/integrity/relationship evidence separately from quality-only judge output. New public guidance names the three visible goals and safely directs the player toward QA and client conversations without exposing F1–F4, private plan rules, or the old HR/module-half/day-2 shortcut. Author debrief text that explains the four missed facts only after end and gives each fact’s question; it must not confuse discovery with goal credit. Preserve captured v2 historical debrief/profile/identity behavior; never replay old records using v3.
 
+Implement exact schema-v2 cross-actor proof consumption from the master's [DS-01 implementation boundary](../../plans/CLIENT_AND_DEADLINE_IMPLEMENTATION.md#ds-01-implementation-boundary-approved-target-contract-2026-10-24); until this slice it remains explicitly unsupported by scoring. Revalidate committed source/actor/revision/delivery and allocation, reject forged or incomplete evidence, award G2 technical readiness once and never score G3's referenced technical prerequisites again. Unacknowledged revisions cannot finalize using old approvals. Keep historical schema-v1 proof handling unchanged.
+
 Do not add metrics, categories, score changes, model calls or new UI layout. Judge fixtures remain offline quality-only mocks with verified quotes and never become acceptance evidence for a real model.
 
 **Reviewer:** Sol checks R-20–27, arithmetic, privacy and historical compatibility.
