@@ -8,6 +8,7 @@
 
 import { fetch as fetchFallback, defaultStore, createStore } from "../../replies/fallbackStore.js";
 import { neutralFor } from "../../llm/pipeline.js";
+import { isRegisteredPackage } from "./scenarioRegistry.js";
 
 const SCENARIO_ID = "missed_deadline";
 const store = defaultStore();
@@ -89,11 +90,11 @@ export function classifyProviderFor(inputText) {
 }
 
 export function createOfflineProviders(pkg, { locale = "en" } = {}) {
-  if (!pkg || pkg.spec?.id !== SCENARIO_ID || pkg.policy?.id !== "sc01-legacy" || pkg.policy?.version !== 1 || locale !== "en") throw new Error("unsupported offline scenario package");
+  if (!isRegisteredPackage(pkg) || (pkg.spec.id !== SCENARIO_ID && typeof pkg.policy.offline?.classifyEvents !== "function") || locale !== "en" || !pkg.spec.locales.includes(locale)) throw new Error("unsupported offline scenario package");
   const store = createStore(pkg.replies?.entries, { scenario: pkg.spec.id, locale, contentHash: pkg.identity?.contentHash });
   return {
     store,
-    classifyProviderFor,
+    classifyProviderFor: pkg.spec.id === SCENARIO_ID ? classifyProviderFor : (text) => async () => ({ text: JSON.stringify({ events: pkg.policy.offline.classifyEvents(text) }) }),
     npcProvider: async ({ system } = {}) => offlineNpc({ system }, store, pkg.spec.id, locale),
   };
 }
@@ -104,7 +105,7 @@ function parseAct(system) {
 }
 
 function parseNpc(system) {
-  const m = /You are [^(]+\(([a-z_]+)\)/.exec(String(system || ""));
+  const m = /You are [^(]+\(([a-z0-9_]+)\)/.exec(String(system || ""));
   return m ? m[1] : null;
 }
 

@@ -175,7 +175,7 @@ function publicContains(publicNode, target) {
   return false;
 }
 
-export function validateScenario(spec) {
+export function validateScenario(spec, { privateProof = false } = {}) {
   const errors = [];
   if (spec === null || typeof spec !== "object" || Array.isArray(spec)) {
     err(errors, "NOT_AN_OBJECT", "$", "spec must be an object");
@@ -192,7 +192,15 @@ export function validateScenario(spec) {
     }
   }
 
-  validateShape(spec, schema, "$", errors);
+  const shape = privateProof ? structuredClone(schema) : schema;
+  if (privateProof) {
+    delete shape.properties.id.const;
+    delete shape.properties.version.const;
+    shape.properties.version.type = "integer";
+    shape.properties.version.minimum = 1;
+    shape.properties.clock.properties.day = { type: "integer", minimum: 0 };
+  }
+  validateShape(spec, shape, "$", errors);
   // Semantic checks assume declared types; malformed input must return errors, not throw.
   if (errors.some((e) => e.code === "SCHEMA_TYPE")) return { ok: false, errors };
 
@@ -225,7 +233,7 @@ export function validateScenario(spec) {
       err(errors, "MISSING_CLOCK_MODEL", "clock", "clock must be an object");
     }
   } else {
-    if (clock.day !== 0) err(errors, "MISSING_CLOCK_MODEL", "clock.day", "clock.day must be 0");
+    if (!privateProof && clock.day !== 0) err(errors, "MISSING_CLOCK_MODEL", "clock.day", "clock.day must be 0");
     if (clock.advance_on_turn !== false) {
       err(errors, "MISSING_CLOCK_MODEL", "clock.advance_on_turn", "clock.advance_on_turn must be false");
     }
@@ -274,6 +282,7 @@ export function validateScenario(spec) {
   }
 
   if (cm && cm.assisted_min_day > cm.unassisted_min_day) err(errors, "BAD_DAY_BOUNDS", "commitment_model", "assisted minimum cannot exceed unassisted minimum");
+  if (privateProof && cm && cm.assistance_requires?.length === 0 && cm.assisted_min_day !== cm.unassisted_min_day) err(errors, "BAD_DAY_BOUNDS", "commitment_model", "no assistance requires identical minimums");
 
   // Facts.
   const factTriggerSet = new Set();
@@ -339,6 +348,9 @@ export function validateScenario(spec) {
         if (typeof entry !== "string") continue;
         const t = entry.trim();
         if (/^event:[A-Za-z_]+$/.test(t)) continue;
+        if (t.startsWith("npc:") && !npcIds.has(t.slice(4))) err(errors, "UNKNOWN_NPC", `${base}.done_when`, "unknown goal actor");
+        if (t.startsWith("fact_revealed:") && !factIds.has(t.slice(14))) err(errors, "UNKNOWN_FACT_REF", `${base}.done_when`, "unknown goal fact");
+        if (t.startsWith("goal_done:") && !goalIds.has(t.slice(10))) err(errors, "UNKNOWN_REQUIRES", `${base}.done_when`, "unknown goal dependency");
         if (!PREDICATE_ALLOW.some((f) => f(t))) {
           err(errors, "BAD_PREDICATE", `${base}.done_when`, `unknown predicate: ${t}`);
         }
@@ -382,6 +394,7 @@ export function validateScenario(spec) {
   if (!beats.some((b) => b && PRESSURE_ACTS.has(b.act))) {
     err(errors, "NO_PRESSURE_BEAT", "beats", "need >=1 pressure beat (press_for_date|callback_commitment)");
   }
+  for (const beat of beats) if (!npcIds.has(beat.npc)) err(errors, "UNKNOWN_NPC", `beats.${beat.id}.npc`, "unknown pressure actor");
 
   // Private canon must not appear under public.
   if (spec.canon && typeof spec.canon === "object" && !Array.isArray(spec.canon)) {

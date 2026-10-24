@@ -1,3 +1,5 @@
+import { goalCandidates } from "./goalCandidates.js";
+export { goalCandidates };
 // Authored SC-01 decisions only. Inputs are read-only projections supplied by core.
 import { B2_BASE_TURN, B2_ASSERTIVE_TURN, ASSERTIVENESS_B2_CUTOFF, B3_GAP_TURNS } from "../../engine/config.js";
 
@@ -16,21 +18,6 @@ export function commitmentBounds({ state, rules }) {
   const active = factDelivered && helpAccepted;
   return { minDay: active ? rules.commitment_model.assisted_min_day : rules.commitment_model.unassisted_min_day,
     cutoffDay: rules.cutoff_day, assistance: { active, factDelivered, helpAccepted } };
-}
-
-export function goalCandidates({ state, rules }) {
-  return rules.goals.flatMap((goal) => {
-    const actorId = rules.goalActors[goal.id];
-    const types = goal.done_when.filter((x) => x.startsWith("event:")).map((x) => x.slice(6));
-    const commitment = goal.done_when.includes("date_mutually_agreed")
-      ? state.commitments.find((c) => c.status === "active" && c.accepted_with === actorId && c.pending_recap_turn === state.turn) : null;
-    if (goal.done_when.includes("date_mutually_agreed") && !commitment) return [];
-    const sources = types.map((type) => state.events_log.find((e) => e.type === type && e.npc_id === actorId &&
-      (!commitment || e.turn_id === commitment.pending_recap_turn)));
-    if (sources.some((e) => !e)) return [];
-    return [{ goalId: goal.id, actorId, sourceIds: sources.map((e) => e.source_id),
-      ...(commitment ? { commitmentId: commitment.id } : {}), requiresDelivery: !!commitment }];
-  });
 }
 
 export function pressureCandidates({ state, rules }) {

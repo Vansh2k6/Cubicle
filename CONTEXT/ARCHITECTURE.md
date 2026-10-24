@@ -512,3 +512,7 @@ The API/pipeline passes the pinned package runtime explicitly to core; existing 
 ### SF-03 language/metadata subset (accepted offline 2026-10-24)
 
 The modern runtime now binds public-canon, commitment-normalization and canon-check hooks before providers, while core leak/ownership checks still protect another actor's facts even if user-known. Date aliases/multi-date clarification, bounded F2 supported spans, historical coaching, session-pinned debrief/retry, stale metadata clearing and public guidance are package-bound. Public presentation is limited to the existing maya/jordan/sam anchor IDs and approved voice IDs. No locale, scenario, voice-cast, phone or UI redesign is introduced. Private-proof scanning and final integration remain SF-04 work.
+
+### SF-04 proof/integration subset (accepted offline 2026-10-24)
+
+The runtime supports a private synthetic proof fixture through an explicit private-policy allowlist; the default registry remains SC-01. `allPackages` scanning covers registered private packages, while private fixture numbers remain test-only and are not production scenario approvals. The final offline suite initially failed only on public reply-label scanner false positives: its 345/345 unit and 74/74 API suites passed. After review of the scanner-only correction, affected tests and default/voice scans passed with zero hits; the full suite was not rerun. Stage 1 acceptance and live, browser, physical microphone/speaker and performance verification remain pending. The existing 546.70 kB office chunk warning persists.
