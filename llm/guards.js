@@ -102,28 +102,38 @@ export function checkReply(reply, opts = {}) {
     scenario, npcId, act, locale = "en",
     userSaid = [], commitments = [],
     revealedIds = [], authorised = null,
-    activeCommitment = null, clockDay = 0, bounds = null, runtime = undefined,
+    activeCommitment = null, clockDay = 0, bounds = null, runtime = undefined, planDelivery = null,
   } = opts;
   const failures = [];
   if (!scenario || !scenario.npcs?.some((npc) => npc.id === npcId)) return { ok: false, failures: [{ code: "bad_input" }] };
   let language;
   try { language = resolveLanguage(scenario, runtime, locale); } catch { return {ok: false, failures: [{code: "unsupported_language"}]}; }
+  if (planDelivery && (planDelivery.actorId !== npcId || !["accept_plan", "close_positive"].includes(act) || !Number.isInteger(planDelivery.turnId) || planDelivery.turnId < 1)) return {ok: false, failures: [{code: "bad_plan_delivery"}]};
   const ownIds = revealedIds.filter((id) => scenario.facts.some((fact) => fact.id === id && fact.owner === npcId));
   const ownTexts = scenario.facts.filter((fact) => ownIds.includes(fact.id)).map((fact) => factContent(scenario, fact.id));
   const corpus = echoCorpus({ userSaid, revealedTexts: ownTexts, commitments });
   const authFact = authorised && authorised.owner === npcId && authorised.act === act && act === `reveal_fact:${authorised.factId}` && scenario.facts.some((fact) => fact.id === authorised.factId && fact.owner === npcId) ? authorised.factId : null;
+  const publicSpans = typeof language.permittedReplySpans === "function" ? language.permittedReplySpans({text: reply, publicCanon: scenario.canon.public,
+    act, planDelivery, facts: ownIds.map((id) => ({id, content: factContent(scenario, id)})), authorisedFact: authFact ? {id: authFact, content: factContent(scenario, authFact)} : null}) : [];
+  if (!Array.isArray(publicSpans) || publicSpans.some((span) => typeof span !== "string" || span.length < 20)) return {ok: false, failures: [{code: "bad_public_span"}]};
+  // Only complete, authored authorized/public spans are removed from foreign
+  // fact scanning. Shared nouns never exempt a private claim or appended text.
+  const spans = [...publicSpans, ...(authFact ? [factContent(scenario, authFact)] : [])];
+  let foreignReply = normalize(reply);
+  for (const span of spans) foreignReply = foreignReply.replace(normalize(span), " ");
 
   for (const fid of undisclosedFacts(scenario, ownIds)) {
     if (fid === authFact) continue; // exemption (a): authorised pending fact
-    const kw = keywordHitsForFact(reply, scenario, fid, corpus, locale);
+    const scanReply = language.permittedReplySpans ? foreignReply : reply;
+    const kw = keywordHitsForFact(scanReply, scenario, fid, corpus, locale);
     if (kw.length > 0) failures.push({ code: "leak_keyword", factId: fid });
-    const sem = semanticHitForFact(reply, scenario, fid, corpus);
+    const sem = semanticHitForFact(scanReply, scenario, fid, corpus);
     if (sem.hit && kw.length === 0) failures.push({ code: "leak_semantic", factId: fid });
   }
 
   const knownCommitments = commitments.map(({original_words, what, target_day}) => ({original_words, what, target_day}));
   const knownActive = activeCommitment ? {target_day: activeCommitment.target_day, original_words: activeCommitment.original_words, what: activeCommitment.what} : null;
-  for (const c of checkLanguageCanon(language, {text: reply, act, permittedCanon: {public: scenario.canon?.public || {}, userSaid, facts: ownIds.map((id) => ({id, content: factContent(scenario, id)})), commitments: knownCommitments}, authorisedFact: authFact ? {id: authFact, content: factContent(scenario, authFact)} : null, activeCommitment: knownActive, clock: {day: clockDay}, bounds})) {
+  for (const c of checkLanguageCanon(language, {text: reply, act, permittedCanon: {public: scenario.canon?.public || {}, userSaid, facts: ownIds.map((id) => ({id, content: factContent(scenario, id)})), commitments: knownCommitments}, authorisedFact: authFact ? {id: authFact, content: factContent(scenario, authFact)} : null, activeCommitment: knownActive, clock: {day: clockDay}, bounds, planDelivery})) {
     failures.push(c);
   }
 

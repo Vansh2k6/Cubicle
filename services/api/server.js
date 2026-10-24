@@ -40,8 +40,8 @@ function localOrigin(origin) {
 const selectedProvider = providerName();
 const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
 const manifest = createManifest(liveProvider ? loadConfig() : {
-  classifier: { model: "offline-stub:rules-v1", promptVersion: "v3", schemaVersion: 1 },
-  npc: { model: "offline-stub:store-v1", promptVersion: "v4", schemaVersion: 1 },
+  classifier: { model: "offline-stub:rules-v1", promptVersion: "v4", schemaVersion: 1 },
+  npc: { model: "offline-stub:store-v1", promptVersion: "v5", schemaVersion: 1 },
   judge: { model: "offline-unavailable:judge", promptVersion: "v2", schemaVersion: 2 },
   coach: { model: "authored-fallback:coach", promptVersion: "v3", schemaVersion: 2 },
 });
@@ -288,7 +288,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         if (!sliders.ok) { send(res, 400, { error: "sliders must be integer values from 0 to 100", retryable: false }); return; }
         const offline = createOfflineProviders(pkg);
         if (!offline?.store || typeof offline.npcProvider !== "function" || typeof offline.classifyProviderFor !== "function") { send(res, 400, { error: "unsupported scenario_id" }); return; }
-        const runtime = Object.freeze({ scenarioId: pkg.spec.id, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules, language: pkg.policy.language, identity: pkg.identity, spec: pkg.spec });
+        const runtime = Object.freeze({ scenarioId: pkg.spec.id, schemaVersion: pkg.identity.schemaVersion, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules, language: pkg.policy.language, identity: pkg.identity, spec: pkg.spec });
         const context = Object.freeze({ pkg, runtime, store: offline.store, npcProvider: npcProvider || liveProvider || offline.npcProvider, classifyProviderFor: offline.classifyProviderFor });
         const session = store.create(pkg.spec, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value, runtime });
         session.identity = pkg.identity;

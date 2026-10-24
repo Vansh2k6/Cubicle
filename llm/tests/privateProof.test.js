@@ -118,7 +118,7 @@ test("guarded failures and fallbacks grant no fact, agreement, or closing credit
 
 test("registered private sources include hidden fixtures and detect injected source text", () => {
   assert.equal(scanRegistry.listScenarios().length, 1);
-  assert.equal(scanRegistry.allPackages().length, 3);
+  assert.equal(scanRegistry.allPackages().length, 4);
   const needles = registeredPrivateNeedles(scanRegistry);
   for (const text of ["private_remote_proof", "private_email_proof", "private-email-proof", "canon_unverified_claim", "proof_dispatcher", "Fixture Dispatcher", "orchid-envelope-private", "The reference code is copper lantern.", "Let us clarify the dispatch note.", "Prepare an email update with the dispatch coordinator.", "dispatch@example.invalid"]) {
     assert.ok(needles.has(text.toLowerCase()), text);

@@ -1,16 +1,26 @@
 import { defaultRegistry, createScenarioRegistry } from "../services/api/scenarioRegistry.js";
 import { privateProofInput, privateProofPolicy } from "../services/api/tests/fixtures/privateProof.js";
 import { remoteProofInput } from "../services/api/tests/fixtures/remoteProof.js";
+import {deadlineV2PackageInput} from "../services/api/deadlineV2Package.js";
 
 // Tooling-only registration: production server never imports this module.
-export const scanRegistry = createScenarioRegistry([...defaultRegistry.allPackages(), privateProofInput(), remoteProofInput()], {
+const fixtures = createScenarioRegistry([...defaultRegistry.allPackages(), privateProofInput(), remoteProofInput()], {
   privatePolicies: { [privateProofPolicy.id]: privateProofPolicy },
+});
+const unpublished = createScenarioRegistry([deadlineV2PackageInput()]);
+export const scanRegistry = Object.freeze({
+  allPackages: () => [...fixtures.allPackages(), ...unpublished.allPackages()],
+  getScenario: (id) => fixtures.getScenario(id),
+  listScenarios: () => defaultRegistry.listScenarios(),
+  publishedPackages: () => defaultRegistry.allPackages(),
 });
 
 export function registeredPrivateNeedles(registry) {
   const needles = new Map();
   const publishedIds = new Set(registry.listScenarios().map((pkg) => pkg.id));
-  const publicAtoms = new Set(registry.allPackages().filter((pkg) => publishedIds.has(pkg.spec.id)).flatMap((pkg) => [...pkg.spec.npcs, pkg.spec.player].flatMap(({ id, name, role }) => [id, name, role])).map((value) => value.toLowerCase()));
+  const published = registry.publishedPackages ? registry.publishedPackages() : registry.allPackages().filter((pkg) => publishedIds.has(pkg.spec.id));
+  const publicHashes = new Set(published.map((pkg) => pkg.identity.contentHash));
+  const publicAtoms = new Set(published.flatMap((pkg) => [...pkg.spec.npcs, pkg.spec.player].flatMap(({ id, name, role }) => [id, name, role])).map((value) => value.toLowerCase()));
   const add = (value, reason) => {
     if (typeof value === "string") {
       if (!publicAtoms.has(value.toLowerCase()) && (value.length >= 6 || /[\s-]/.test(value))) needles.set(value.toLowerCase(), reason);
@@ -25,6 +35,8 @@ export function registeredPrivateNeedles(registry) {
       add(fact.unlock_question, `unlock ${pkg.spec.id}/${fact.id}`);
     }
     add(pkg.spec.canon.private, `private canon ${pkg.spec.id}`);
+    add(pkg.spec.plan_model, `private plan model ${pkg.spec.id}`);
+    add(pkg.privateSources, `private source data ${pkg.spec.id}`);
     // Scenario/locale and tone tags are public lookup metadata, not templates.
     for (const entry of pkg.replies.entries || []) {
       const reason = `replies ${pkg.spec.id}/${entry.id}`;
@@ -50,8 +62,8 @@ export function registeredPrivateNeedles(registry) {
         }
       }
     }
-    if (!publishedIds.has(pkg.spec.id)) {
-      add(pkg.spec.id, `private fixture identity ${pkg.spec.id}`);
+    if (!publicHashes.has(pkg.identity.contentHash)) {
+      if (!publishedIds.has(pkg.spec.id)) add(pkg.spec.id, `private fixture identity ${pkg.spec.id}`);
       add(JSON.stringify(pkg.spec), `private fixture source ${pkg.spec.id}`);
       add(pkg.spec.briefing, `private fixture briefing ${pkg.spec.id}`);
       add(pkg.spec.canon.public, `private fixture public canon ${pkg.spec.id}`);

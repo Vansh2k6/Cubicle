@@ -21,9 +21,9 @@ test("buildClassifierInput slices lastTurns to <=2", () => {
   assert.deepEqual(in1.lastTurns.map((t) => t.text), ["b", "c"]);
 });
 
-test("classifier v3 prompt and config share provenance", () => {
-  assert.equal(loadConfig({}).classifier.promptVersion, "v3");
-  assert.match(getClassifierPrompt(), /Classifier prompt v3/);
+test("classifier v4 prompt and config share provenance", () => {
+  assert.equal(loadConfig({}).classifier.promptVersion, "v4");
+  assert.match(getClassifierPrompt(), /Classifier prompt v4/);
   assert.match(getClassifierPrompt(), /Ownership and status are independent multi-labels/);
 });
 

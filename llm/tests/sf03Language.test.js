@@ -113,7 +113,7 @@ test("public metadata preserves current cast, exactly three anchors and approved
 });
 
 test("private language resources have real scanner needles and are absent from frontend import graph", () => {
-  const resources = ["llm/sc01Language.js", "llm/languageContext.js", "llm/prompts/classifier/v3.md", "llm/prompts/npc/v4-boundary.md", "llm/prompts/coach/v3.md"];
+  const resources = ["llm/sc01Language.js", "llm/languageContext.js", "llm/deadlineV2Language.js", "llm/pipeline.js", "llm/prompts/classifier/v4.md", "llm/prompts/npc/v4-boundary.md", "llm/prompts/npc/v5-boundary.md", "llm/prompts/coach/v3.md"];
   const all = resources.map((path) => readFileSync(resolve(root, path), "utf8")).join("\n").toLowerCase();
   for (const [needle, reason] of privateLanguageNeedles) {
     assert.ok(all.includes(needle), needle);

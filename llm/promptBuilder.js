@@ -1,5 +1,5 @@
 import {readFileSync} from "node:fs";
-const BOUNDARY = readFileSync(new URL("./prompts/npc/v4-boundary.md", import.meta.url), "utf8");
+const BOUNDARY = readFileSync(new URL("./prompts/npc/v5-boundary.md", import.meta.url), "utf8");
 import {resolveLanguage, publicLanguageInput} from "./languageContext.js";
 // llm/promptBuilder.js — Pure NPC prompt composer (R-01/R-04).
 // Includes: persona, tone text, public canon, THIS npc's revealed facts, and ONLY
@@ -12,6 +12,7 @@ function badInput(message) {
 }
 
 const ACT_INSTRUCTIONS = {
+  accept_plan: "Acknowledge only the engine-selected part of the current proposal using its final reply instruction.",
   greet: "Greet the user briefly in character.",
   deflect_sealed: "Deflect the probing question briefly without revealing anything private.",
   press_for_date: "Press for a concrete date. Do not name one yourself.",

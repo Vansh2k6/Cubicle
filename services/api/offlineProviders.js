@@ -90,12 +90,16 @@ export function classifyProviderFor(inputText) {
 }
 
 export function createOfflineProviders(pkg, { locale = "en" } = {}) {
-  if (!isRegisteredPackage(pkg) || (pkg.spec.id !== SCENARIO_ID && typeof pkg.policy.offline?.classifyEvents !== "function") || locale !== "en" || !pkg.spec.locales.includes(locale)) throw new Error("unsupported offline scenario package");
+  const legacy = pkg?.policy?.id === "sc01-legacy" && pkg.identity?.schemaVersion === 1;
+  if (!isRegisteredPackage(pkg) || (!legacy && typeof pkg.policy.offline?.classifyEvents !== "function") || locale !== "en" || !pkg.spec.locales.includes(locale)) throw new Error("unsupported offline scenario package");
   const store = createStore(pkg.replies?.entries, { scenario: pkg.spec.id, locale, contentHash: pkg.identity?.contentHash });
   return {
     store,
-    classifyProviderFor: pkg.spec.id === SCENARIO_ID ? classifyProviderFor : (text) => async () => ({ text: JSON.stringify({ events: pkg.policy.offline.classifyEvents(text) }) }),
-    npcProvider: async ({ system } = {}) => offlineNpc({ system }, store, pkg.spec.id, locale),
+    classifyProviderFor: legacy ? classifyProviderFor : (text) => async ({messages} = {}) => {
+      let context; try {context = JSON.parse(messages?.[0]?.content || "{}").plan_context;} catch { /* unsupported context yields no plan event */ }
+      return {text: JSON.stringify({events: pkg.policy.offline.classifyEvents(text, context)})};
+    },
+    npcProvider: async ({ system } = {}) => pkg.policy.offline?.reply?.({system}) || offlineNpc({ system }, store, pkg.spec.id, locale),
   };
 }
 

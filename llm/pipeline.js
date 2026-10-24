@@ -139,7 +139,7 @@ export async function runTurn(opts = {}) {
   }
 
   if (session.identity && opts.runtime === undefined) throw new Error("bound language runtime required");
-  resolveLanguage(scenario, opts.runtime, session.locale || "en");
+  const language = resolveLanguage(scenario, opts.runtime, session.locale || "en");
   if (opts.runtime && JSON.stringify(opts.runtime.identity) !== JSON.stringify(session.identity)) throw new Error("session language identity mismatch");
   const trace = { turn: null, events: [], act: null, guardEvents: [], regen: false, delivered: false, replySource: null, npcFailure: null, npcHttpStatus: undefined };
 
@@ -153,6 +153,15 @@ export async function runTurn(opts = {}) {
     lastTurns: lastUserTextsToNpc(convo, npcId, 2).slice(0, -1),
     userKnown: session.user_known || [],
     clock: session.clock || { day: 0 },
+    ...(language.normalizeEvents ? {planContext: {
+      actorId: npcId,
+      publicCanon: scenario.canon.public,
+      ownFacts: (session.user_known || []).filter((id) => factById(scenario, id)?.owner === npcId).map((id) => ({id, content: factById(scenario, id).content.en})),
+      activePlan: (() => {
+        const p = session.commitments.filter((c) => c.status === "active").pop()?.plan;
+        return p ? {revision: p.revision, proposalDelivered: p.delivered, slots: Object.fromEntries(["route", "primary", "followUp", "manual", "engineering", "qa"].map((key) => [key, p[key]]))} : null;
+      })(),
+    }} : {}),
   });
   const tCls0 = Date.now();
   const cls = await classifyTurn(
@@ -169,6 +178,18 @@ export async function runTurn(opts = {}) {
   const act = applied.act;
   trace.act = act;
   trace.turn = session.turn;
+  let planDelivery = null;
+  if (typeof language.planReply === "function" && session.staged?.planEvidence && session.staged.npcId === npcId && session.staged.turnId === session.turn && ["accept_plan", "close_positive"].includes(act)) {
+    const evidence = session.staged.planEvidence;
+    const current = session.commitments.find((c) => c.id === evidence.commitmentId && c.status === "active");
+    if (evidence.revision === null || current?.plan?.revision === evidence.revision) {
+      const stage = {npcId, turnId: session.turn, revision: evidence.revision, proposal: !!evidence.proposal,
+        ownership: evidence.ownership.length > 0, acknowledgements: evidence.acknowledgements.map((ack) => ack.ack), recap: !!evidence.recap};
+      const expectedReply = language.planReply({act, actorId: npcId, turnId: session.turn, stage});
+      if (typeof expectedReply !== "string" || !expectedReply.trim() || expectedReply.length > 500) throw new Error("invalid plan acknowledgement");
+      planDelivery = {expectedReply, actorId: npcId, turnId: session.turn, revision: evidence.revision, stage};
+    }
+  }
 
   // 4. Authorise exactly the staged reveal for this npc + act (R-01).
   let authorised = null;
@@ -198,6 +219,7 @@ export async function runTurn(opts = {}) {
     clockDay: (session.clock && session.clock.day) || 0,
     bounds: boundsFor(session),
     runtime: opts.runtime,
+    planDelivery,
   });
   const prompt = buildNpcPrompt({
     scenario, runtime: opts.runtime, locale: session.locale || "en",
@@ -219,6 +241,8 @@ export async function runTurn(opts = {}) {
   }
   if (session.staged?.agreementAllowed) prompt.system += "\n" + MOVE_PROMPTS.agreement;
   if (session.staged?.closingAllowed) prompt.system += "\n" + MOVE_PROMPTS.closing;
+  if (planDelivery) prompt.system += "\nENGINE-SELECTED PLAN MOVE: " + JSON.stringify({actorId: npcId, turnId: session.turn, revision: planDelivery.revision,
+    ownership: planDelivery.stage.ownership, proposal: planDelivery.stage.proposal, acknowledgement: planDelivery.stage.acknowledgements, recap: planDelivery.stage.recap, closing: act === "close_positive"}) + "\nENGINE-BOUND PLAN REPLY: " + JSON.stringify(planDelivery.expectedReply);
   const tGen0 = Date.now();
   let gen = await generateNpcReply({ prompt, provider: providers.npc, manifestId });
   stages.generateMs = Date.now() - tGen0;
@@ -229,6 +253,7 @@ export async function runTurn(opts = {}) {
   }
 
   const positiveOk = (replyText) => {
+    if (planDelivery) return language.checkPlanReply({text: replyText, act, actorId: npcId, turnId: session.turn, stage: planDelivery.stage}) === true;
     if (session.staged?.agreementAllowed && !expressesAcceptance(replyText)) return false;
     if (session.staged?.closingAllowed && !expressesClosing(replyText)) return false;
     if (!authorised) return true;
@@ -288,18 +313,18 @@ export async function runTurn(opts = {}) {
         locale: session.locale || "en",
       }, store);
       if (!fb) continue;
-      const v = guardTimed(() => checkReply(fb.text, { ...guardCtx(), act: a, authorised: null }));
+      const v = guardTimed(() => checkReply(fb.text, { ...guardCtx(), act: a, authorised: null, planDelivery: null }));
       trace.guardEvents.push({ stage: "fallback:" + a, ok: v.ok, codes: v.failures.map((f) => f.code + (f.factId ? ":" + f.factId : "")) });
       if (v.ok) { picked = fb; fallbackAct = a; break; }
     }
     if (picked) {
       gen = { text: picked.text, source: "fallback", trimmed: false, manifestId };
     } else {
-      const neutral = neutralFor(npcId);
-      const v = guardTimed(() => checkReply(neutral, { ...guardCtx(), authorised: null }));
+      const neutral = language.normalizeEvents ? NEUTRAL_DEFAULT : neutralFor(npcId);
+      const v = guardTimed(() => checkReply(neutral, { ...guardCtx(), authorised: null, planDelivery: null }));
       trace.guardEvents.push({ stage: "fallback:neutral", ok: v.ok, codes: v.failures.map((f) => f.code + (f.factId ? ":" + f.factId : "")) });
       const safeText = v.ok ? neutral : "Let's keep going.";
-      if (!v.ok && !guardTimed(() => checkReply(safeText, {...guardCtx(), authorised: null})).ok) throw new Error("no guarded fallback available");
+      if (!v.ok && !guardTimed(() => checkReply(safeText, {...guardCtx(), authorised: null, planDelivery: null})).ok) throw new Error("no guarded fallback available");
       gen = { text: safeText, source: "fallback", trimmed: false, manifestId };
       fallbackAct = "fallback_clarify";
     }
@@ -318,8 +343,8 @@ export async function runTurn(opts = {}) {
   const onAct = !usedFallback;
   const delivered = verdict.ok && positive && onAct && gen.source === "llm";
   engine.commitDelivery(session, session.turn, { delivered, runtime: opts.runtime,
-    agreementExpressed: expressesAcceptance(gen.text),
-    closingExpressed: expressesClosing(gen.text) });
+    agreementExpressed: planDelivery ? positiveOk(gen.text) : expressesAcceptance(gen.text),
+    closingExpressed: planDelivery ? act === "close_positive" && positiveOk(gen.text) : expressesClosing(gen.text) });
   trace.delivered = delivered;
 
   const npcState = session.npcs[npcId] || { mood: 50 };

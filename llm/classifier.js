@@ -75,18 +75,19 @@ let cachedPrompt = null;
 export function getClassifierPrompt() {
   if (!cachedPrompt) {
     const dir = dirname(fileURLToPath(import.meta.url));
-    cachedPrompt = readFileSync(join(dir, "prompts", "classifier", "v3.md"), "utf8");
+    cachedPrompt = readFileSync(join(dir, "prompts", "classifier", "v4.md"), "utf8");
   }
   return cachedPrompt;
 }
 
 // lastTurns sliced to <=2 by code.
-export function buildClassifierInput({ text, lastTurns, userKnown, clock } = {}) {
+export function buildClassifierInput({ text, lastTurns, userKnown, clock, planContext } = {}) {
   return {
     text: typeof text === "string" ? text : "",
     lastTurns: Array.isArray(lastTurns) ? lastTurns.slice(-2) : [],
     userKnown: Array.isArray(userKnown) ? userKnown.slice() : [],
     clock: clock && typeof clock.day === "number" ? { day: clock.day } : { day: 0 },
+    ...(planContext ? {planContext: structuredClone(planContext)} : {}),
   };
 }
 
@@ -96,7 +97,7 @@ export async function classifyTurn(deps, input) {
   const { provider, manifestId = null } = deps || {};
   const language = deps?.scenario ? resolveLanguage(deps.scenario, deps.runtime, deps.locale || "en") : deps?.runtime !== undefined ? null : sc01Language;
   if (!language) throw new Error("classifier language context required");
-  const date = language.normalizeCommitment({text: input.text, clock: input.clock, publicDateLabels: {}});
+  const date = language.normalizeCommitment({text: input.text, clock: input.clock, publicDateLabels: {}, planContext: input.planContext});
   if (!date || !(date.day === null || Number.isInteger(date.day) && date.day >= 0) || !(date.clarification === null || typeof date.clarification === "string")) throw new Error("invalid commitment interpretation");
   const system = (deps && deps.system) || getClassifierPrompt();
   const timeoutMs = (deps && deps.timeoutMs) || 1500;
@@ -105,6 +106,7 @@ export async function classifyTurn(deps, input) {
     recent_turns: input.lastTurns,
     user_known: input.userKnown,
     clock: input.clock,
+    ...(input.planContext ? {plan_context: input.planContext} : {}),
   };
   const res = await complete({
     role: "classifier",
@@ -136,7 +138,7 @@ export async function classifyTurn(deps, input) {
     const params = ev.params && typeof ev.params === "object" && !Array.isArray(ev.params)
       ? { ...ev.params }
       : {};
-    if (type === "committed_deadline") {
+    if (type === "committed_deadline" && !language.normalizeEvents) {
       if (date.day === null) {
         clarify.push({reason: "ambiguous_date", detail: date.clarification || input.text.slice(0, 120)});
         dropped.push({type, reason: date.clarification === "missing_day" ? "missing_day" : "ambiguous_date"});
@@ -152,7 +154,7 @@ export async function classifyTurn(deps, input) {
     events.push({ type, params });
   }
 
-  if (date.clarification && date.clarification !== "missing_day" && !clarify.some((entry) => entry.reason === "ambiguous_date")) clarify.push({reason: "ambiguous_date", detail: date.clarification});
+  if (!language.normalizeEvents && date.clarification && date.clarification !== "missing_day" && !clarify.some((entry) => entry.reason === "ambiguous_date")) clarify.push({reason: "ambiguous_date", detail: date.clarification});
 
   for (const c of Array.isArray(data.clarify) ? data.clarify : []) {
     if (c && typeof c.reason === "string") {
@@ -160,6 +162,11 @@ export async function classifyTurn(deps, input) {
     }
   }
 
+  if (language.normalizeEvents) {
+    const normalized = language.normalizeEvents({events, text: input.text, planContext: input.planContext});
+    if (!normalized || !Array.isArray(normalized.events) || !Array.isArray(normalized.clarify) || !Array.isArray(normalized.dropped)) throw new Error("invalid classifier normalization");
+    return {...normalized, clarify: [...clarify, ...normalized.clarify], dropped: [...dropped, ...normalized.dropped], manifestId, attempts: res.attempts};
+  }
   return { events, clarify, manifestId, attempts: res.attempts, dropped };
 }
 
