@@ -17,7 +17,7 @@ import { createConversation, runTurn, publicResponse, projectGoals, nextHintFor 
 import { createManifest } from "../../llm/manifest.js";
 import { difficultyFor, validateSliders } from "../../shared/settings.js";
 import { createOfflineProviders, classifyProviderFor } from "./offlineProviders.js";
-import { defaultRegistry, publicScenario } from "./scenarioRegistry.js";
+import { defaultRegistry, publicScenario, isRegisteredPackage } from "./scenarioRegistry.js";
 import { loadConfig, providerName } from "../../llm/config.js";
 import { createGroqProvider } from "../../llm/providers/groq.js";
 import { assembleDebrief } from "../../scoring/debrief.js";
@@ -130,7 +130,13 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     getSession: (id) => store.getState(id), uploadTimeoutMs: voiceUploadTimeoutMs });
   const speechOptions = { config: voiceConfig, providers: sttProviders, localReady: async () => (await health.check()).tts,
     onFailure: () => health.unavailable(), log: (entry) => console.info(JSON.stringify(entry)) };
-  const speech = createSpeechService(speechOptions);
+  const speech = createSpeechService({ ...speechOptions, resolveVoice(session, turn) {
+    const context = contexts.get(session.id);
+    if (!context || !isRegisteredPackage(context.pkg) || session.identity !== context.pkg.identity || !Object.hasOwn(session.npcs, turn.npcId) ||
+        !convos.get(session.id)?.turns.includes(turn) || turn.speaker !== "npc") return null;
+    const actor = publicScenario(context.pkg).npcs.find((candidate) => candidate.id === turn.npcId);
+    return actor?.contactMode === "phone" ? actor.voiceId : voiceConfig.voiceMap?.[actor?.sceneAnchor];
+  } });
   const coachSpeech = createSpeechService({ ...speechOptions, ended: true });
   function beginDebrief(session, retry = false) {
     let job = debriefs.get(session.id);
@@ -327,7 +333,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         const npcId = body && body.npc_id;
         const text = body && body.text;
         const key = body && body.idempotencyKey;
-        if (!session.npcs[npcId]) {
+        if (typeof npcId !== "string" || !Object.hasOwn(session.npcs, npcId)) {
           send(res, 400, { error: "unknown npc_id", retryable: false });
           return;
         }

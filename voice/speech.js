@@ -16,7 +16,7 @@ function bounded(work, ms, controller) {
   });
 }
 
-export function createSpeechService({ config, providers = [], log = () => {}, localReady = Promise.resolve(true), ended = false, onFailure = () => {} } = {}) {
+export function createSpeechService({ config, providers = [], log = () => {}, localReady = Promise.resolve(true), ended = false, onFailure = () => {}, resolveVoice = null } = {}) {
   const sessions = new Map();
   const provider = providers.find((candidate) => typeof candidate?.synthesize === "function");
   const chain = config.ttsChain || [];
@@ -36,19 +36,22 @@ export function createSpeechService({ config, providers = [], log = () => {}, lo
   };
   const eligible = (session) => ended ? session.ended : !session.ended;
   const prefetch = (session, turn) => {
-    if (!config.enabled || !eligible(session) || !turn || turn.speaker !== "npc" ||
-        !(ended ? ["alex_coach"] : ["maya", "jordan", "sam"]).includes(turn.npcId) || !config.voiceMap?.[turn.npcId]) return none;
+    if (!config.enabled || !eligible(session) || !turn || turn.speaker !== "npc") return none;
+    const voice = ended ? (turn.npcId === "alex_coach" ? config.voiceMap?.alex_coach : null)
+      : resolveVoice ? resolveVoice(session, turn) : (!session.identity && !session.engine_policy && ["maya", "jordan", "sam"].includes(turn.npcId) ? config.voiceMap?.[turn.npcId] : null);
+    if (!voice) return none;
     const id = String(turn.id);
     let entries = sessions.get(session.id);
     if (!entries) sessions.set(session.id, entries = new Map());
     const existing = entries.get(id);
     if (existing) { touch(entries, id, existing); return existing.descriptor; }
     const controller = new AbortController();
-    const entry = { controller, descriptor: !localAllowed || chain[0] !== "local" || !provider ? fallback(id) : descriptor(id, "server"), audio: null };
+    const entry = { controller, descriptor: !localAllowed || chain[0] !== "local" || !provider ? fallback(id) : descriptor(id, "server"), audio: null,
+      allowed: () => eligible(session) && (ended || !resolveVoice || resolveVoice(session, turn) === voice) };
     touch(entries, id, entry);
     const started = Date.now();
     let attempted = false;
-    const current = () => eligible(session) && !controller.signal.aborted && sessions.get(session.id)?.get(id) === entry;
+    const current = () => entry.allowed() && !controller.signal.aborted && sessions.get(session.id)?.get(id) === entry;
     const record = (outcome) => {
       try { log({ event: "tts", session_hash: createHash("sha256").update(session.id).digest("hex").slice(0, 12), turn_id: id,
         provider: "local", bytes: entry.audio?.length || 0, latency_ms: Date.now() - started, outcome }); } catch { /* diagnostics never affect speech */ }
@@ -57,7 +60,7 @@ export function createSpeechService({ config, providers = [], log = () => {}, lo
     entry.promise = bounded(new Promise(setImmediate).then(async () => {
       if (!await (typeof localReady === "function" ? localReady() : localReady) || !localAllowed || !current()) throw new Error("unavailable");
       attempted = true;
-      return bounded(Promise.resolve().then(() => provider.synthesize({ text: turn.text, voice: config.voiceMap[turn.npcId], signal: controller.signal })), config.ttsTimeoutMs || 6000, controller);
+      return bounded(Promise.resolve().then(() => provider.synthesize({ text: turn.text, voice, signal: controller.signal })), config.ttsTimeoutMs || 6000, controller);
     }), (config.ttsTimeoutMs || 6000) + 500, controller)
       .then((result) => {
         if (!current() || !Buffer.isBuffer(result?.audio) || !result.audio.length || result.audio.length > MAX_AUDIO_BYTES || result.mime !== "audio/wav") throw new Error("unavailable");
@@ -68,10 +71,10 @@ export function createSpeechService({ config, providers = [], log = () => {}, lo
   const audio = async (session, id) => {
     id = String(id);
     const entries = sessions.get(session.id), entry = entries?.get(id);
-    if (!entry || !eligible(session)) return null;
+    if (!entry || !entry.allowed()) return null;
     touch(entries, id, entry);
     await entry.promise;
-    if (!eligible(session) || sessions.get(session.id)?.get(id) !== entry) return null;
+    if (!entry.allowed() || sessions.get(session.id)?.get(id) !== entry) return null;
     return entry.audio ? { audio: entry.audio, mime: "audio/wav" } : { speech: entry.descriptor };
   };
   return Object.freeze({ prefetch, audio, clear, disableLocal: () => { localAllowed = false; } });

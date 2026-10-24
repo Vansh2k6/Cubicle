@@ -10,7 +10,7 @@ import {classifyTurn, buildClassifierInput} from "../classifier.js";
 import {runTurn, createConversation, nextHintFor} from "../pipeline.js";
 import {safeHistoricalText, coachSession} from "../../scoring/coach.js";
 import {assembleDebrief, bandFor} from "../../scoring/debrief.js";
-import {publicCast, FIXED_CAST} from "../../shared/presentation.js";
+import {publicCast, FIXED_CAST, PHONE_BINDING} from "../../shared/presentation.js";
 import {projectGuidance} from "../../src/guidance.js";
 import {scanArtifacts} from "../../scripts/bundle-scan-core.mjs";
 import {privateLanguageNeedles} from "../../scripts/private-language-needles.mjs";
@@ -159,6 +159,25 @@ test("one or two public actors map uniquely to existing anchors and reject empty
   assert.throws(() => publicCast([{id: "unknown", name: "Unknown", role: "peer"}]));
   const bindings = {a: FIXED_CAST.maya, b: FIXED_CAST.sam};
   assert.deepEqual(publicCast([{id: "a", name: "A", role: "peer"}, {id: "b", name: "B", role: "peer"}], bindings).map((actor) => actor.sceneAnchor), ["maya", "sam"]);
+});
+
+test("one phone contact joins three unchanged physical actors through strict public bindings", () => {
+  const contact = {id: "client", name: "Rohan Mehta", role: "Client Operations Lead", private_context: "private fixture marker"};
+  const actors = [...scenario.npcs, contact], bindings = {...FIXED_CAST, client: PHONE_BINDING};
+  const result = publicCast(actors, bindings);
+  assert.deepEqual(result.slice(0, 3), publicCast(scenario.npcs));
+  assert.deepEqual(result[3], {id: contact.id, name: contact.name, role: contact.role, contactMode: "phone", voiceId: "en_GB-alan-medium"});
+  assert.equal(Object.hasOwn(result[3], "sceneAnchor"), false);
+  for (const binding of [
+    {contactMode: "email", voiceId: PHONE_BINDING.voiceId},
+    {contactMode: "phone", voiceId: "unknown"},
+    {...PHONE_BINDING, sceneAnchor: "maya"},
+    {...PHONE_BINDING, sceneAnchor: undefined},
+    {sceneAnchor: "sam", voiceId: FIXED_CAST.sam.voiceId},
+    {sceneAnchor: "__proto__"},
+  ]) assert.throws(() => publicCast(actors, {...bindings, client: binding}));
+  assert.throws(() => publicCast(actors, {...bindings, sam: PHONE_BINDING}));
+  assert.throws(() => publicCast([...actors, {...contact, id: "other"}], {...bindings, other: PHONE_BINDING}));
 });
 
 test("modern debrief uses captured bands and first-actor settings for an unregistered private record", async () => {

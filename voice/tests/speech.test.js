@@ -94,3 +94,20 @@ test("invalid or oversized audio degrades to fallback without retaining bytes", 
     service.clear(session.id);
   }
 });
+
+test("bound speech requires a canonical approved actor row and never inherits legacy voice eligibility", async () => {
+  const bound = { id: "bound", ended: false, identity: { contentHash: "opaque" } };
+  const committed = { ...turn, npcId: "client" }, calls = [];
+  const service = createSpeechService({ config, resolveVoice: (s, row) => s === bound && row === committed ? "en_GB-alan-medium" : null,
+    providers: [{ async synthesize(args) { calls.push(args); return { audio: Buffer.from("RIFF"), mime: "audio/wav" }; } }] });
+  for (const row of [{ ...committed }, {...committed, speaker: "user"}, {...committed, npcId: "foreign"}]) assert.equal(service.prefetch(bound, row).mode, "none");
+  assert.equal(service.prefetch({...bound}, committed).mode, "none");
+  assert.equal(service.prefetch(bound, committed).mode, "server");
+  assert.ok((await service.audio(bound, committed.id)).audio);
+  assert.equal(calls.length, 1); assert.equal(calls[0].voice, "en_GB-alan-medium");
+  bound.ended = true;
+  assert.equal(service.prefetch(bound, committed).mode, "none"); assert.equal(await service.audio(bound, committed.id), null);
+  const direct = createSpeechService({ config: {...config, voiceMap: {...config.voiceMap, client: "en_GB-alan-medium"}} });
+  assert.equal(direct.prefetch(session, committed).mode, "none");
+  assert.equal(direct.prefetch({...bound, ended: false}, turn).mode, "none");
+});

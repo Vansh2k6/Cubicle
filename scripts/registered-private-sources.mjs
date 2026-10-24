@@ -1,8 +1,9 @@
 import { defaultRegistry, createScenarioRegistry } from "../services/api/scenarioRegistry.js";
 import { privateProofInput, privateProofPolicy } from "../services/api/tests/fixtures/privateProof.js";
+import { remoteProofInput } from "../services/api/tests/fixtures/remoteProof.js";
 
 // Tooling-only registration: production server never imports this module.
-export const scanRegistry = createScenarioRegistry([...defaultRegistry.allPackages(), privateProofInput()], {
+export const scanRegistry = createScenarioRegistry([...defaultRegistry.allPackages(), privateProofInput(), remoteProofInput()], {
   privatePolicies: { [privateProofPolicy.id]: privateProofPolicy },
 });
 
