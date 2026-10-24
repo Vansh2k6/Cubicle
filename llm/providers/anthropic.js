@@ -8,6 +8,9 @@ import { safeFailure, validateAgainstSchema } from "../gateway.js";
 const MODEL = "claude-haiku-5-5";
 const CALL_CAP = 40, TOKEN_CAP = 200_000, OUTPUT_CAP = 1024, USD_CAP = 4, RATE_PER_MILLION = 2.5;
 const GRANT = "cubicle-scenario-prototype-haiku-2026-10-25";
+const LOCK_WAIT_MS = 5000;
+const RENAME_RETRIES = 3;
+const TRANSIENT_RENAME_CODES = new Set(["EPERM", "EACCES", "EBUSY", "EEXIST", "ENOTEMPTY"]);
 const error = (code, retryable = false) => Object.assign(new Error(`LLM ${code.toLowerCase()}`), { code, retryable });
 const validLedger = (v) => v && v.version === 1 && Number.isSafeInteger(v.calls) && v.calls >= 0 && v.calls <= CALL_CAP &&
   Number.isSafeInteger(v.reservedTokens) && v.reservedTokens >= 0 && v.reservedTokens <= TOKEN_CAP &&
@@ -16,8 +19,18 @@ const validLedger = (v) => v && v.version === 1 && Number.isSafeInteger(v.calls)
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const caps = Object.freeze({calls: CALL_CAP, reservedTokens: TOKEN_CAP, outputTokens: OUTPUT_CAP, usd: USD_CAP, usdPerMillionReservedTokens: RATE_PER_MILLION});
 
+async function renameWithRetry(source, destination) {
+  for (let attempt = 0; ; attempt++) {
+    try { await rename(source, destination); return; }
+    catch (e) {
+      if (!TRANSIENT_RENAME_CODES.has(e.code) || attempt >= RENAME_RETRIES) throw e;
+      await wait(20 * (attempt + 1));
+    }
+  }
+}
+
 async function lockedUpdate(path, update) {
-  const lock = `${path}.lock`, until = Date.now() + 5000;
+  const lock = `${path}.lock`, until = Date.now() + LOCK_WAIT_MS;
   let handle;
   while (!handle) {
     try { handle = await open(lock, "wx"); }
@@ -31,16 +44,16 @@ async function lockedUpdate(path, update) {
     if (!next || !validLedger(next)) throw error("LLM_BUDGET_EXCEEDED");
     const temp = `${path}.${randomUUID()}.tmp`;
     await writeFile(temp, JSON.stringify(next), { flag: "wx" });
-    try { await rename(temp, path); }
+    try { await renameWithRetry(temp, path); }
     catch (e) {
       // Windows does not replace an existing destination with rename(). Keep
       // the previous counters recoverable while swapping under the exclusive lock.
       if (!["EPERM", "EEXIST", "ENOTEMPTY"].includes(e.code)) { await unlink(temp).catch(() => {}); throw error("LLM_BUDGET_UNAVAILABLE"); }
       const backup = `${path}.${randomUUID()}.previous`;
       try {
-        await rename(path, backup);
-        try { await rename(temp, path); }
-        catch (replaceError) { await rename(backup, path).catch(() => {}); throw replaceError; }
+        await renameWithRetry(path, backup);
+        try { await renameWithRetry(temp, path); }
+        catch (replaceError) { await renameWithRetry(backup, path).catch(() => {}); throw replaceError; }
         await unlink(backup).catch(() => {});
       } catch {
         await unlink(temp).catch(() => {});
@@ -153,7 +166,10 @@ export function createAnthropicProvider({ env = process.env, config = loadConfig
       throw error(timedOut ? "TIMEOUT" : safe.failureCode, timedOut || e?.retryable === true || !e?.code);
     } finally { clearTimeout(timer); }
   };
-  provider.timeoutMs = timeoutMs + 1000;
+  // The gateway deadline covers three bounded ledger-lock windows (authorization,
+  // reservation, usage), plus the worst-case transient-rename retries across
+  // those atomic updates. The network/body timer itself remains timeoutMs.
+  provider.timeoutMs = timeoutMs + LOCK_WAIT_MS * 3 + 2000;
   return provider;
 }
 

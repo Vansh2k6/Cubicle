@@ -134,7 +134,7 @@ test("turn allowlist: public keys only, no debug without flag, no sealed text", 
     idempotencyKey: "k-allow-1",
   });
   assert.equal(status, 200);
-  assert.deepEqual(Object.keys(data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id", "speech"].sort());
+  assert.deepEqual(Object.keys(data).sort(), ["end_reason", "ended", "npc_reply", "public_state", "turn_id", "speech", "reply_source"].sort());
   assert.deepEqual(
     Object.keys(data.public_state).sort(),
     ["ended", "goals", "mood_label", "next_hint", "npc_availability"].sort(),

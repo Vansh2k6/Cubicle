@@ -24,6 +24,8 @@ test("Anthropic configuration pins Haiku for every role without changing Groq de
     assert.equal(anthro[role].reasoningEffort,"low");
   }
   assert.equal(loadConfig({}).npc.model,"qwen/qwen3.8-27b");
+  const provider=createAnthropicProvider({env:{},config:anthro,fetchFn:async()=>{throw new Error("not dispatched");}});
+  assert.equal(provider.timeoutMs,29_000);
 });
 
 test("provider status reports offline until explicit authorization and a usable ledger exist", async () => fixture(async (_dir, ledger) => {
@@ -119,16 +121,16 @@ test("parallel reservations are atomic and timeout or oversized body retain the 
   let dispatched=0;
   const fetchFn=async()=>{dispatched++;return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:1,output_tokens:1},content:[{type:"text",text:"ok"}]}),{status:200});};
   const provider=createAnthropicProvider({env:envFor(ledger),fetchFn});
-  await Promise.all(Array.from({length:12},(_,i)=>provider({role:"npc",messages:[{role:"user",content:`parallel ${i}`}]})));
-  assert.equal(dispatched,12);
+  await Promise.all(Array.from({length:24},(_,i)=>provider({role:"npc",messages:[{role:"user",content:`parallel ${i}`}]})));
+  assert.equal(dispatched,24);
   let saved=JSON.parse(await readFile(ledger,"utf8"));
-  assert.equal(saved.calls,12); assert.equal(saved.actualInputTokens,12); assert.equal(saved.actualOutputTokens,12);
+  assert.equal(saved.calls,24); assert.equal(saved.actualInputTokens,24); assert.equal(saved.actualOutputTokens,24);
   const slow=createAnthropicProvider({env:envFor(ledger),timeoutMs:15,fetchFn:async()=>({ok:true,body:{getReader(){return {read:()=>new Promise(()=>{}),releaseLock(){}};}}})});
   await assert.rejects(slow({role:"npc",messages:[{role:"user",content:"timeout"}]}),{code:"TIMEOUT"});
-  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,13);
+  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,25);
   const huge=createAnthropicProvider({env:envFor(ledger),fetchFn:async()=>new Response("x".repeat(256_001),{status:200,headers:{"content-type":"application/json"}})});
   await assert.rejects(huge({role:"npc",messages:[{role:"user",content:"large body"}]}),{code:"OUTPUT_INVALID"});
-  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,14);
+  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,26);
 }));
 
 test("gateway retry reserves each dispatch and succeeds without exposing provider errors", async () => fixture(async (_dir, ledger) => {

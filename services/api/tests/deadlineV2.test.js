@@ -73,7 +73,7 @@ test("v2 automatic completion produces an ended score3 debrief while pre-end fac
     for (let i = 0; i < steps.length; i++) {
       const [npc_id, text] = steps[i]; result = await request(path + "/turn", {npc_id, text, idempotencyKey: "ds03-" + i});
       assert.equal(result.status, 200, JSON.stringify(result.body));
-      assert.deepEqual(Object.keys(result.body).sort(), ["end_reason", "ended", "npc_reply", "public_state", "speech", "turn_id"]);
+      assert.deepEqual(Object.keys(result.body).sort(), ["end_reason", "ended", "npc_reply", "public_state", "speech", "turn_id", "reply_source"]);
       assert.ok(!JSON.stringify(result.body).includes("plan_model"));
     }
     assert.equal(result.body.ended, true); assert.equal(result.body.end_reason, "goals_complete");
