@@ -76,6 +76,9 @@ test("prototype choices and keyword compositions are bounded, public previews", 
       "The client wants an earlier date and also says a feature was omitted",
       "I forgot to implement a feature and the client wants to shorten the deadline",
       "I forgot to implement a feature for Mars",
+      "The client wants to reduce the budget",
+      "The client wants to shorten the meeting",
+      "The client wants an earlier retirement",
     ]) {
       const response = await request(app,"POST","/prototype/compose",{text});
       assert.equal(response.status, 422);
