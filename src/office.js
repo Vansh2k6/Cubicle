@@ -430,6 +430,7 @@ export function createOffice(container, hooks) {
   nearRing.visible = false;
   const labels = document.querySelector("#scene-labels");
   const entries = { ...npcs, player: { ...player, name: "You", role: "" } };
+  const baselineLabels = Object.fromEntries(Object.entries(npcs).map(([id, p]) => [id, {name: p.name, role: p.role}]));
   for (let [id, p] of Object.entries(entries)) {
     let el = document.createElement("div");
     el.className = `npc-label ${id === "player" ? "player" : ""}`;
@@ -669,6 +670,20 @@ export function createOffice(container, hooks) {
   frameId = requestAnimationFrame(frame);
   return {
     dispose,
+    setPublicCast(cast) {
+      for (const [anchor, p] of Object.entries(npcs)) {
+        const actor = Array.isArray(cast) ? cast.find((entry) => entry.sceneAnchor === anchor) : null;
+        const name = actor && typeof actor.name === "string" ? actor.name : baselineLabels[anchor].name;
+        const role = actor && typeof actor.role === "string" ? actor.role : baselineLabels[anchor].role;
+        const strong = p.label.querySelector("strong"), small = p.label.querySelector("small");
+        strong.textContent = name;
+        if (anchor === "maya") {
+          const star = document.createElement("span"); star.className = "npc-star"; star.textContent = "◆";
+          strong.append(" ", star);
+        }
+        if (small) small.textContent = role;
+      }
+    },
     reset() {
       player.root.position.set(2.9, 0, 3.7);
       player.root.rotation.y = -0.65;

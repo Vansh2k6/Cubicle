@@ -37,7 +37,7 @@ export async function assembleDebrief({ record, scenario = record.scenario, prov
   const coachAvailable = moments.every((m) => m.source === "llm");
   const total = deterministic.deterministic + judged;
   const positives = [];
-  if (snapshot.session.goals.G1?.status === "done") positives.push("You took responsibility and shared an honest update.");
+  if (deterministic.metrics.goals.evidence.some((entry) => entry.source_id === "goal:G1" && entry.points > 0)) positives.push("You took responsibility and shared an honest update.");
   if (deterministic.metrics.hidden_facts.points > 0) positives.push("Your questions uncovered more context.");
   if (!positives.length) positives.push("You made time to practice a difficult conversation.");
   const priorities = deterministic.priorities.map((entry) => {
@@ -56,7 +56,7 @@ export async function assembleDebrief({ record, scenario = record.scenario, prov
     breakdown: Object.entries(deterministic.metrics).map(([id, metric]) => ({ id, label: LABELS[id], points: id === "rubric" ? judged : metric.points, cap: metric.cap, source: id === "rubric" ? "judged" : "deterministic" })),
     what_went_well: positives, timeline: deterministic.flags.map(withQuote), priorities,
     moments, coach_status: coachAvailable ? "available" : "unavailable",
-    missed_facts: scenario.facts.filter((f) => !snapshot.session.user_known.includes(f.id) || snapshot.session.facts[f.id]?.status !== "revealed")
+    missed_facts: scenario.facts.filter((f) => !deterministic.metrics.hidden_facts.evidence.some((entry) => entry.source_id === `fact:${f.id}` && entry.points > 0))
       .map((f) => ({ id: f.id, owner: f.owner, content: f.content.en, unlock_question: f.unlock_question.en })),
     weights: deterministic.weights, penalties: deterministic.penalties, scoring_version: deterministic.scoring_version,
     settings: structuredClone(snapshot.session.customisation), difficulty: difficultyFor(snapshot.session.customisation?.[scenario.npcs[0]?.id]), end_reason: snapshot.session.endReason,

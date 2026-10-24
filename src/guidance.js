@@ -1,7 +1,9 @@
 import {sc01Guidance} from "../shared/sc01Guidance.js";
+import {isDeadlineV2, deadlineGuidance} from "../shared/deadlineGuidance.js";
 
 // Inputs are public checklist/metadata only. The default is the existing direct SC-01 compatibility entry.
 export function projectGuidance({scenarioId = "missed_deadline", goals = [], currentNpc = null, hint = "", ended = false, npcs} = {}) {
+  if (scenarioId === "missed_deadline" && isDeadlineV2(npcs)) return deadlineGuidance({goals, npcs, currentNpc, ended});
   if (scenarioId === "missed_deadline") return sc01Guidance({goals, currentNpc, hint, ended, ...(npcs ? {npcs} : {})});
   const pending = goals.find((goal) => goal?.status !== "done" && !goal?.locked);
   const complete = goals.length > 0 && goals.every((goal) => goal?.status === "done");

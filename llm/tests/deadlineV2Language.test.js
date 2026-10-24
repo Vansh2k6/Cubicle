@@ -62,7 +62,7 @@ for (const route of ["full", "phased"]) test(`${route} natural conversation disc
   assert.equal(closing.act, "close_positive"); assert.equal(closing.delivered, true, JSON.stringify(closing.trace));
   assert.equal(f.session.turn, 18); assert.equal(f.session.endReason, "goals_complete");
   assert.equal(f.session.commitments.length, 1); assert.equal(f.session.commitments[0].target_day, 3);
-  assert.throws(() => scoreSession(createScoreRecord(f.session, f.convo, pkg.spec, pkg.scoringProfile)), /Unsupported scenario scoring/);
+  assert.equal(scoreSession(createScoreRecord(f.session, f.convo, pkg.spec, pkg.scoringProfile)).metrics.goals.points, 30);
 });
 
 test("versioned NOT-RUN live cases have five or more natural positives for every changed interpretation", async () => {

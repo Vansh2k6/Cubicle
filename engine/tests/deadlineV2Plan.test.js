@@ -67,7 +67,7 @@ for (const route of ["full", "phased"]) test(`${route} closes within 20 with cro
   assert.deepEqual(proof.prerequisite_evidence.map((e) => e.actor_id), ["jordan", "sam"]);
   const allocated = Object.values(s.goals).flatMap((g) => g.proof.source_ids);
   assert.equal(allocated.length, new Set(allocated).size);
-  assert.throws(() => scoreSession(createScoreRecord(s, {turns: []}, context.spec, context.scoringProfile)), /Unsupported scenario scoring/);
+  assert.equal(scoreSession(createScoreRecord(s, {turns: []}, context.spec, context.scoringProfile)).metrics.goals.points, 30);
 });
 
 test("strict v2 authoring and engine identity; default registry and providers remain old/unplayable", () => {

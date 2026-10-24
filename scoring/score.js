@@ -1,5 +1,6 @@
 import { CONFIG, normalizeScoringProfile } from "./config.js";
 import { legacyGoalProofs } from "./sc01Legacy.js";
+import {supportedDeadlineV2, deadlineV2Goal} from "./deadlineV2Proof.js";
 import { startMood, warmthGain, patienceDrop, GAIN_EVENTS, VAGUE_EVENTS } from "../engine/config.js";
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
@@ -25,12 +26,13 @@ export function scoreSession(record, scenario = record.scenario) {
   const config = record.scoringProfile || (legacy ? CONFIG.missed_deadline : null);
   const profile = scenario.scoring.bands ? normalizeScoringProfile(scenario) : (legacy ? CONFIG.missed_deadline : null);
   const identity = record.identity;
+  const v2 = !legacy && identity?.schemaVersion === 2 && supportedDeadlineV2(session, scenario, identity);
   const identityMatches = identity && same(identity, session.identity) && identity.scenarioId === scenario.id &&
-    identity.contentVersion === scenario.version && identity.scoringVersion === config?.scoring_version && identity.schemaVersion === 1 &&
+    identity.contentVersion === scenario.version && identity.scoringVersion === config?.scoring_version && (identity.schemaVersion === 1 || v2) &&
     typeof identity.contentHash === "string" && /^[a-f0-9]{64}$/.test(identity.contentHash) &&
     identity.policyId === session.engine_policy?.id && identity.policyVersion === session.engine_policy?.version;
-  if (!config || !profile || !same(config, profile) || session.scenario_id !== scenario.id || session.scenario_version !== scenario.version ||
-      (legacy ? !same(config, CONFIG.missed_deadline) : (!record.scenario || !same(record.scenario, scenario) || !identityMatches || session.engine_policy.proof_version !== 1))) {
+  if (!config || !profile || !same(config, profile) || (!legacy && scenario.version === 2 && !v2) || session.scenario_id !== scenario.id || session.scenario_version !== scenario.version ||
+      (legacy ? !same(config, CONFIG.missed_deadline) : (!record.scenario || !same(record.scenario, scenario) || !identityMatches || session.engine_policy.proof_version !== (v2 ? 2 : 1)))) {
     throw new Error("Unsupported scenario scoring version or weights");
   }
   const mapping = turnMap(record.convo, session);
@@ -70,7 +72,8 @@ export function scoreSession(record, scenario = record.scenario) {
     const proofMatches = proof?.actor_id === declaredActor && proof?.requires_delivery === goal.done_when.includes("date_mutually_agreed") &&
       declaredTypes.length === sources.length && declaredTypes.every((type) => sources.some((e) => e?.type === type)) &&
       goal.requires.every((id) => validGoals.has(id));
-    const done = proofMatches && state?.status === "done" && !!proof && sources.length > 0 && new Set(proof.source_ids).size === sources.length &&
+    const verified = v2 && goal.requires.every((id) => validGoals.has(id)) ? deadlineV2Goal(record, goal, usedGoalSources) : null;
+    const done = v2 ? !!verified : proofMatches && state?.status === "done" && !!proof && sources.length > 0 && new Set(proof.source_ids).size === sources.length &&
       sources.every((e) => e && e.npc_id === proof.actor_id && e.turn_id <= state.turn_id && !usedGoalSources.has(e.source_id) &&
         (legacy ? e.allocation !== "integrity" : e.allocation === "goals")) &&
       (!proof.requires_delivery || !!closingCommitment);
@@ -78,10 +81,15 @@ export function scoreSession(record, scenario = record.scenario) {
       { loss: done ? 0 : goal.weight, status: done ? "awarded" : "missed", evidence: [] });
     if (done) {
       validGoals.add(goal.id);
-      for (const e of sources) {
+      for (const e of v2 ? verified.sources : sources) {
         usedGoalSources.add(e.source_id);
-        completedGoalTypes.set(`${proof.actor_id}:${e.type}`, true);
-        reserve(e, "goals"); row.evidence.push(evidence(e.source_id, e.turn_id));
+        completedGoalTypes.set(`${e.npc_id}:${e.type}`, true);
+        reserve(e, "goals"); row.evidence.push(evidence(e.source_id, e.turn_id, v2 ? {actor_id: e.npc_id, ...(e.plan_revision ? {revision: e.plan_revision} : {})} : {}));
+      }
+      if (v2 && verified.commitment) {row.commitment_id = verified.commitment.id; row.plan_id = proof.plan_id; row.revision = proof.revision;}
+      if (v2 && verified.prerequisites.length) {
+        row.prerequisite_evidence = verified.prerequisites.map((e) => evidence(e.source_id, e.turn_id, {actor_id: e.npc_id, revision: e.plan_revision}));
+        verified.prerequisites.forEach((e) => reserve(e, "goals"));
       }
       if (closingCommitment) row.commitment_id = closingCommitment.id;
     }

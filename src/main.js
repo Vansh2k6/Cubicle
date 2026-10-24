@@ -465,6 +465,7 @@ function startOffice() {
         },
       });
       office = instance;
+      office.setPublicCast?.(state.scenarioMetadata?.npcs);
     });
   }).then((result) => {
     if (generation === officeGeneration && result) enterOffice();
@@ -617,6 +618,7 @@ function renderPeople(box) {
   if (retry) retry.onclick = loadScenarioMetadata;
 }
 function syncPeople() {
+  office?.setPublicCast?.(state.scenarioMetadata?.npcs);
   renderPeople($(".people-list"));
   renderPeople($("#context-people"));
   if (state.threads) {

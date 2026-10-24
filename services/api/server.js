@@ -62,11 +62,11 @@ function availability(session) {
   return Object.fromEntries(Object.keys(session.npcs || {}).map((id) => [id, true]));
 }
 
-function initialPublic(session, spec) {
+function initialPublic(session, spec, metadata = spec) {
   return {
     mood_label: moodLabel(session.npcs.maya ? session.npcs.maya.mood : 50),
     goals: publicGoals(session, spec),
-    next_hint: nextHintFor(session.goals, {id: spec.id, npcs: spec.npcs, goals: publicGoals(session, spec)}),
+    next_hint: nextHintFor(session.goals, {id: spec.id, npcs: metadata.npcs, goals: publicGoals(session, spec)}),
     npc_availability: availability(session),
     ended: false,
   };
@@ -299,7 +299,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           briefing: pkg.spec.briefing.en,
           scenario: publicScenario(pkg),
           settings: sliders.value, difficulty: difficultyFor(sliders.value),
-          public_state: initialPublic(session, pkg.spec),
+          public_state: initialPublic(session, pkg.spec, publicScenario(pkg)),
           manifest: debug ? manifest.id : undefined,
         });
         return;
@@ -314,7 +314,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         engine.endSession(session);
         speech.clear(session.id);
         beginDebrief(session);
-        send(res, 200, { ended: true, end_reason: session.endReason, public_state: { ...initialPublic(session, context.pkg.spec), ended: true } });
+        send(res, 200, { ended: true, end_reason: session.endReason, public_state: { ...initialPublic(session, context.pkg.spec, publicScenario(context.pkg)), ended: true } });
         return;
       }
       // POST /sessions/{id}/turn

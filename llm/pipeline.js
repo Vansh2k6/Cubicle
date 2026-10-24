@@ -1,4 +1,6 @@
 import {sc01NextHint} from "../shared/sc01Guidance.js";
+import {isDeadlineV2, deadlineGuidance} from "../shared/deadlineGuidance.js";
+import {publicCast, FIXED_CAST, PHONE_BINDING} from "../shared/presentation.js";
 import {resolveLanguage} from "./languageContext.js";
 // llm/pipeline.js — Guarded turn pipeline (ARCHITECTURE.md §5, P2b).
 // runTurn: append user turn -> classify -> engine.applyTurn -> generate ->
@@ -54,6 +56,7 @@ function factById(scenario, factId) {
 // Next-step hint driven by PUBLIC goal state only (P3.2 / FR-25). No sealed
 // data, no act internals: the mapping is a pure function of goal statuses.
 export function nextHintFor(goals, metadata = {id: "missed_deadline"}) {
+  if (metadata.id === "missed_deadline" && isDeadlineV2(metadata.npcs)) return deadlineGuidance({goals: metadata.goals || Object.entries(goals).map(([id, goal]) => ({id, ...goal})), npcs: metadata.npcs}).hint;
   if (metadata.id === "missed_deadline") return sc01NextHint(goals, metadata.npcs);
   const visible = Array.isArray(metadata.goals) ? metadata.goals : [];
   const pending = visible.find((goal) => (goals[goal.id]?.status || goal.status) !== "done" && !goal.locked);
@@ -73,6 +76,9 @@ export function projectGoals(scenario, session) {
 }
 
 function hintFor(session, act, scenario) {
+  if (scenario.version === 2 && session.ended) return "The conversation has ended.";
+  if (scenario.version === 2 && scenario.plan_model) return nextHintFor(session.goals, {id: scenario.id, goals: projectGoals(scenario, session),
+    npcs: publicCast(scenario.npcs, {...FIXED_CAST, client: PHONE_BINDING})});
   // A completed checklist keeps its wrap-up hint even though the session
   // ended on goals_complete; other endings (walkout, max turns) report that
   // the conversation has ended.
