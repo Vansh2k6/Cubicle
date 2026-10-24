@@ -58,12 +58,25 @@ test("prototype choices and keyword compositions are bounded, public previews", 
         for (const fact of pkg.spec.facts) assert.equal(serialized.includes(fact.content.en.toLowerCase()),false);
       }
     }
-    for (const [text, id] of [["The feature was omitted from the signed product scope", "prototype_omitted_feature"], ["The client asks us to deliver sooner", "prototype_earlier_delivery"]]) {
+    for (const [text, id] of [
+      ["The feature was omitted from the signed product scope", "prototype_omitted_feature"],
+      ["I forgot to implement a feature in a product", "prototype_omitted_feature"],
+      ["We have forgotten to add a feature to the product", "prototype_omitted_feature"],
+      ["The client asks us to deliver sooner", "prototype_earlier_delivery"],
+      ["create a scenario where client is trying to reduce deadline", "prototype_earlier_delivery"],
+      ["The client asked to shorten the deadline", "prototype_earlier_delivery"],
+      ["The customer is trying to tighten deadline", "prototype_earlier_delivery"],
+    ]) {
       const response = await request(app,"POST","/prototype/compose",{text});
       assert.equal(response.status, 200);
       assert.equal((await response.json()).scenario_id, id);
     }
-    for (const text of ["Build me a new onboarding simulation", "The client wants an earlier date and also says a feature was omitted"]) {
+    for (const text of [
+      "Build me a new onboarding simulation",
+      "The client wants an earlier date and also says a feature was omitted",
+      "I forgot to implement a feature and the client wants to shorten the deadline",
+      "I forgot to implement a feature for Mars",
+    ]) {
       const response = await request(app,"POST","/prototype/compose",{text});
       assert.equal(response.status, 422);
       assert.ok((await response.json()).reason);
