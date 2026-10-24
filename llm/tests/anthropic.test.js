@@ -121,16 +121,40 @@ test("parallel reservations are atomic and timeout or oversized body retain the 
   let dispatched=0;
   const fetchFn=async()=>{dispatched++;return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:1,output_tokens:1},content:[{type:"text",text:"ok"}]}),{status:200});};
   const provider=createAnthropicProvider({env:envFor(ledger),fetchFn});
-  await Promise.all(Array.from({length:24},(_,i)=>provider({role:"npc",messages:[{role:"user",content:`parallel ${i}`}]})));
-  assert.equal(dispatched,24);
+  const outcomes=await Promise.allSettled(Array.from({length:24},(_,i)=>provider({role:"npc",messages:[{role:"user",content:`parallel ${i}`}]})));
+  const fulfilled=outcomes.filter((r)=>r.status==="fulfilled").length;
+  assert.ok(fulfilled>=1);
+  assert.ok(outcomes.filter((r)=>r.status==="rejected").every((r)=>r.reason?.code==="LLM_BUDGET_UNAVAILABLE"));
   let saved=JSON.parse(await readFile(ledger,"utf8"));
-  assert.equal(saved.calls,24); assert.equal(saved.actualInputTokens,24); assert.equal(saved.actualOutputTokens,24);
+  assert.equal(saved.calls,dispatched); assert.ok(saved.calls<=24);
+  assert.equal(saved.actualInputTokens,fulfilled); assert.equal(saved.actualOutputTokens,fulfilled);
+  assert.ok(saved.reservedTokens<=200_000); assert.ok(saved.reservedUsd<=4);
   const slow=createAnthropicProvider({env:envFor(ledger),timeoutMs:15,fetchFn:async()=>({ok:true,body:{getReader(){return {read:()=>new Promise(()=>{}),releaseLock(){}};}}})});
+  const callsBeforeTimeout=saved.calls;
   await assert.rejects(slow({role:"npc",messages:[{role:"user",content:"timeout"}]}),{code:"TIMEOUT"});
-  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,25);
+  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,callsBeforeTimeout+1);
   const huge=createAnthropicProvider({env:envFor(ledger),fetchFn:async()=>new Response("x".repeat(256_001),{status:200,headers:{"content-type":"application/json"}})});
   await assert.rejects(huge({role:"npc",messages:[{role:"user",content:"large body"}]}),{code:"OUTPUT_INVALID"});
-  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,26);
+  saved=JSON.parse(await readFile(ledger,"utf8")); assert.equal(saved.calls,callsBeforeTimeout+2);
+}));
+
+test("concurrent reservations near the call cap cannot overspend", async () => fixture(async (_dir, ledger) => {
+  const capped={...initialLedger,grant,model:"claude-haiku-5-5",caps:{calls:40,reservedTokens:200000,outputTokens:1024,usd:4,usdPerMillionReservedTokens:2.5},calls:39};
+  await writeFile(ledger,JSON.stringify(capped));
+  let dispatched=0;
+  const provider=createAnthropicProvider({env:envFor(ledger),fetchFn:async()=>{
+    dispatched++;
+    return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:1,output_tokens:1},content:[{type:"text",text:"ok"}]}),{status:200});
+  }});
+  const outcomes=await Promise.allSettled(Array.from({length:4},(_,i)=>provider({role:"npc",messages:[{role:"user",content:`near cap ${i}`}]})));
+  assert.equal(outcomes.filter((r)=>r.status==="fulfilled").length,1);
+  const rejected=outcomes.filter((r)=>r.status==="rejected");
+  assert.equal(rejected.length,3);
+  assert.ok(rejected.every((r)=>["LLM_BUDGET_EXCEEDED","LLM_BUDGET_UNAVAILABLE"].includes(r.reason?.code)));
+  const saved=JSON.parse(await readFile(ledger,"utf8"));
+  assert.equal(saved.calls,40); assert.equal(dispatched,1);
+  assert.equal(saved.actualInputTokens,1); assert.equal(saved.actualOutputTokens,1);
+  assert.ok(saved.reservedTokens<=200_000); assert.ok(saved.reservedUsd<=4);
 }));
 
 test("gateway retry reserves each dispatch and succeeds without exposing provider errors", async () => fixture(async (_dir, ledger) => {

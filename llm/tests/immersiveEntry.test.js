@@ -108,6 +108,7 @@ test('entry rendering uses full viewport mounting and reduced-motion CSS without
   assert.match(html, /<button[^>]*id="entry-prototype"[^>]*>[\s\S]*Try scenarios[\s\S]*<\/button>/);
   assert.match(source, /\$\("#entry-prototype"\)\.onclick = openPrototypeModal/);
   assert.match(source, /\$\("#nav-prototype"\)\.onclick = openPrototypeModal/);
+  assert.match(css, /\.modal-backdrop:has\(#prototype-content\) \{ z-index: 70; \}/);
   assert.match(css, /\.sidebar, \.topbar, \.page-heading, \.page-footer \{ display: none; \}/);
   assert.match(css, /body\.office-mounted #game-viewport[^}]+height: 100%/);
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*\.entry-screen \{ transition: none; \}/);
