@@ -7,6 +7,7 @@
   --purple: #6b5cce;
   --border: #e9ecef;
 }
+.entry-prototype-button { display: block; margin: 18px auto 0; }
 .entry-screen { max-width: 920px; margin: 7vh auto 0; padding: 32px; }
 .entry-intro { max-width: 610px; margin: 0 auto 30px; text-align: center; }.entry-kicker { margin: 0 0 8px; color: var(--accent); font-size: 13px; font-weight: 700; }.entry-intro h1 { margin: 0 0 12px; }.entry-intro p:last-child { color: var(--muted); line-height: 1.6; }
 .scenario-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }.scenario-card { min-height: 190px; padding: 22px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); text-align: left; }.scenario-card:hover, .scenario-card:focus-visible { border-color: #8fb09c; background: var(--soft); }.scenario-card span, .scenario-card small { display: block; color: var(--muted); }.scenario-card span { color: var(--accent); font-size: 12px; font-weight: 700; }.scenario-card strong { display: block; margin: 18px 0 10px; font-size: 18px; line-height: 1.25; }.scenario-card small { line-height: 1.5; }

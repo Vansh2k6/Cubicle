@@ -95,41 +95,40 @@ if (script !== null) {
     console.log(`you> ${line}`);
     const r = await turn(line);
     if (r === "ended") break;
-    if (!r) process.exit(1);
+    if (!r) { process.exitCode = 1; break; }
   }
-  process.exit(0);
+} else {
+  const rl = createInterface({ input: process.stdin, output: process.stdout, prompt: "you> " });
+  rl.prompt();
+  rl.on("line", async (raw) => {
+    const line = raw.trim();
+    if (line === "/quit") {
+      rl.close();
+      return;
+    }
+    if (line === "/goals") {
+      showGoals({ goals: lastGoals });
+      rl.prompt();
+      return;
+    }
+    if (line === "/hint") {
+      console.log(hint);
+      rl.prompt();
+      return;
+    }
+    if (line.startsWith("/npc ")) {
+      npc = line.slice(5).trim() || npc;
+      console.log(`(talking to ${npc})`);
+      rl.prompt();
+      return;
+    }
+    if (!line) {
+      rl.prompt();
+      return;
+    }
+    const r = await turn(line);
+    if (r === "ended") rl.close();
+    else rl.prompt();
+  });
+  rl.on("close", () => { process.exitCode = 0; });
 }
-
-const rl = createInterface({ input: process.stdin, output: process.stdout, prompt: "you> " });
-rl.prompt();
-rl.on("line", async (raw) => {
-  const line = raw.trim();
-  if (line === "/quit") {
-    rl.close();
-    return;
-  }
-  if (line === "/goals") {
-    showGoals({ goals: lastGoals });
-    rl.prompt();
-    return;
-  }
-  if (line === "/hint") {
-    console.log(hint);
-    rl.prompt();
-    return;
-  }
-  if (line.startsWith("/npc ")) {
-    npc = line.slice(5).trim() || npc;
-    console.log(`(talking to ${npc})`);
-    rl.prompt();
-    return;
-  }
-  if (!line) {
-    rl.prompt();
-    return;
-  }
-  const r = await turn(line);
-  if (r === "ended") rl.close();
-  else rl.prompt();
-});
-rl.on("close", () => process.exit(0));

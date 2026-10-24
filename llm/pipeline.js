@@ -393,7 +393,7 @@ export function publicResponse(result) {
     : [];
   return {
     npc_reply: result.reply,
-    reply_source: result.trace?.replySource === "fallback" ? "fallback" : "normal",
+    reply_source: result.trace?.replySource === "fallback" ? "fallback" : "standard",
     public_state: {
       mood_label: ps.mood_label,
       goals,

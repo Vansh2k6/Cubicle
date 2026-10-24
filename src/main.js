@@ -335,6 +335,7 @@ function showBriefing(id) {
   const briefing = $("#scenario-briefing");
   briefing.hidden = false;
   $("#scenario-cards").hidden = true;
+  $("#entry-prototype").hidden = true;
   const current = () => state.entry === "briefing" && state.scenario === id && state.metadataGeneration === generation;
   const render = (metadata) => {
     if (!current()) return;
@@ -381,6 +382,7 @@ function showSelection() {
   $("#entry-error").hidden = true;
   $("#scenario-briefing").hidden = true;
   $("#scenario-cards").hidden = false;
+  $("#entry-prototype").hidden = false;
   renderEntry();
 }
 function persistProgress() {
@@ -1316,10 +1318,12 @@ $("#nav-office").onclick = () => {
   $("#game-viewport").focus();
 };
 $("#nav-progress").onclick = showProgress;
-$("#nav-prototype").onclick = () => {
+const openPrototypeModal = () => {
   showModal("Try a scenario", '<div id="prototype-content" aria-live="polite"></div>');
   renderPrototypeEntry($("#prototype-content"));
 };
+$("#nav-prototype").onclick = openPrototypeModal;
+$("#entry-prototype").onclick = openPrototypeModal;
 $("#profile").onclick = () =>
   showModal(
     "Meet your work self.",

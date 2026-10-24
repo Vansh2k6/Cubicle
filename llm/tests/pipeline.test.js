@@ -47,6 +47,7 @@ test("2. leaks twice: guarded fallback, no credit, not user-known", async () => 
   const fake = new FakeProvider([cannedClassifier([]), cannedText(LEAK), cannedText(LEAK2)]);
   const res = await runTurn({ session, scenario, convo, npcId: "maya", text: "Hello.", engine, providers: Prov(fake), manifestId: "m1" });
   assert.equal(res.usedFallback, true);
+  assert.equal(publicResponse(res).reply_source, "fallback");
   assert.equal(res.delivered, false);
   // Fallback itself passes both guards.
   const v = checkReply(res.reply, {
@@ -147,6 +148,7 @@ test("6. public response allowlist: only public keys, no internals", async () =>
   });
   const pub = publicResponse(res);
   assert.deepEqual(Object.keys(pub).sort(), PUBLIC_KEYS.slice().sort());
+  assert.equal(pub.reply_source, "standard");
   assert.deepEqual(Object.keys(pub.public_state).sort(), PUBLIC_STATE_KEYS.slice().sort());
   const blob = JSON.stringify(pub);
   for (const banned of ["asked_reveal_all", "leak", "trigger", "forthcomingness", "mood\":", "F1", "F2", "F3", "cutoff", "greet", "deflect"]) {

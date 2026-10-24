@@ -49,7 +49,9 @@ for (const id of ['deadline', 'email', 'call']) test(`production selection brief
   assert.equal((f.get('#scenario-cards').innerHTML.match(/data-entry-scenario=/g) || []).length, 3);
   f.context.showBriefing(id); await tick(); assert.equal(f.state.entry, 'briefing'); assert.equal(f.state.scenario, id);
   assert.match(f.get('#scenario-briefing').innerHTML, /Shubhankar, an employee/);
+  assert.equal(f.get('#entry-prototype').hidden, true);
   assert.equal(f.counts.loads, 0); f.get('#briefing-back').onclick(); assert.equal(f.state.entry, 'selection');
+  assert.equal(f.get('#entry-prototype').hidden, false);
 });
 test('Start defers one import and one scene, waits for successful onReady, then fades for 450 ms', async () => {
   const f = fixture(); f.context.showBriefing('deadline'); await tick(); const pending = f.context.startOffice();
@@ -101,7 +103,11 @@ test('confirmed Menu clears an ended feedback modal, cancels audio and invalidat
   assert.equal(f.counts.voices, 1); assert.equal(f.counts.speech, 1); assert.equal(f.get('#modal-root').children.length, 0);
 });
 test('entry rendering uses full viewport mounting and reduced-motion CSS without a sidebar dashboard', () => {
+  const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../../src/style.css', import.meta.url), 'utf8');
+  assert.match(html, /<button[^>]*id="entry-prototype"[^>]*>[\s\S]*Try scenarios[\s\S]*<\/button>/);
+  assert.match(source, /\$\("#entry-prototype"\)\.onclick = openPrototypeModal/);
+  assert.match(source, /\$\("#nav-prototype"\)\.onclick = openPrototypeModal/);
   assert.match(css, /\.sidebar, \.topbar, \.page-heading, \.page-footer \{ display: none; \}/);
   assert.match(css, /body\.office-mounted #game-viewport[^}]+height: 100%/);
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*\.entry-screen \{ transition: none; \}/);
