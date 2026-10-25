@@ -2,8 +2,9 @@ import { initializeAnthropicBudgetLedger } from "../llm/providers/anthropic.js";
 
 const gameplayGrant = "all-scenarios-live-gameplay";
 const prototypeGrant = "cubicle-scenario-prototype-haiku-2026-10-25";
+const localPlayGrant = "local-scenario-play-2026-10-25";
 const grantName = process.argv[2] || process.env.CUBICLE_LIVE_TEST;
-if (grantName && ![gameplayGrant, prototypeGrant].includes(grantName)) {
+if (grantName && ![gameplayGrant, prototypeGrant, localPlayGrant].includes(grantName)) {
   console.error("Unknown Anthropic task grant; use an approved exact grant name.");
   process.exitCode = 2;
 } else {

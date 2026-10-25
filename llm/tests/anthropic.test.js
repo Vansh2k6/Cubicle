@@ -12,6 +12,7 @@ import {createConversation,runTurn} from "../pipeline.js";
 
 const grant = "cubicle-scenario-prototype-haiku-2026-10-25";
 const gameplayGrant = "all-scenarios-live-gameplay";
+const localPlayGrant = "local-scenario-play-2026-10-25";
 const initialLedger = {version:1,calls:0,reservedTokens:0,reservedUsd:0,actualInputTokens:0,actualOutputTokens:0};
 async function fixture(run, initial = initialLedger) {
   const dir = await mkdtemp(join(process.cwd(), ".test-haiku-ledger-")), ledger = join(dir, "ledger.json");
@@ -94,6 +95,40 @@ test("gameplay grant permits its final dispatch and refuses the next one", async
   await assert.rejects(provider({role:"npc",messages:[{role:"user",content:"over cap"}]}),{code:"LLM_BUDGET_EXCEEDED"});
   const saved=JSON.parse(await readFile(gameplayLedger,"utf8"));
   assert.equal(saved.calls,350); assert.equal(dispatches,1); assert.equal(saved.actualInputTokens,1); assert.equal(saved.actualOutputTokens,1);
+}));
+
+test("local scenario play has an isolated exclusive ledger and a 200-call cap", async () => fixture(async (_dir, oldLedger) => {
+  const gameplayLedger=join(_dir,"gameplay-ledger.json"), localLedger=join(_dir,"local-ledger.json");
+  await initializeAnthropicBudgetLedger(gameplayGrant,gameplayLedger);
+  const gameplayBefore=await readFile(gameplayLedger,"utf8"), oldBefore=await readFile(oldLedger,"utf8");
+  await assert.rejects(initializeAnthropicBudgetLedger("local-scenario-play-2026-10-25-extra",localLedger),{code:"PROVIDER_UNAVAILABLE"});
+  await initializeAnthropicBudgetLedger(localPlayGrant,localLedger);
+  const localBefore=await readFile(localLedger,"utf8"), saved=JSON.parse(localBefore);
+  assert.equal(saved.grant,localPlayGrant); assert.equal(saved.model,"claude-haiku-5-5");
+  assert.deepEqual(saved.caps,{calls:200,reservedTokens:5_000_000,outputTokens:1024,usd:0.5,usdPerMillionInputTokens:0.1,usdPerMillionOutputTokens:0.5,maxInputBytes:100_000});
+  await assert.rejects(initializeAnthropicBudgetLedger(localPlayGrant,localLedger));
+  assert.equal(await readFile(localLedger,"utf8"),localBefore,"exclusive-create must preserve the initialized grant ledger");
+  assert.equal(await readFile(gameplayLedger,"utf8"),gameplayBefore,"the all-scenarios ledger is isolated");
+  assert.equal(await readFile(oldLedger,"utf8"),oldBefore,"the earlier grant ledger is isolated");
+
+  const env=envFor(localLedger,{CUBICLE_LIVE_TEST:localPlayGrant});
+  const mismatched=createAnthropicProvider({env:envFor(oldLedger,{CUBICLE_LIVE_TEST:localPlayGrant}),fetchFn:async()=>{throw new Error("must not dispatch");}});
+  await assert.rejects(mismatched({role:"npc",messages:[{role:"user",content:"hello"}]}),{code:"LLM_BUDGET_UNAVAILABLE"});
+  assert.equal(await readFile(oldLedger,"utf8"),oldBefore,"an old unbound ledger cannot be adopted by the new grant");
+
+  const nearCap=JSON.parse(await readFile(localLedger,"utf8")); nearCap.calls=199;
+  await writeFile(localLedger,JSON.stringify(nearCap));
+  let dispatches=0;
+  const provider=createAnthropicProvider({env,fetchFn:async()=>{
+    dispatches++;
+    return new Response(JSON.stringify({stop_reason:"end_turn",usage:{input_tokens:1,output_tokens:1},content:[{type:"text",text:"ok"}]}),{status:200});
+  }});
+  await provider({role:"npc",messages:[{role:"user",content:"last allowed"}]});
+  await assert.rejects(provider({role:"npc",messages:[{role:"user",content:"over cap"}]}),{code:"LLM_BUDGET_EXCEEDED"});
+  const final=JSON.parse(await readFile(localLedger,"utf8"));
+  assert.equal(final.calls,200); assert.equal(dispatches,1); assert.equal(final.actualInputTokens,1); assert.equal(final.actualOutputTokens,1);
+  assert.ok(final.reservedTokens<=5_000_000); assert.ok(final.reservedUsd<=0.5);
+  assert.equal(anthropicProviderMode(env),"offline (Claude task budget exhausted)");
 }));
 
 test("Anthropic configuration pins Haiku for every role without changing Groq defaults", () => {

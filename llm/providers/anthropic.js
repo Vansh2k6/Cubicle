@@ -9,28 +9,33 @@ const MODEL = "claude-haiku-5-5";
 const CALL_CAP = 40, TOKEN_CAP = 200_000, OUTPUT_CAP = 1024, USD_CAP = 4, RATE_PER_MILLION = 2.5;
 const GRANT = "cubicle-scenario-prototype-haiku-2026-10-25";
 const GAMEPLAY_GRANT = "all-scenarios-live-gameplay";
+const LOCAL_PLAY_GRANT = "local-scenario-play-2026-10-25";
 const GAMEPLAY_CALL_CAP = 350, GAMEPLAY_TOKEN_CAP = 5_000_000, GAMEPLAY_OUTPUT_CAP = 1024, GAMEPLAY_USD_CAP = 0.5;
 const GAMEPLAY_INPUT_BYTE_CAP = 100_000, GAMEPLAY_INPUT_RATE_PER_MILLION = 0.1, GAMEPLAY_OUTPUT_RATE_PER_MILLION = 0.5;
 const caps = Object.freeze({calls: CALL_CAP, reservedTokens: TOKEN_CAP, outputTokens: OUTPUT_CAP, usd: USD_CAP, usdPerMillionReservedTokens: RATE_PER_MILLION});
+const gameplayProfile = Object.freeze({
+  name: GAMEPLAY_GRANT,
+  caps: Object.freeze({calls: GAMEPLAY_CALL_CAP, reservedTokens: GAMEPLAY_TOKEN_CAP, outputTokens: GAMEPLAY_OUTPUT_CAP,
+    usd: GAMEPLAY_USD_CAP, usdPerMillionInputTokens: GAMEPLAY_INPUT_RATE_PER_MILLION, usdPerMillionOutputTokens: GAMEPLAY_OUTPUT_RATE_PER_MILLION,
+    maxInputBytes: GAMEPLAY_INPUT_BYTE_CAP}),
+  ledger: ".state/all-scenarios-live-gameplay-ledger.json",
+  reserve: (body, maxTokens) => {
+    const inputBytes = Buffer.byteLength(JSON.stringify(body), "utf8");
+    if (inputBytes + 2048 > GAMEPLAY_INPUT_BYTE_CAP) throw error("LLM_BUDGET_EXCEEDED");
+    const inputBound = inputBytes + 2048;
+    return {reservedTokens: inputBound + maxTokens,
+      reservedUsd: inputBound * GAMEPLAY_INPUT_RATE_PER_MILLION / 1_000_000 + maxTokens * GAMEPLAY_OUTPUT_RATE_PER_MILLION / 1_000_000};
+  },
+});
+const localPlayProfile = Object.freeze({...gameplayProfile, name: LOCAL_PLAY_GRANT,
+  caps: Object.freeze({...gameplayProfile.caps, calls: 200}), ledger: ".state/local-scenario-play-2026-10-25-ledger.json"});
 const grantProfiles = Object.freeze({
   [GRANT]: Object.freeze({name: GRANT, caps, ledger: ".state/anthropic-budget-ledger.json", reserve: (body, maxTokens) => {
     const reservedTokens = Buffer.byteLength(JSON.stringify(body), "utf8") + 2048 + maxTokens;
     return {reservedTokens, reservedUsd: reservedTokens * RATE_PER_MILLION / 1_000_000};
   }}),
-  [GAMEPLAY_GRANT]: Object.freeze({
-    name: GAMEPLAY_GRANT,
-    caps: Object.freeze({calls: GAMEPLAY_CALL_CAP, reservedTokens: GAMEPLAY_TOKEN_CAP, outputTokens: GAMEPLAY_OUTPUT_CAP,
-      usd: GAMEPLAY_USD_CAP, usdPerMillionInputTokens: GAMEPLAY_INPUT_RATE_PER_MILLION, usdPerMillionOutputTokens: GAMEPLAY_OUTPUT_RATE_PER_MILLION,
-      maxInputBytes: GAMEPLAY_INPUT_BYTE_CAP}),
-    ledger: ".state/all-scenarios-live-gameplay-ledger.json",
-    reserve: (body, maxTokens) => {
-      const inputBytes = Buffer.byteLength(JSON.stringify(body), "utf8");
-      if (inputBytes + 2048 > GAMEPLAY_INPUT_BYTE_CAP) throw error("LLM_BUDGET_EXCEEDED");
-      const inputBound = inputBytes + 2048;
-      return {reservedTokens: inputBound + maxTokens,
-        reservedUsd: inputBound * GAMEPLAY_INPUT_RATE_PER_MILLION / 1_000_000 + maxTokens * GAMEPLAY_OUTPUT_RATE_PER_MILLION / 1_000_000};
-    },
-  }),
+  [GAMEPLAY_GRANT]: gameplayProfile,
+  [LOCAL_PLAY_GRANT]: localPlayProfile,
 });
 const grantProfileFor = (name) => Object.hasOwn(grantProfiles, name) ? grantProfiles[name] : null;
 
