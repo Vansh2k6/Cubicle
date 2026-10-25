@@ -17,13 +17,17 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {privateLanguageNeedles} from "./private-language-needles.mjs";
 import { scanRegistry, registeredPrivateNeedles } from "./registered-private-sources.mjs";
+import {prototypeRegistry, publicScenario} from "../services/api/scenarioRegistry.js";
 import { scanArtifacts } from "./bundle-scan-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const scenario = JSON.parse(readFileSync(join(root, "scenarios", "missed_deadline.json"), "utf8"));
 const replies = JSON.parse(readFileSync(join(root, "replies", "missed_deadline.en.json"), "utf8"));
 
-const banned = new Map([...privateLanguageNeedles, ...registeredPrivateNeedles(scanRegistry)]); // lowercased needle -> reason
+const prototypeNeedles = registeredPrivateNeedles({allPackages: prototypeRegistry.allPackages,
+  publishedPackages: prototypeRegistry.allPackages,
+  listScenarios: () => prototypeRegistry.allPackages().map(publicScenario)});
+const banned = new Map([...privateLanguageNeedles, ...registeredPrivateNeedles(scanRegistry), ...prototypeNeedles]); // lowercased needle -> reason
 function add(needle, reason) {
   const n = String(needle);
   if (n.length < 6 && !/[\s-]/.test(n)) return; // skip bare common words (vendor collisions)

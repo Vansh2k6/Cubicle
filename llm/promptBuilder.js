@@ -70,7 +70,7 @@ export function buildNpcPrompt(opts = {}) {
 
   let instruction = ACT_INSTRUCTIONS[act];
   if (instruction === undefined) {
-    const m = /^reveal_fact:([A-Za-z0-9_]+)$/.exec(act);
+    const m = /^reveal_fact:([A-Za-z0-9_-]+)$/.exec(act);
     if (m) {
       const fact = factById(scenario, m[1]);
       if (!fact || fact.owner !== npcId) throw badInput(`reveal act ${act} not authorised for ${npcId}`);

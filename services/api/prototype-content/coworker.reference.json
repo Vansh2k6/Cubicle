@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "frame_id": "frame-coworker-v1",
+  "components": [
+    {
+      "id": "coworker.situation.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "situation",
+      "status": "reference",
+      "body": {
+        "title": "Handing over a shared task",
+        "briefing": "You and Jordan share a task that is now at risk. Maya set the boundaries, and Sam supports People and HR processes and work records. Find what is actually done, split the work, and confirm the handover."
+      }
+    },
+    {
+      "id": "coworker.goals.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "goals",
+      "status": "reference",
+      "body": {
+        "labels": {
+          "CO-G1": "Find out what is done and what is blocked",
+          "CO-G2": "Agree who owns which part",
+          "CO-G3": "Agree the handover date and confirm the check-in",
+          "CO-R1": "State a target day for your next step",
+          "CO-R2": "Propose a short paired session on the reviewed parts",
+          "CO-R3": "Acknowledge the extra load before splitting the work"
+        }
+      }
+    },
+    {
+      "id": "coworker.fact.CO-F1.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "fact:CO-F1",
+      "status": "reference",
+      "body": {
+        "content": "Jordan is covering an on-call rotation and cannot finish the shared task alone.",
+        "leak_keywords": [
+          "cannot finish alone",
+          "on-call rotation"
+        ],
+        "unlock_question": "What else is on your plate this week?"
+      }
+    },
+    {
+      "id": "coworker.fact.CO-F2.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "fact:CO-F2",
+      "status": "reference",
+      "body": {
+        "content": "Maya approved a two-day handover window if the task keeps its original owner of record.",
+        "leak_keywords": [
+          "handover window",
+          "owner of record",
+          "two-day"
+        ],
+        "unlock_question": "What has Maya already agreed about the handover?"
+      }
+    },
+    {
+      "id": "coworker.fact.CO-F3.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "fact:CO-F3",
+      "status": "reference",
+      "body": {
+        "content": "Sam can walk you through the checklist showing which parts of the task were already reviewed.",
+        "leak_keywords": [
+          "checklist",
+          "already reviewed"
+        ],
+        "unlock_question": "Is there a record of what is already done?"
+      }
+    },
+    {
+      "id": "coworker.fact.CO-F4.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "fact:CO-F4",
+      "status": "reference",
+      "body": {
+        "content": "The remaining part is blocked on a credential that only Maya can request.",
+        "leak_keywords": [
+          "credential",
+          "only Maya can request"
+        ],
+        "unlock_question": "What exactly is blocked, and who can unblock it?"
+      }
+    },
+    {
+      "id": "coworker.cast.maya.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "cast:maya",
+      "status": "reference",
+      "body": {
+        "role": "team manager",
+        "persona": "Sets boundaries and expects them respected.",
+        "public_context": "Maya set the handover rules for the team.",
+        "motivation": "Maya wants decisions that hold without her in the room."
+      }
+    },
+    {
+      "id": "coworker.cast.jordan.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "cast:jordan",
+      "status": "reference",
+      "body": {
+        "role": "teammate",
+        "persona": "Overloaded but direct, and states capacity plainly when asked.",
+        "public_context": "Jordan shares the task with you and is busy this week.",
+        "motivation": "Jordan wants the split agreed in this conversation, not after another missed day."
+      }
+    },
+    {
+      "id": "coworker.cast.sam.reference",
+      "frame": "frame-coworker-v1",
+      "slot": "cast:sam",
+      "status": "reference",
+      "body": {
+        "role": "People partner and team coordinator",
+        "persona": "Supports clear handovers and fair workload discussions through the team's shared process.",
+        "public_context": "Sam supports the team's people processes and maintains shared work records.",
+        "motivation": "Sam wants each person to know who owns the next step and how to ask for support."
+      }
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "frame_id": "frame-client-v1",
+  "components": [
+    {
+      "id": "client.situation.reference",
+      "frame": "frame-client-v1",
+      "slot": "situation",
+      "status": "reference",
+      "body": {
+        "title": "A client change after sign-off",
+        "briefing": "The client wants a change after sign-off. Maya leads the engagement, Jordan knows the delivery work, and Sam supports People and HR processes. Clarify the need, state the impact, and agree how the change is handled."
+      }
+    },
+    {
+      "id": "client.goals.reference",
+      "frame": "frame-client-v1",
+      "slot": "goals",
+      "status": "reference",
+      "body": {
+        "labels": {
+          "CL-G1": "Confirm the real need behind the change",
+          "CL-G2": "State the impact on the current sprint plan",
+          "CL-G3": "Agree how the change is handled and recap it",
+          "CL-R1": "Offer a limited option that protects this week",
+          "CL-R2": "Propose deferring the change to a later cycle",
+          "CL-R3": "Confirm who handles the next step"
+        }
+      }
+    },
+    {
+      "id": "client.fact.CL-F1.reference",
+      "frame": "frame-client-v1",
+      "slot": "fact:CL-F1",
+      "status": "reference",
+      "body": {
+        "content": "The client's own customer demo is on day 2, which is why the change cannot wait for the next sprint.",
+        "leak_keywords": [
+          "customer demo",
+          "cannot wait"
+        ],
+        "unlock_question": "What deadline is the client actually working to?"
+      }
+    },
+    {
+      "id": "client.fact.CL-F2.reference",
+      "frame": "frame-client-v1",
+      "slot": "fact:CL-F2",
+      "status": "reference",
+      "body": {
+        "content": "With Jordan's pairing help, the change takes about two days and displaces planned test work; it touches one module.",
+        "leak_keywords": [
+          "one module",
+          "about two days",
+          "planned test work",
+          "pairing help"
+        ],
+        "unlock_question": "How large is the change, and what would it displace?"
+      }
+    },
+    {
+      "id": "client.fact.CL-F3.reference",
+      "frame": "frame-client-v1",
+      "slot": "fact:CL-F3",
+      "status": "reference",
+      "body": {
+        "content": "The signed paperwork permits one scope revision if it is documented before the demo slot.",
+        "leak_keywords": [
+          "one scope revision",
+          "documented",
+          "signed paperwork"
+        ],
+        "unlock_question": "What does the agreement allow for late changes?"
+      }
+    },
+    {
+      "id": "client.fact.CL-F4.reference",
+      "frame": "frame-client-v1",
+      "slot": "fact:CL-F4",
+      "status": "reference",
+      "body": {
+        "content": "The customer can absorb the revision in a later cycle if a short workaround covers the earlier customer event.",
+        "leak_keywords": [
+          "short workaround",
+          "absorb the revision"
+        ],
+        "unlock_question": "Is there a path that keeps both dates?"
+      }
+    },
+    {
+      "id": "client.cast.maya.reference",
+      "frame": "frame-client-v1",
+      "slot": "cast:maya",
+      "status": "reference",
+      "body": {
+        "role": "engagement lead",
+        "persona": "Client-facing lead who turns requests into commitments and dislikes surprises.",
+        "public_context": "Maya owns the client relationship and the engagement timeline.",
+        "motivation": "Maya wants the client to hear one clear answer rather than three versions."
+      }
+    },
+    {
+      "id": "client.cast.jordan.reference",
+      "frame": "frame-client-v1",
+      "slot": "cast:jordan",
+      "status": "reference",
+      "body": {
+        "role": "delivery engineer",
+        "persona": "Estimates honestly and asks what will be displaced before adding work.",
+        "public_context": "Jordan builds the deliverable and knows the implementation detail.",
+        "motivation": "Jordan wants estimates to include whatever gets displaced."
+      }
+    },
+    {
+      "id": "client.cast.sam.reference",
+      "frame": "frame-client-v1",
+      "slot": "cast:sam",
+      "status": "reference",
+      "body": {
+        "role": "People and delivery partner",
+        "persona": "Supports fair workload conversations and keeps engagement approvals clear.",
+        "public_context": "Sam supports the team's people processes and maintains engagement records.",
+        "motivation": "Sam wants people to understand their responsibilities and use a clear approval process."
+      }
+    }
+  ]
+}

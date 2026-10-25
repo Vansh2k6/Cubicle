@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "frame_id": "frame-manager-v1",
+  "components": [
+    {
+      "id": "manager.situation.reference",
+      "frame": "frame-manager-v1",
+      "slot": "situation",
+      "status": "reference",
+      "body": {
+        "title": "Scope creep on a live deliverable",
+        "briefing": "Your deliverable is due in three days when two new asks land. Your manager Maya wants a date. Find out what is really driving the new work, name the trade-off, and agree what ships."
+      }
+    },
+    {
+      "id": "manager.goals.reference",
+      "frame": "frame-manager-v1",
+      "slot": "goals",
+      "status": "reference",
+      "body": {
+        "labels": {
+          "MGR-G1": "Restate the deliverable and the new asks in priority order",
+          "MGR-G2": "Name the trade-off before accepting any new scope",
+          "MGR-G3": "Agree the protected date and recap it",
+          "MGR-R1": "Offer a phased delivery for the new asks",
+          "MGR-R2": "Put the agreed trade-off in writing",
+          "MGR-R3": "Ask what should stop so the date can hold"
+        }
+      }
+    },
+    {
+      "id": "manager.fact.MGR-F1.reference",
+      "frame": "frame-manager-v1",
+      "slot": "fact:MGR-F1",
+      "status": "reference",
+      "body": {
+        "content": "An executive demo is booked for day 3, and both new asks came from that demo rather than the original scope.",
+        "leak_keywords": [
+          "executive demo",
+          "booked for day 3",
+          "came from that demo"
+        ],
+        "unlock_question": "Why is this urgent now, and who is it for?"
+      }
+    },
+    {
+      "id": "manager.fact.MGR-F2.reference",
+      "frame": "frame-manager-v1",
+      "slot": "fact:MGR-F2",
+      "status": "reference",
+      "body": {
+        "content": "Jordan already built a stub for the export ask and can hand it over in one afternoon.",
+        "leak_keywords": [
+          "stub",
+          "export ask",
+          "one afternoon"
+        ],
+        "unlock_question": "Does any of the new work already exist, and can you hand it over?"
+      }
+    },
+    {
+      "id": "manager.fact.MGR-F3.reference",
+      "frame": "frame-manager-v1",
+      "slot": "fact:MGR-F3",
+      "status": "reference",
+      "body": {
+        "content": "The team published a priority rule: an ask arriving after scope freeze needs a written trade-off before it is accepted.",
+        "leak_keywords": [
+          "priority rule",
+          "scope freeze",
+          "written trade-off"
+        ],
+        "unlock_question": "Is there a team rule about late asks?"
+      }
+    },
+    {
+      "id": "manager.fact.MGR-F4.reference",
+      "frame": "frame-manager-v1",
+      "slot": "fact:MGR-F4",
+      "status": "reference",
+      "body": {
+        "content": "Maya can drop the weekly metrics report to protect the date if the trade-off is named explicitly.",
+        "leak_keywords": [
+          "weekly metrics report",
+          "named explicitly"
+        ],
+        "unlock_question": "What could be dropped if the date has to hold?"
+      }
+    },
+    {
+      "id": "manager.cast.maya.reference",
+      "frame": "frame-manager-v1",
+      "slot": "cast:maya",
+      "status": "reference",
+      "body": {
+        "role": "manager",
+        "persona": "Direct and fair project manager who protects committed dates and dislikes unnamed trade-offs.",
+        "public_context": "Maya manages this deliverable and has two new asks from above.",
+        "motivation": "Maya wants a date the team can actually keep, agreed out loud."
+      }
+    },
+    {
+      "id": "manager.cast.jordan.reference",
+      "frame": "frame-manager-v1",
+      "slot": "cast:jordan",
+      "status": "reference",
+      "body": {
+        "role": "tech lead",
+        "persona": "Senior engineer who would rather hand over working code than explain it twice.",
+        "public_context": "Jordan owns the export module and knows what already exists in it.",
+        "motivation": "Jordan wants one clear owner for each remaining piece."
+      }
+    },
+    {
+      "id": "manager.cast.sam.reference",
+      "frame": "frame-manager-v1",
+      "slot": "cast:sam",
+      "status": "reference",
+      "body": {
+        "role": "people partner",
+        "persona": "Calm process person who quotes agreed team rules instead of opinions.",
+        "public_context": "Sam keeps team process notes and gives straight process advice.",
+        "motivation": "Sam wants process questions answered plainly, without policy language."
+      }
+    }
+  ]
+}

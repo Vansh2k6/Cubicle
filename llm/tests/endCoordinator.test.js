@@ -168,7 +168,7 @@ test("setup-load retry preserves the approached colleague before direct-session 
     getCalls++;
     return Promise.reject(new Error("offline"));
   };
-  const $ = (selector) => ({ ".entry-intro": intro, "#entry-screen": entry, "#scenario": scenario, "#scenario-cards": cards, "#scenario-briefing": briefing, "#briefing-back": {}, "#briefing-retry": retry }[selector] || null);
+  const $ = (selector) => ({ ".entry-intro": intro, "#entry-screen": entry, "#scenario": scenario, "#scenario-cards": cards, "#entry-prototype": {}, "#scenario-briefing": briefing, "#briefing-back": {}, "#briefing-retry": retry }[selector] || null);
   const { showCastSetup } = Function("state", "$", "scenarios", "getScenario", `
     const showSelection = () => {};
     ${fn("showCastSetup")}

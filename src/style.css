@@ -2206,3 +2206,13 @@ input, textarea { caret-color: var(--accent); }
 .cast-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding-top: 20px; border-top: 1px solid var(--line); }.cast-presets button, .cast-scenarios button { min-height: 36px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; }.cast-presets button:hover, .cast-scenarios button:hover { border-color: var(--accent); background: var(--soft); }.cast-presets .is-selected, .cast-scenarios .is-current { border-color: var(--accent); color: var(--accent); background: var(--soft); }.cast-overall { margin-left: auto; }.cast-summary { margin: 18px 0 0; padding: 12px; background: var(--soft); color: var(--ink); }.cast-scenarios { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
 @media (min-width: 721px) and (max-width: 900px) { .cast-trait { grid-template-columns: 1fr; gap: 6px; }.cast-trait > div:first-child, .cast-range, .cast-ends { grid-column: 1; grid-row: auto; }.cast-ends { padding-right: 38px; } }
 @media (max-width: 720px) { .cast-workspace { grid-template-columns: 1fr; gap: 18px; }.cast-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }.cast-person { grid-template-columns: 42px minmax(0, 1fr) 14px; gap: 8px; min-height: 60px; }.cast-face { width: 42px; height: 42px; }.cast-editor { padding: 20px 16px; }.cast-trait { grid-template-columns: 1fr; gap: 6px; }.cast-trait > div:first-child, .cast-range, .cast-ends { grid-column: 1; grid-row: auto; }.cast-ends { padding-right: 38px; }.cast-overall { margin-left: 0; } }
+
+.entry-prototype-button { display: block; margin: 18px auto 0; }
+.modal-backdrop:has(#prototype-content) { z-index: 70; }
+#prototype-content .prototype-compose { margin: 16px 0; padding: 12px 0; border-block: 1px solid var(--line); }
+#prototype-content summary { cursor: pointer; font-weight: 600; }
+#prototype-content .prototype-compose[open] .field-label { display: block; margin-top: 14px; }
+#prototype-content textarea { display: block; width: 100%; box-sizing: border-box; margin: 8px 0 12px; }
+#prototype-content .prototype-check > p { line-height: 1.6; }
+#prototype-content .prototype-goals { margin: 16px 0; }
+#prototype-content .prototype-check > label { display: block; margin: 16px 0 12px; }

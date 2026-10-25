@@ -97,3 +97,5 @@ A scenario is not mergeable until:
 - **R-70** When code and docs disagree, fix one in the same PR and say which.
 - **R-71** Decisions that bend a rule are recorded in `DECISIONS.md` with date and reason *before* the code merges.
 
+
+**D-42 bounded scope amendment (2026-10-25):** R-63/R-64 additionally permit only the user-requested main-based custom component port in `plans/MAIN_GENERATION_PORT.md`, including its narrow loopback local-preview exception. Safety/scoring/shared acceptance requirements remain. The current side-conversation instruction prohibits subagents; report single-agent review/testing honestly rather than claiming an independent handoff.
