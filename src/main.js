@@ -73,6 +73,7 @@ import {parseScenarioMetadata} from "./scenarioMetadata.js";
 import { projectGuidance } from "./guidance.js";
 import { CAST_PRESETS, CAST_TRAITS, applyCastPreset, castTone, createCastDraft, effectiveCastSettings, npcSliderPayload, updateCastDraft, useOverallSettings } from "./castSetup.js";
 import "./guidance.css";
+import {renderPrototypeEntry} from "./prototypeEntry.js";
 const ending = createEndCoordinator();
 const voiceBuildEnabled = import.meta.env.VITE_VOICE === "1";
 let voiceStatus = null;
@@ -332,6 +333,7 @@ function showCastSetup(id, pinnedMetadata = null, previousSessionId = null) {
   const briefing = $("#scenario-briefing");
   briefing.hidden = false;
   $("#scenario-cards").hidden = true;
+  $("#entry-prototype").hidden = true;
   const current = () => state.entry === "setup" && state.scenario === id && state.metadataGeneration === generation;
   const render = (metadata) => {
     if (!current()) return;
@@ -419,6 +421,7 @@ function showSelection() {
   $("#entry-error").hidden = true;
   $("#scenario-briefing").hidden = true;
   $("#scenario-cards").hidden = false;
+  $("#entry-prototype").hidden = false;
   renderEntry();
 }
 function persistProgress() {
@@ -509,6 +512,7 @@ function startOffice() {
   document.body.classList.add("office-mounted");
   $("#scenario-briefing").hidden = true;
   $("#scenario-cards").hidden = true;
+  $("#entry-prototype").hidden = true;
   $("#entry-error").hidden = true;
   $("#entry-loading").hidden = false;
   if (office) { enterOffice(); return Promise.resolve(office); }
@@ -1317,6 +1321,12 @@ $("#nav-office").onclick = () => {
   $("#game-viewport").focus();
 };
 $("#nav-progress").onclick = showProgress;
+const openPrototypeModal = () => {
+  showModal("Try a scenario", '<div id="prototype-content" aria-live="polite"></div>');
+  renderPrototypeEntry($("#prototype-content"));
+};
+$("#nav-prototype").onclick = openPrototypeModal;
+$("#entry-prototype").onclick = openPrototypeModal;
 $("#profile").onclick = () =>
   showModal(
     "Meet your work self.",

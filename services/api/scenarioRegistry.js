@@ -9,6 +9,7 @@ import { sc01EnginePolicy, sc01Rules } from "./sc01EnginePolicy.js";
 import { CONFIG, normalizeScoringProfile } from "../../scoring/config.js";
 import {deadlineV2PackageInput, deadlineV2Policy} from "./deadlineV2Package.js";
 import {hrPackageInput, hrPolicy} from "./hrPackage.js";
+import {createPrototypePackageInputs, createPrototypeCompositions, matchPrototypeComposition} from "./prototypeCatalog.js";
 
 const clone = (value) => structuredClone(value);
 function freeze(value) {
@@ -39,7 +40,12 @@ export function publicScenario(pkg) {
 const registeredPackages = new WeakSet();
 export const isRegisteredPackage = (pkg) => registeredPackages.has(pkg);
 
+let prototypeInputs = new Map();
+
 function validatePackage(input, privatePolicies) {
+  const prototypeInput = input?.prototype === true ? prototypeInputs.get(input.spec?.id) : null;
+  const prototype = !!prototypeInput && input === prototypeInput;
+  if (input?.prototype && !prototype) throw new Error("invalid prototype package binding");
   const approved = privatePolicies[input.policy?.id];
   const privateProof = input.privateProof === true && !!approved;
   if (input.privateProof && (!approved || approved.version !== input.policy.version || approved.engine !== input.policy.engine || approved.language !== input.policy.language || approved.offline !== input.policy.offline || canonical(approved.rules) !== canonical(input.policy.rules))) throw new Error("invalid private policy binding");
@@ -50,7 +56,11 @@ function validatePackage(input, privatePolicies) {
   const presentation = clone(input.presentation || FIXED_CAST);
   publicCast(spec.npcs, presentation);
   const policy = { ...clone({ id: input.policy?.id, version: input.policy?.version }), offline: input.policy?.offline, engine: input.policy?.engine, language: input.policy?.language, rules: clone(input.policy?.rules) };
-  const validation = validateScenario(spec, { privateProof });
+  const prototypeAssistanceFlag = prototype ? input.policy?.rules?.assistanceFlag : null;
+  if (prototype && (!prototypeAssistanceFlag || prototypeAssistanceFlag !== `help_accepted_with_${input.policy?.rules?.assistanceActor}` ||
+      input.policy?.rules?.assistanceFact !== spec.commitment_model?.assistance_requires?.find((item) => item.endsWith("_delivered"))?.replace(/_delivered$/, ""))) throw new Error("invalid prototype assistance binding");
+  const validation = validateScenario(spec, {privateProof: privateProof || prototype,
+    allowedAssistanceFlags: prototype ? [prototypeAssistanceFlag] : []});
   const v2 = !privateProof && spec.id === "missed_deadline" && spec.version === 2;
   const hr = !privateProof && spec.id === "workplace_intimidation";
   if (hr) {
@@ -59,6 +69,7 @@ function validatePackage(input, privatePolicies) {
         policy.id !== hrPolicy.id || policy.version !== hrPolicy.version || policy.engine !== hrPolicy.engine || policy.language !== hrPolicy.language || policy.offline !== hrPolicy.offline || canonical(policy.rules) !== canonical(hrPolicy.rules)) throw new Error("invalid supported HR package");
   }
   const privateSources = v2 ? clone(input.privateSources) : undefined;
+  const prototypeSources = prototype ? clone(input.prototypeSources) : undefined;
   if (v2) {
     const supported = deadlineV2PackageInput();
     if (input.privateProof || !validation.ok || canonical(spec) !== canonical(supported.spec) || canonical(replies) !== canonical(supported.replies) ||
@@ -69,7 +80,7 @@ function validatePackage(input, privatePolicies) {
   const config = CONFIG.missed_deadline;
   const matchesItems = (items, expected) => Array.isArray(items) && items.length === Object.keys(expected).length && items.every((item) => expected[item.id] === item.weight);
   const scoring = spec.scoring || {};
-  if (!privateProof && !v2 && !hr && (!validation.ok || spec.id !== "missed_deadline" || spec.locales?.length !== 1 || spec.locales[0] !== "en" || !Array.isArray(replies?.entries) || canonical(scoringProfile) !== canonical(config) || canonical(normalizeScoringProfile(spec)) !== canonical(config) || scoring.version !== config.scoring_version || canonical(scoring.weights) !== canonical(config.weights) || !matchesItems(spec.goals, config.goals) || !matchesItems(spec.facts, config.facts) || (scoring.penalties && canonical(scoring.penalties) !== canonical(config.penalties)) || policy?.id !== "sc01-legacy" || policy?.version !== 1 || Object.keys(sc01EnginePolicy).some((key) => policy.engine?.[key] !== sc01EnginePolicy[key]) || Object.keys(sc01Language).some((key) => policy.language?.[key] !== sc01Language[key]) || canonical(policy.rules) !== canonical(sc01Rules))) throw new Error("invalid scenario package");
+  if (!privateProof && !prototype && !v2 && !hr && (!validation.ok || spec.id !== "missed_deadline" || spec.locales?.length !== 1 || spec.locales[0] !== "en" || !Array.isArray(replies?.entries) || canonical(scoringProfile) !== canonical(config) || canonical(normalizeScoringProfile(spec)) !== canonical(config) || scoring.version !== config.scoring_version || canonical(scoring.weights) !== canonical(config.weights) || !matchesItems(spec.goals, config.goals) || !matchesItems(spec.facts, config.facts) || (scoring.penalties && canonical(scoring.penalties) !== canonical(config.penalties)) || policy?.id !== "sc01-legacy" || policy?.version !== 1 || Object.keys(sc01EnginePolicy).some((key) => policy.engine?.[key] !== sc01EnginePolicy[key]) || Object.keys(sc01Language).some((key) => policy.language?.[key] !== sc01Language[key]) || canonical(policy.rules) !== canonical(sc01Rules))) throw new Error("invalid scenario package");
   if (!validation.ok || spec.locales?.length !== 1 || spec.locales[0] !== "en" || !Array.isArray(replies?.entries) || canonical(scoringProfile) !== canonical(normalizeScoringProfile(spec)) || !policy.id || !Number.isInteger(policy.version) || policy.version < 1 || ["commitmentBounds", "goalCandidates", "pressureCandidates", "relayAccuracy"].some((key) => typeof policy.engine?.[key] !== "function") || ["publicCanonLines", "normalizeCommitment", "canonCheck"].some((key) => typeof policy.language?.[key] !== "function")) throw new Error("invalid scenario package");
   const ids = new Set();
   for (const npc of spec.npcs || []) { if (!npc?.id || ids.has(npc.id)) throw new Error("invalid npc ids"); ids.add(npc.id); }
@@ -82,10 +93,10 @@ function validatePackage(input, privatePolicies) {
   const owners = Object.fromEntries((spec.facts || []).map((fact) => [fact.id, fact.owner]));
   const baselineNpcs = (specData.npcs || []).map((npc) => npc.id).sort();
   const goalIds = (spec.goals || []).map((goal) => goal.id).sort();
-  if (!privateProof && !v2 && !hr && (canonical(owners) !== canonical(baselineOwners) || canonical([...ids].sort()) !== canonical(baselineNpcs) || canonical(goalIds) !== canonical(["G1", "G2", "G3"]) || canonical(spec.commitment_model) !== canonical(specData.commitment_model))) throw new Error("incompatible legacy scenario package");
+  if (!privateProof && !prototype && !v2 && !hr && (canonical(owners) !== canonical(baselineOwners) || canonical([...ids].sort()) !== canonical(baselineNpcs) || canonical(goalIds) !== canonical(["G1", "G2", "G3"]) || canonical(spec.commitment_model) !== canonical(specData.commitment_model))) throw new Error("incompatible legacy scenario package");
   const identity = freeze({ scenarioId: spec.id, contentVersion: spec.version, schemaVersion: v2 ? 2 : 1, policyId: policy.id, policyVersion: policy.version, scoringVersion: spec.scoring.version,
-    contentHash: hash({ spec, replies, scoringProfile, policyId: policy.id, policyVersion: policy.version, policyRules: policy.rules, presentation, ...(v2 ? {privateSources} : {}) }) });
-  const pkg = freeze({ spec, replies, scoringProfile, presentation, policy, identity, ...(v2 ? {privateSources} : {}) });
+    contentHash: hash({ spec, replies, scoringProfile, policyId: policy.id, policyVersion: policy.version, policyRules: policy.rules, presentation, ...(v2 ? {privateSources} : {}), ...(prototype ? {prototypeSources} : {}) }) });
+  const pkg = freeze({ spec, replies, scoringProfile, presentation, policy, identity, ...(v2 ? {privateSources} : {}), ...(prototype ? {prototypeSources} : {}) });
   registeredPackages.add(pkg);
   return pkg;
 }
@@ -113,3 +124,14 @@ export const legacyPackageInput = () => ({ spec: clone(specData), replies: clone
   policy: { id: "sc01-legacy", version: 1, engine: sc01EnginePolicy, language: sc01Language, rules: clone(sc01Rules) }, aliases: ["deadline"] });
 export const legacyRegistry = createScenarioRegistry([legacyPackageInput()]);
 export const defaultRegistry = createScenarioRegistry([{...deadlineV2PackageInput(), aliases: ["deadline"]}, hrPackageInput()]);
+
+const prototypeBase = legacyPackageInput();
+const approvedPrototypeInputs = [...createPrototypePackageInputs(prototypeBase), ...createPrototypeCompositions(prototypeBase)];
+prototypeInputs = new Map(approvedPrototypeInputs.map((input) => [input.spec.id, input]));
+const prototypePackages = createScenarioRegistry(approvedPrototypeInputs);
+export const prototypeRegistry = Object.freeze({
+  getScenario(id) { return defaultRegistry.getScenario(id) || prototypePackages.getScenario(id); },
+  listScenarios() { return defaultRegistry.listScenarios(); },
+  allPackages() { return [...defaultRegistry.allPackages(), ...prototypePackages.allPackages()]; },
+});
+export {matchPrototypeComposition};

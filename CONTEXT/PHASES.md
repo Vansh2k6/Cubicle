@@ -236,3 +236,5 @@ All Stage 1 acceptance criteria hold across every scenario and language; reply-s
 - Trained classifier (S2-P3) depends on logged, human-reviewed labels from Stage 1 play.
 
 **Implementation status note, 2026-10-17:** Groq adapter and two-call connectivity smoke are recorded in D-30. The root accepted S1-07 relay/beats/ending implementation after review, offline/API checks and a limited browser check; evidence is in `evals/reports/S1-07-gate.md`. Full P2/P3 live acceptance and complete scene smart/trap runs remain NOT RUN. Checked implementation items do not close those phase exit gates.
+
+**2026-10-25 bounded addition:** D-42 permits only the main-based existing custom component prototype and compact popup in `plans/MAIN_GENERATION_PORT.md`. Private local preview after schema/semantic/offline-engine checks and local review is distinct from shared readiness. No phase completion, live/judge/full-total acceptance, R-45 or publication is implied.

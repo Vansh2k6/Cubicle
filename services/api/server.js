@@ -17,7 +17,7 @@ import { createConversation, runTurn, publicResponse, projectGoals, nextHintFor 
 import { createManifest } from "../../llm/manifest.js";
 import { difficultyFor, validateNpcSliders, validateSliders } from "../../shared/settings.js";
 import { createOfflineProviders, classifyProviderFor } from "./offlineProviders.js";
-import { defaultRegistry, publicScenario, isRegisteredPackage } from "./scenarioRegistry.js";
+import { prototypeRegistry, publicScenario, isRegisteredPackage, matchPrototypeComposition } from "./scenarioRegistry.js";
 import { loadConfig, providerName } from "../../llm/config.js";
 import { createGroqProvider } from "../../llm/providers/groq.js";
 import { assembleDebrief } from "../../scoring/debrief.js";
@@ -37,6 +37,10 @@ function localOrigin(origin) {
   try { const value = new URL(origin); return value.origin === origin && value.protocol === "http:" && ["localhost", "127.0.0.1"].includes(value.hostname); } catch { return false; }
 }
 
+function localCaller(req) {
+  return ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket?.remoteAddress || "");
+}
+
 const selectedProvider = providerName();
 const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
 const manifest = createManifest(liveProvider ? loadConfig() : {
@@ -44,6 +48,11 @@ const manifest = createManifest(liveProvider ? loadConfig() : {
   npc: { model: "offline-stub:store-v1", promptVersion: "v6", schemaVersion: 1 },
   judge: { model: "offline-unavailable:judge", promptVersion: "v2", schemaVersion: 2 },
   coach: { model: "authored-fallback:coach", promptVersion: "v3", schemaVersion: 2 },
+});
+
+const prototypeManifest = createManifest({...manifest.roles,
+  classifier: {...manifest.roles.classifier, promptVersion: "prototype-v1"},
+  npc: {...manifest.roles.npc, promptVersion: "prototype-v1"},
 });
 
 function moodLabel(mood) {
@@ -115,7 +124,7 @@ function restoreInPlace(obj, snapshotJson) {
   Object.assign(obj, data);
 }
 
-export function createServer({ debug = false, staticHandler = null, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = null, hrProvider = null, registry = defaultRegistry, voiceConfig = loadVoiceConfig(), voiceProviders = null, voiceUploadTimeoutMs = 8000 } = {}) {
+export function createServer({ debug = false, staticHandler = null, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = null, hrProvider = null, registry = prototypeRegistry, voiceConfig = loadVoiceConfig(), voiceProviders = null, voiceUploadTimeoutMs = 8000 } = {}) {
   const store = new SessionStore(engine);
   const convos = new Map();
   const contexts = new Map();
@@ -230,6 +239,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         let id, itemId;
         try { id = decodeURIComponent(match[1]); itemId = decodeURIComponent(match[2]); } catch { send(res, 404, { error: "not found" }); return; }
         const session = store.getState(id);
+        if (contexts.get(id)?.pkg.prototypeSources && !localCaller(req)) { send(res, 404, {error:"not found"}); return; }
         let result;
         if (momentMatch) {
           const job = debriefs.get(id);
@@ -253,6 +263,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
       if (debriefMatch && ((req.method === "GET" && !debriefMatch[2]) || (req.method === "POST" && debriefMatch[2]))) {
         const session = store.getState(decodeURIComponent(debriefMatch[1]));
         if (!session || !contexts.has(session.id)) { send(res, 404, { error: "unknown session" }); return; }
+        if (contexts.get(session.id).pkg.prototypeSources && !localCaller(req)) { send(res, 404, {error:"not found"}); return; }
         if (!session.ended) { send(res, 409, { status: "not_ready", error: "end the session first" }); return; }
         if (inflight.has(session.id)) { send(res, 202, { status: "pending", debrief: null, retry_allowed: false }); return; }
         const existing = debriefs.get(session.id);
@@ -271,6 +282,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           send(res, 404, { error: "unknown scenario" });
           return;
         }
+        if (pkg.prototypeSources && !localCaller(req)) { send(res, 404, {error:"not found"}); return; }
         send(res, 200, publicScenario(pkg));
         return;
       }
@@ -283,6 +295,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           const previousId = body.previous_session_id;
           const previous = typeof previousId === "string" && previousId ? store.getState(previousId) : null;
           const captured = previous && contexts.get(previousId);
+          if (captured?.pkg.prototypeSources && !localCaller(req)) { send(res, 404, {error:"not found"}); return; }
           if (!previous?.ended || !captured || !isRegisteredPackage(captured.pkg) ||
               previous.identity !== captured.pkg.identity || previous.scenario_id !== captured.pkg.spec.id ||
               ![captured.pkg.spec.id, captured.pkg.spec.id === "missed_deadline" ? "deadline" : captured.pkg.spec.id].includes(sid)) {
@@ -295,6 +308,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           return;
         }
         if (body && Object.prototype.hasOwnProperty.call(body, "customisation")) { send(res, 400, { error: "customisation is not supported", retryable: false }); return; }
+        if (pkg.prototypeSources && !localCaller(req)) { send(res, 404, {error:"not found"}); return; }
         const sliders = validateSliders(body && body.sliders);
         if (!sliders.ok) { send(res, 400, { error: "sliders must be integer values from 0 to 100", retryable: false }); return; }
         const npcSliders = validateNpcSliders(body && body.npc_sliders, pkg.spec.npcs.map((npc) => npc.id));
@@ -303,7 +317,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         if (!offline?.store || typeof offline.npcProvider !== "function" || typeof offline.classifyProviderFor !== "function") { send(res, 400, { error: "unsupported scenario_id" }); return; }
         const runtime = Object.freeze({ scenarioId: pkg.spec.id, schemaVersion: pkg.identity.schemaVersion, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules, language: pkg.policy.language, identity: pkg.identity, spec: pkg.spec });
         const paidHr = pkg.spec.id === "workplace_intimidation" && typeof hrProvider === "function";
-        const sessionManifest = pkg.spec.id === "workplace_intimidation" ? createManifest(Object.fromEntries(Object.entries(manifest.roles).map(([role, entry]) => [role, {...entry, model: paidHr ? "claude-haiku-5-5" : ({classifier: "offline-stub:hr-rules-v1", npc: "offline-stub:hr-store-v1", judge: "offline-unavailable:judge", coach: "authored-fallback:coach"})[role], promptVersion: "hr-v1"}]))) : manifest;
+        const sessionManifest = pkg.prototypeSources ? prototypeManifest : pkg.spec.id === "workplace_intimidation" ? createManifest(Object.fromEntries(Object.entries(manifest.roles).map(([role, entry]) => [role, {...entry, model: paidHr ? "claude-haiku-5-5" : ({classifier: "offline-stub:hr-rules-v1", npc: "offline-stub:hr-store-v1", judge: "offline-unavailable:judge", coach: "authored-fallback:coach"})[role], promptVersion: "hr-v1"}]))) : manifest;
         const context = Object.freeze({ pkg, runtime, manifest: sessionManifest, feedbackProviders: paidHr ? {judge: hrProvider, coach: hrProvider} : pkg.spec.id === "workplace_intimidation" ? {} : feedbackProviders, classifierProvider: paidHr ? hrProvider : null, store: offline.store, npcProvider: paidHr ? hrProvider : npcProvider || (pkg.spec.id === "workplace_intimidation" ? null : liveProvider) || offline.npcProvider, classifyProviderFor: offline.classifyProviderFor });
         const session = store.create(pkg.spec, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value, customisation: npcSliders.value, runtime });
         session.identity = pkg.identity;
@@ -315,15 +329,25 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           scenario: publicScenario(pkg),
           settings: sliders.value, npc_settings: structuredClone(session.customisation), difficulty: difficultyFor(sliders.value),
           public_state: initialPublic(session, pkg.spec, publicScenario(pkg)),
+          ...(pkg.prototypeSources ? {provider_mode: liveProvider ? "live" : "offline"} : {}),
           manifest: debug ? context.manifest.id : undefined,
         });
         return;
+      }
+      if (req.method === "POST" && path === "/prototype/compose") {
+        if (!localCaller(req)) { send(res, 404, {error:"not found"}); return; }
+        const body = await readBody(req), match = matchPrototypeComposition(body?.text);
+        if (!match.ok) { send(res, 422, {error:"unsupported_or_ambiguous_requirements", reason:match.reason}); return; }
+        const pkg = registry.getScenario(match.id);
+        if (!pkg || pkg.prototypeSources?.family !== "client") { send(res, 404, {error:"prototype composition unavailable"}); return; }
+        send(res, 200, {scenario_id:pkg.spec.id, scenario:publicScenario(pkg)}); return;
       }
       const endMatch = /^\/sessions\/([^/]+)\/end$/.exec(path);
       if (req.method === "POST" && endMatch) {
         const id = decodeURIComponent(endMatch[1]);
         const session = store.getState(id);
         const context = session && contexts.get(session.id);
+        if (context?.pkg.prototypeSources && !localCaller(req)) { send(res, 404, {error:"not found"}); return; }
         if (!session || !context) { send(res, 404, { error: "unknown session" }); return; }
         if (inflight.has(id)) { send(res, 409, { error: "wait for the current turn", retryable: true }); return; }
         engine.endSession(session);
@@ -339,6 +363,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         const session = store.getState(sessionId);
         const convo = convos.get(sessionId);
         const context = session && contexts.get(session.id);
+        if (context?.pkg.prototypeSources && !localCaller(req)) { send(res, 404, {error:"not found"}); return; }
         if (!session || !convo || !context) {
           send(res, 404, { error: "unknown session" });
           return;
@@ -394,6 +419,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           );
           if (out.usedFallback) warnNpcFallback(npcId, out.trace, context.pkg.spec);
           const pub = publicResponse(out);
+          if (context.pkg.prototypeSources) pub.reply_source = out.usedFallback ? "fallback" : "standard";
 
           // TTS is strictly after the guarded row and public response exist.
           const npcTurn = convo.turns[convo.turns.length - 1];

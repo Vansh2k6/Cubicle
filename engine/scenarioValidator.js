@@ -176,7 +176,7 @@ function publicContains(publicNode, target) {
   return false;
 }
 
-export function validateScenario(spec, { privateProof = false } = {}) {
+export function validateScenario(spec, { privateProof = false, allowedAssistanceFlags = [] } = {}) {
   const errors = [];
   if (spec === null || typeof spec !== "object" || Array.isArray(spec)) {
     err(errors, "NOT_AN_OBJECT", "$", "spec must be an object");
@@ -285,7 +285,7 @@ export function validateScenario(spec, { privateProof = false } = {}) {
         if (req.endsWith("_delivered")) {
           const fid = req.slice(0, -"_delivered".length);
           if (!factIds.has(fid)) err(errors, "UNKNOWN_FACT_REF", `commitment_model.assistance_requires.${req}`, `unknown fact ref: ${req}`);
-        } else if (!KNOWN_FLAGS.has(req)) {
+        } else if (!KNOWN_FLAGS.has(req) && !(privateProof && allowedAssistanceFlags.includes(req) && /^help_accepted_with_[a-z][a-z0-9_]*$/.test(req))) {
           err(errors, "UNKNOWN_FLAG", `commitment_model.assistance_requires.${req}`, `unknown assistance flag: ${req}`);
         }
       }

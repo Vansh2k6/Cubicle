@@ -91,14 +91,14 @@ async function turn(text) {
 }
 
 if (script !== null) {
+  process.exitCode = 0;
   for (const line of script.split(";").map((s) => s.trim()).filter(Boolean)) {
     console.log(`you> ${line}`);
     const r = await turn(line);
     if (r === "ended") break;
-    if (!r) process.exit(1);
+    if (!r) { process.exitCode = 1; break; }
   }
-  process.exit(0);
-}
+} else {
 
 const rl = createInterface({ input: process.stdin, output: process.stdout, prompt: "you> " });
 rl.prompt();
@@ -132,4 +132,5 @@ rl.on("line", async (raw) => {
   if (r === "ended") rl.close();
   else rl.prompt();
 });
-rl.on("close", () => process.exit(0));
+rl.on("close", () => { process.exitCode = 0; });
+}
