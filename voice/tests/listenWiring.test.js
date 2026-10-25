@@ -8,7 +8,8 @@ import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "../../src/debr
 import { captureRun } from "../../src/endCoordinator.js";
 const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8").replaceAll("\r\n", "\n");
 const part = (a, b) => source.slice(source.indexOf(a), source.indexOf(b, source.indexOf(a)));
-const script = part("function markListen(", "function unlockSpeech()") + part("function unlockSpeech()", "function cancelVoice()") + part("function rerenderVoiceSafely()", "const scenarios =") + part("function openDebrief(", "function completeScenario()") + part("function closeModal()", "function showGuide()") + part('$("#sound").onclick = () => {', '$("#sound").innerHTML = icon(state.muted ? "volume-x" : "volume-2");\n$("#sound").setAttribute');
+const routing = source.match(/const API_SCENARIOS[^;]+;/)[0] + source.match(/const apiScenarioId[^;]+;/)[0] + source.match(/const selectorScenarioId[^;]+;/)[0];
+const script = routing + part("function markListen(", "function unlockSpeech()") + part("function unlockSpeech()", "function cancelVoice()") + part("function rerenderVoiceSafely()", "const scenarios =") + part("function openDebrief(", "function completeScenario()") + part("function closeModal()", "function showGuide()") + part('$("#sound").onclick = () => {', '$("#sound").innerHTML = icon(state.muted ? "volume-x" : "volume-2");\n$("#sound").setAttribute');
 const moment = { moment_id: "0-0", general: true, better_reply: "What should I clarify?" };
 const result = { status: "partial", total_status: "provisional", deterministic: { points: 15, cap: 75 }, judged: { dimensions: [] }, moments: [moment], what_went_well: [], breakdown: [], priorities: [], timeline: [], missed_facts: [], weights: {}, settings: {} };
 function fixture({ enabled = false, muted = true, flag = true } = {}) {

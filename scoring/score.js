@@ -69,14 +69,18 @@ export function scoreSession(record, scenario = record.scenario) {
       c.status === "active" && !c.unrealistic && c.accepted_with === proof.actor_id && c.recap_turn_id === state?.turn_id) : null;
     const declaredTypes = goal.done_when.filter((x) => x.startsWith("event:")).map((x) => x.slice(6));
     const declaredActor = legacy ? proof?.actor_id : session.model?.policy_rules?.goalActors?.[goal.id];
-    const proofMatches = proof?.actor_id === declaredActor && proof?.requires_delivery === goal.done_when.includes("date_mutually_agreed") &&
+    const hrDelivery = scenario.id === "workplace_intimidation" && identity?.policyId === "hr-reporting" && identity?.policyVersion === 1 && ["G1", "G2", "G3"].includes(goal.id);
+    const responseDelivered = hrDelivery && Number.isInteger(proof?.delivery_turn) && proof.delivery_turn >= state.turn_id &&
+      record.convo?.turns.some((turn) => turn.speaker === "npc" && turn.npcId === proof.actor_id &&
+        mapping.find((row) => row.engine_turn_id === proof.delivery_turn)?.user_turn_id === turn.id - 1 && turn.act === "accept_plan");
+    const proofMatches = proof?.actor_id === declaredActor && proof?.requires_delivery === (hrDelivery || goal.done_when.includes("date_mutually_agreed")) &&
       declaredTypes.length === sources.length && declaredTypes.every((type) => sources.some((e) => e?.type === type)) &&
       goal.requires.every((id) => validGoals.has(id));
     const verified = v2 && goal.requires.every((id) => validGoals.has(id)) ? deadlineV2Goal(record, goal, usedGoalSources) : null;
     const done = v2 ? !!verified : proofMatches && state?.status === "done" && !!proof && sources.length > 0 && new Set(proof.source_ids).size === sources.length &&
       sources.every((e) => e && e.npc_id === proof.actor_id && e.turn_id <= state.turn_id && !usedGoalSources.has(e.source_id) &&
         (legacy ? e.allocation !== "integrity" : e.allocation === "goals")) &&
-      (!proof.requires_delivery || !!closingCommitment);
+      (!proof.requires_delivery || !!closingCommitment || responseDelivered);
     const row = add("goals", `goal:${goal.id}`, state?.turn_id || session.turn, done ? goal.weight : 0,
       { loss: done ? 0 : goal.weight, status: done ? "awarded" : "missed", evidence: [] });
     if (done) {

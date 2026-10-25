@@ -5,14 +5,23 @@ import {normalizeScoringProfile} from "../../scoring/config.js";
 import {FIXED_CAST, PHONE_BINDING} from "../../shared/presentation.js";
 import {deadlineV2EnginePolicy, deadlineV2Rules, extractDeadlineV2, planSlots} from "./deadlineV2EnginePolicy.js";
 import {deadlineV2Language, PLAN_REPLIES} from "../../llm/deadlineV2Language.js";
+import {contentTokens} from "../../llm/languagePrimitives.js";
 
 const offline = Object.freeze({
   classifyEvents(text, context) {return extractDeadlineV2({text, actorId: context?.actorId, activePlan: context?.activePlan}).events;},
-  reply({system}) {
+  reply({system, messages = []}) {
     const match = /\nENGINE-BOUND PLAN REPLY: ("[^\n]+")$/.exec(String(system));
-    if (!match) return null;
-    let text; try {text = JSON.parse(match[1]);} catch {return null;}
-    return Object.values(PLAN_REPLIES).includes(text) ? {text} : null;
+    if (match) {
+      let text; try {text = JSON.parse(match[1]);} catch {return null;}
+      if (Object.values(PLAN_REPLIES).includes(text)) return {text};
+    }
+    const act = /CURRENT MOVE:\s*([A-Za-z_]+)/.exec(String(system))?.[1];
+    const actorId = /You are [^(]+\(([a-z0-9_]+)\)/.exec(String(system))?.[1];
+    const latest = [...messages].reverse().find((row) => row?.role === "user")?.content;
+    const fact = spec.facts.find((entry) => entry.owner === actorId && messages.some((row) => row?.role === "assistant" && row.content === entry.content.en));
+    if (!fact || !["react_freely", "deflect_sealed"].includes(act) || typeof latest !== "string") return null;
+    const priorTokens = new Set(contentTokens(fact.content.en));
+    return contentTokens(latest).some((token) => priorTokens.has(token)) ? {text: fact.content.en} : null;
   },
 });
 function freezeData(value) {

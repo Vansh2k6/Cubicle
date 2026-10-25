@@ -1,4 +1,5 @@
 import { pressureCandidates } from "./sc01EnginePolicy.js";
+import {normalize, tokens} from "../../llm/languagePrimitives.js";
 
 export const deadlineV2Rules = Object.freeze({
   assistanceFact: null, assistanceActor: null, assistanceFlag: null,
@@ -17,7 +18,7 @@ export function planSlots(route) {
     engineering: {actorId: "jordan", reservation: route === "full" ? "pair_before_launch" : "followup_by_day6"},
     qa: {actorId: "sam", fix: "await_save_ack", checks: ["save_success", "save_failure", "retry"]}};
 }
-const textForm = (text) => String(text).trim().toLowerCase().replace(/\s+/g, " ");
+const textForm = (text) => String(text).trim().toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, " ");
 // Closed affirmative forms for the DS01 engine seam, not a general language
 // classifier. Match the entire utterance so refusal/attribution cannot hide
 // beside otherwise valid words. DS02 owns wider semantic interpretation.
@@ -97,6 +98,26 @@ function readRelay(text) {
   return null;
 }
 
+function roleInquiry(text, actorId) {
+  // Preserve quote evidence before normalisation removes punctuation.
+  const raw = String(text || "").trim();
+  if (/["“”]/.test(raw) || /^'[\s\S]{2,}'$/.test(raw) || /^‘[\s\S]{2,}’$/.test(raw)) return null;
+  const t = normalize(text), words = new Set(tokens(text));
+  // Questions only: quoted, negated, or instruction-bearing wording must not
+  // become a fact probe merely because it repeats a relevant topic.
+  if (/\b(?:ignore|instructions|reveal|tell me everything|do not|approve|accept|approval|approved|goal|goals|mark)\b/.test(t) ||
+    words.has("not") || words.has("never") || /\bdon t\b/.test(t)) return null;
+  if (!/^(?:what|which|is|are|was|were|can|could|should|would|do|does|did)\b/.test(t)) return null;
+  if (/\b(?:can|could|may|should) i tell you\b/.test(t)) return null;
+  if (actorId === "maya" && /\brouting\b/.test(t)) return "asked_background";
+  const remainingWork = /\b(?:work|tasks?)\b.*\b(?:left|remaining|unfinished|pending)\b/.test(t) ||
+    /\b(?:left|remaining|unfinished|pending)\b.*\b(?:work|tasks?)\b/.test(t) || /\bwhat s left\b/.test(t);
+  if (actorId === "jordan" && (/\b(?:reuse|reusable|existing|already built|component)\b/.test(t) || remainingWork)) return "asked_for_help";
+  if (actorId === "sam" && /\b(?:risk|risky|test|verify|launch|build)\b/.test(t)) return "asked_impact";
+  if (actorId === "client" && /\b(?:must work|essential|features?|need|expectation)\b/.test(t) && /\b(?:launch|friday|team)\b/.test(t)) return "asked_expectation";
+  return null;
+}
+
 // The sole v2 prose interpreter. Classifier, offline provider and core policy
 // share these nominations; delivery and authority remain core decisions.
 export function extractDeadlineV2({text, actorId, activePlan = null}) {
@@ -129,11 +150,13 @@ export function extractDeadlineV2({text, actorId, activePlan = null}) {
     const inquiry = [
       [/^(?:what exactly did i promise on routing|what had actually been agreed about routing|what did we agree about routing|what is the background to routing|how did routing get included)[?]?$/, "asked_background"],
       [/^(?:why is this handover urgent|why the rush|why is friday important|why is the launch urgent|what makes this urgent)[?]?$/, "asked_why_urgent"],
-      [/^(?:what can we reuse|what's left and can you help|what is left and can you help|what capacity do you have|can you reserve help for this plan|what help is available)[?]?$/, "asked_for_help"],
+      [/^(?:what can we reuse(?:[?!. ,]+can you help(?: me)?)?|can you help(?: me)?|what's left and can you help|what is left and can you help|what capacity do you have|can you reserve help for this plan|what help is available)[?!.]*$/, "asked_for_help"],
       [/^(?:what could go wrong|what could make release unsafe|what should qa verify|what must we fix and verify|what is the release risk)[?]?$/, "asked_impact"],
-      [/^(?:what does the client need friday|what do you actually need friday|could operations manually route|what would client operations need|what are your expectations)[?]?$/, "asked_expectation"],
+      [/^(?:what does the client need (?:this )?friday|what do you actually need (?:this )?friday|could operations manually route|what would client operations need|what are your expectations)[?]?$/, "asked_expectation"],
     ].find(([pattern]) => pattern.test(t));
+    const roleBackedInquiry = roleInquiry(text, actorId);
     if (inquiry) add(inquiry[1]);
+    else if (roleBackedInquiry) add(roleBackedInquiry);
     else if (/^(?:i own the delay|this is on me|i take responsibility|i missed the handover|the delay is my fault)[.;, ]+(?:the (?:portal|handover) is (?:late|overdue)|the work is unfinished|we have not delivered)[.!]?$/.test(t)) {add("took_ownership"); add("gave_honest_status");}
     else if (/^(?:hi|hello|hey)[.!]?$/.test(t)) add("greeted");
     else if (/ignore.*instructions|tell me everything|reveal all/.test(t)) add("asked_reveal_all");

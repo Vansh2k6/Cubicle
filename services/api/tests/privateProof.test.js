@@ -23,7 +23,7 @@ test("production routes never enable the private proof", async () => {
   const { app, base } = await start();
   try {
     const catalog = await request(base, "/scenarios");
-    assert.deepEqual(catalog.body.map((item) => item.id), ["missed_deadline"]);
+    assert.deepEqual(catalog.body.map((item) => item.id), ["missed_deadline", "workplace_intimidation"]);
     assert.equal((await request(base, "/scenarios/private_email_proof")).status, 404);
     assert.equal((await request(base, "/sessions", { scenario_id: "private_email_proof" })).status, 400);
   } finally { await new Promise((resolve) => app.server.close(resolve)); }

@@ -11,6 +11,8 @@ Version 0.1 · 2026-10-16 · Whole project. Items marked **[S1]** target the dem
 5. **Fail soft.** Every external call has a retry, a schema check, and a fallback (R-12).
 6. **Config over code.** Scenarios, weights, replies, taxonomies are data.
 
+**HR reporting policy (D-40).** The second scenario has a separate registered package, classifier/NPC boundaries and scoring interpretation. Quoted classifier evidence nominates events; pure code stages actor-bound goals, and only guarded delivery completes them. Its staged support acknowledgement takes priority over optional context reveal/deflection; suppressed disclosure remains sealed and earns no discovery credit. HR can agree a response process before the two colleague goals, and the scenario ends only after all three required goals. Snehal is optional. Deadline policies do not opt into this ordering or these goal rules. Haiku testing uses the separate adapter and persistent phase ledger under R-67/R-68; global Groq routing never supplies the HR scenario.
+
 ## 2. System overview
 
 ```mermaid
@@ -218,6 +220,8 @@ Output: `{"events":[{"type":"…","params":{}}]}`; invalid → retry once → `{
 
 S1-12 applies one shared set of integer sliders (0–100, default 50) to all three colleagues. Missing keys default to 50; invalid objects, unknown keys and invalid values are rejected without coercion. They are fixed at session creation and copied into the ended debrief. Difficulty is display-only: the mean of assertiveness, 100−patience, 100−warmth and 100−forthcomingness is Easy below 34, Medium below 67, otherwise Hard (D-29); there is no score multiplier.
 
+D-39 additionally permits optional session-start `npc_sliders`. After resolving any captured retry package, the API validates own plain-map actor IDs against that package and accepts only partial four-slider integer maps. Missing values inherit the shared vector, and the engine materializes each registered actor's effective settings. Create responses add cloned `npc_settings`; debrief records retain the effective engine settings. `npc_sliders`, shared `sliders`, and legacy client `customisation` are rejected after start. This changes neither difficulty calculation nor scoring, rules, or engine mechanics.
+
 Server-side `llm/tone.js` maps the same values through `llm/prompts/npc/v3-tone.json` at bands below 30 / 30–69 / at least 70. NPC prompt version v3 composes the existing v2 move instructions with this v3 tone asset. Both live and offline manifests identify the new NPC composition; judge/coach and scoring versions are unchanged. Tone never authorizes a disclosure or selects an act. The client imports only public settings and preview wording, never the server tone asset, engine or scenario specification. Engine constants remain provisional and unchanged; live tone/guard acceptance is NOT RUN. Approved presets (D-32) are implemented by S1-13's optional setup selector.
 
 ### 6.4 Dialogue act selection (first match wins) — R-33
@@ -385,8 +389,8 @@ Redis: live session state, rate limits. Object storage: cached TTS audio, option
 ```
 GET  /scenarios                           -> list (briefing, visible goals, difficulty)
 GET  /scenarios/{id}                      -> briefing + visible goals (never sealed data)
-POST /sessions                            {scenario_id, sliders?} -> {session_id, briefing, settings, difficulty, public_state}  # Stage 1; shared integer sliders only
-POST /sessions/{id}/turn                  {npc_id, text | audio} -> {npc_reply, public_state, ended, end_reason?}
+POST /sessions                            {scenario_id, sliders?, npc_sliders?, previous_session_id?} -> {session_id, briefing, settings, npc_settings, difficulty, public_state}
+POST /sessions/{id}/turn                  {npc_id, text | audio} -> {npc_reply, public_state, ended, end_reason?}  # settings are fixed after creation
 POST /sessions/{id}/scene-event           {type, npc_id}  -> {public_state}
 POST /sessions/{id}/end                   -> {ok}          # triggers debrief generation
 GET  /sessions/{id}/debrief               -> {score, breakdown, timeline, priorities, moments[], missed_facts[], customisation}

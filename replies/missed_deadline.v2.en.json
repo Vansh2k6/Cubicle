@@ -39,11 +39,11 @@
       "variants": [
         {
           "id": "one",
-          "text": "Could you ask a more specific question about that?"
+          "text": "Let's sort out the handover first. What part do you need clarity on?"
         },
         {
           "id": "two",
-          "text": "Tell me which concern you want to understand."
+          "text": "I can help you frame the next conversation. What part of the handover concerns you?"
         }
       ]
     },
@@ -219,11 +219,11 @@
       "variants": [
         {
           "id": "one",
-          "text": "Could you ask a more specific question about that?"
+          "text": "Let's work through the handover. What part are you trying to reuse or get help with?"
         },
         {
           "id": "two",
-          "text": "Tell me which concern you want to understand."
+          "text": "Tell me what you need to reuse or get help with, and we can work through it."
         }
       ]
     },

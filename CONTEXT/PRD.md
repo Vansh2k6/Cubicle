@@ -4,7 +4,7 @@ Version 0.1 · 2026-10-16 · Scope: **whole project** (stage tags show where eac
 
 ## 1. Summary
 
-Cubicle lets people practise real workplace conversations — owning a missed deadline, replying late to an email, recovering from a missed call, negotiating with a client — by walking around a 3D office and talking to AI colleagues who react to what the user actually says. Colleagues hold **hidden facts** that surface only when the user asks good questions. Afterwards the user gets a **fair, evidence-backed debrief** that quotes their own words, shows what they missed, and lets them hear or redo a better version.
+Cubicle lets people practise real workplace conversations — owning a missed deadline, reporting a workplace concern, recovering from a missed call, negotiating with a client — by walking around a 3D office and talking to AI colleagues who react to what the user actually says. Colleagues hold **hidden facts** that surface only when the user asks good questions. Afterwards the user gets a **fair, evidence-backed debrief** that quotes their own words, shows what they missed, and lets them hear or redo a better version.
 
 ## 2. Problem
 
@@ -56,10 +56,11 @@ Primary audience is an open decision (O-01); default is students.
 | ID | Title | Cast | Status |
 |---|---|---|---|
 | SC-01 | **Missed a project deadline** — "The project was due yesterday. Your manager is waiting for an update." Objective: *Own the delay and agree on a realistic next step.* | Maya (manager), Jordan (teammate), Sam (People & culture) | Exists as baseline; full spec below (S1) |
-| SC-02 | **Forgot to reply to an email** — "…falling through the cracks. Your manager needs an answer before the team can move forward." Objective: *Acknowledge the oversight and close the loop.* | Maya, Jordan, Sam | Exists as baseline; facts/goals to author (S1 optional, S2 required) |
+| SC-02 | **Report repeated workplace mistreatment** — the employee reports dismissed concerns, exclusion from planning, and criticism; the package practises observable reporting, support options, and an HR response plan. | Snehal, Vansh, Prathamesh, Vedant (HR) | Authored; implementation pending under D-40 |
 | SC-03 | **Missed an important call** | Maya, Jordan, Sam | Exists as baseline; content TBD (S2) |
 | SC-04 | **The Two-Day Promise** — client Rohan Mehta (product owner) pushes a 2-day deadline; real leeway is 4 days; needs PDF *and* CSV; earlier vendor burned him | Rohan (external client) | Designed in the original PDF; needs a "client call" mode (S2) |
 | SC-05+ | Production incident, code review, unclear client requirement, difficult teammate conversation, JD-generated scenarios | varies | S2 |
+
 
 ### SC-01 specification (**confirmed server-side fixture; not yet integrated into the UI**)
 

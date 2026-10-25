@@ -15,7 +15,7 @@ test("Practice modal uses captured public deadline copy, escapes it and preserve
   let html;
   const old = {title: "Original title", description: "Original briefing", goal: "Original objective"};
   const state = {scenario: "deadline", scenarioMetadata: {...metadata, title: "Captured <portal>", briefing: "Captured & public", goals: [{label: "First objective"}, {label: "Second objective"}]}};
-  runInNewContext(handler, {$, state, scenarios: {deadline: old, email: old}, showModal: (_title, body) => {html = body;},
+  runInNewContext(handler, {isTypedScenario: (id) => ["deadline", "email"].includes(id), $, state, scenarios: {deadline: old, email: old}, showModal: (_title, body) => {html = body;},
     escapeHtml: (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"), showProgress() {}, renderPeople() {}});
   $("#office-context").onclick();
   assert.match(html, /Captured &lt;portal&gt;/); assert.match(html, /Captured &amp; public/);

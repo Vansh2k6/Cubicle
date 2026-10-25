@@ -11,9 +11,9 @@ test("default activation publishes only v2 public metadata and scanner covers bo
   assert.equal(pkg, defaultRegistry.getScenario("missed_deadline"));
   assert.equal(pkg.spec.version, 2); assert.equal(pkg.identity.scoringVersion, 3);
   assert.equal(pkg.spec.npcs.length, 4); assert.equal(legacyRegistry.getScenario("deadline").spec.version, 1);
-  assert.deepEqual(defaultRegistry.listScenarios(), [publicScenario(pkg)]);
+  assert.deepEqual(defaultRegistry.listScenarios().filter((s) => s.id === "missed_deadline"), [publicScenario(pkg)]);
   const all = scanRegistry.allPackages();
-  assert.equal(all.length, 4); assert.equal(new Set(all.map((p) => p.identity.contentHash)).size, 4);
+  assert.equal(all.length, 5); assert.equal(new Set(all.map((p) => p.identity.contentHash)).size, 5);
   const needles = registeredPrivateNeedles(scanRegistry);
   for (const p of all) for (const fact of p.spec.facts) {
     assert.ok(scanArtifacts([{file: "injected.js", text: fact.content.en}], needles).length, p.identity.contentVersion + "/" + fact.id);

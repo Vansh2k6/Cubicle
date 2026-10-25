@@ -66,12 +66,12 @@ const icons = {
 import { createSession, getScenario, sendTurn, endSession, getDebrief, retryDebrief, getVoiceStatus, transcribeAudio, getTurnAudio, getDebriefAudio, newKey } from "./api.js";
 import { DEFAULT_SLIDERS } from "../shared/settings.js";
 import { settingsPreview } from "./settingsPreview.js";
-import { PRESETS, presetName, presetSettings, presetsEnabled } from "../shared/presets.js";
 import { renderDebrief, pollDebrief, recoverFeedbackRetry } from "./debrief.js";
 import { createEndCoordinator, captureRun } from "./endCoordinator.js";
 import { compareAttempts, displayAttemptMetric, displayAttemptScore, readProgress, saveProgress, summaryFromDebrief, upsertAttempt } from "./progress.js";
 import {parseScenarioMetadata} from "./scenarioMetadata.js";
 import { projectGuidance } from "./guidance.js";
+import { CAST_PRESETS, CAST_TRAITS, applyCastPreset, castTone, createCastDraft, effectiveCastSettings, npcSliderPayload, updateCastDraft, useOverallSettings } from "./castSetup.js";
 import "./guidance.css";
 const ending = createEndCoordinator();
 const voiceBuildEnabled = import.meta.env.VITE_VOICE === "1";
@@ -169,30 +169,12 @@ const scenarios = {
     ],
   },
   email: {
-    title: "Forgot to reply to an email",
-    short: "Missed email",
-    tag: "Clear communication",
+    title: "Reporting Workplace Intimidation",
+    short: "Workplace intimidation",
+    tag: "Seeking support",
     description:
-      "An important email slipped through the cracks. Your manager needs an answer before the team can move forward.",
-    goal: "Acknowledge the oversight and close the loop.",
-    opening:
-      "Hi Shubhankar. I sent you an email about the client proposal two days ago. I haven’t heard back. Did you get a chance to see it?",
-    choices: [
-      [
-        "I missed it, and I’m sorry for holding things up. Let me prioritize it now.",
-        "You should have sent me a reminder.",
-        "I saw it, but I thought it could wait.",
-      ],
-      [
-        "I’ll review it and reply by 11 AM. I’ll also set a daily inbox check.",
-        "I’ll try to remember next time.",
-        "Could you just tell me everything in person?",
-      ],
-    ],
-    replies: [
-      "Thanks for acknowledging it. We need your input to move the proposal forward. When can I expect your response?",
-      "That works. Please include any questions in your reply so we can resolve them together. Thanks for closing the loop.",
-    ],
+      "You are repeatedly dismissed in meetings, excluded from discussion, then criticized for missing context. Seek a safer way to work.",
+    goal: "Discuss observable events with Vansh; explore support with Prathamesh; agree a response plan with Vedant.",
   },
   call: {
     title: "Missed an important call",
@@ -221,6 +203,12 @@ const scenarios = {
     ],
   },
 };
+// The selector keeps its original email key while the typed API exposes the
+// authored public scenario id.
+const API_SCENARIOS = Object.freeze({ deadline: "deadline", email: "workplace_intimidation" });
+const apiScenarioId = (id) => API_SCENARIOS[id] || id;
+const isTypedScenario = (id) => Object.hasOwn(API_SCENARIOS, id);
+const selectorScenarioId = (id) => id === "workplace_intimidation" ? "email" : id === "missed_deadline" ? "deadline" : id;
 const people = {
   maya: {
     name: "Snehal Mane",
@@ -241,7 +229,8 @@ const people = {
     initials: "PS",
   },
 };
-const saved = readProgress(() => window.localStorage, Object.keys(scenarios));
+const progressScenarioIds = [...new Set([...Object.keys(scenarios), ...Object.values(API_SCENARIOS)])];
+const saved = readProgress(() => window.localStorage, progressScenarioIds);
 let state = {
   entry: "selection",
   scenario: "deadline",
@@ -265,13 +254,16 @@ let state = {
   sharedHint: "",
   startingSession: false,
   appliedSettings: null,
+  appliedNpcSettings: null,
+  settingsDrafts: {},
+  setupPerson: null,
 };
 const icon = (name, cls = "") => `<i data-lucide="${name}" class="${cls}"></i>`;
 const $ = (s) => document.querySelector(s);
 const refreshIcons = () => createIcons({ icons });
 function currentGuidance() {
   return projectGuidance({
-    scenarioId: state.scenarioMetadata?.id || (state.scenario === "deadline" ? "missed_deadline" : state.scenario),
+    scenarioId: state.scenarioMetadata?.id || apiScenarioId(state.scenario),
     goals: state.sharedGoals,
     ...(state.scenarioMetadata ? {npcs: state.scenarioMetadata.npcs} : {}),
     currentNpc: state.dialogue,
@@ -280,7 +272,7 @@ function currentGuidance() {
   });
 }
 function updatePublicGuidance() {
-  if (state.scenario !== "deadline") return;
+  if (!isTypedScenario(state.scenario)) return;
   const guidance = currentGuidance();
   const heading = $("#next-heading"), description = $("#next-description"), step = $(".step-number");
   if (heading) heading.textContent = guidance.heading;
@@ -302,12 +294,12 @@ function updatePublicGuidance() {
 }
 function updateScenario() {
   let s = scenarios[state.scenario];
-  const metadata = state.scenario === "deadline" ? state.scenarioMetadata : null;
+  const metadata = isTypedScenario(state.scenario) ? state.scenarioMetadata : null;
   const title = $("#scenario-title");
   if (title) title.textContent = metadata?.title || s.title;
   $("#scenario-description").textContent = metadata?.briefing || s.description;
   $("#objective-text").textContent = s.goal;
-  if (state.scenario === "deadline") updatePublicGuidance();
+  if (isTypedScenario(state.scenario)) updatePublicGuidance();
   else {
     $("#next-heading").textContent = "Say hello to Snehal";
     $("#next-description").innerHTML =
@@ -318,37 +310,72 @@ function updateScenario() {
   refreshIcons();
 }
 function updateProgress() {
-  $("#progress-count").textContent = new Set([...Object.keys(state.complete), ...state.attempts.map((a) => a.scenario)]).size;
+  $("#progress-count").textContent = new Set([...Object.keys(state.complete), ...state.attempts.map((a) => selectorScenarioId(a.scenario))]).size;
 }
 function renderEntry() {
   $("#scenario-cards").innerHTML = Object.entries(scenarios).map(([id, s]) => `<button class="scenario-card" type="button" data-entry-scenario="${id}"><span>${escapeHtml(s.tag)}</span><strong>${escapeHtml(s.title)}</strong><small>${escapeHtml(s.goal)}</small></button>`).join("");
-  document.querySelectorAll("[data-entry-scenario]").forEach((button) => button.onclick = () => showBriefing(button.dataset.entryScenario));
+  document.querySelectorAll("[data-entry-scenario]").forEach((button) => button.onclick = () => showCastSetup(button.dataset.entryScenario));
 }
-function showBriefing(id) {
-  if (state.entry !== "selection" || !scenarios[id]) return;
-  state.entry = "briefing";
-  state.scenarioMetadata = null;
+function castActors(id, metadata) {
+  if (metadata) return metadata.npcs;
+  return Object.entries(people).map(([actorId, actor]) => ({ id: actorId, ...actor, sceneAnchor: actorId }));
+}
+function showCastSetup(id, pinnedMetadata = null, previousSessionId = null) {
+  if (!["selection", "setup"].includes(state.entry) || !scenarios[id]) return;
+  state.entry = "setup";
+  $(".entry-intro").hidden = true;
+  $("#entry-screen").setAttribute("aria-labelledby", "cast-setup-title");
+  state.scenarioMetadata = pinnedMetadata;
   state.scenario = id;
   $("#scenario").value = id;
   const generation = state.metadataGeneration = (state.metadataGeneration || 0) + 1;
   const briefing = $("#scenario-briefing");
   briefing.hidden = false;
   $("#scenario-cards").hidden = true;
-  const current = () => state.entry === "briefing" && state.scenario === id && state.metadataGeneration === generation;
+  const current = () => state.entry === "setup" && state.scenario === id && state.metadataGeneration === generation;
   const render = (metadata) => {
     if (!current()) return;
     const s = scenarios[id];
-    briefing.innerHTML = `<h2>${escapeHtml(metadata?.title || s.title)}</h2><p>${escapeHtml(metadata?.briefing || s.description)}</p><dl><div><dt>Your role</dt><dd>Shubhankar, an employee</dd></div><div><dt>Your objective</dt><dd>${escapeHtml(metadata ? metadata.goals[0]?.label || s.goal : s.goal)}</dd></div></dl><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="entry-start" type="button">Start your day ${icon("arrow-right")}</button></div>`;
-    $("#briefing-back").onclick = showSelection;
-    $("#entry-start").onclick = () => { updateScenario(); startOffice().catch(() => {}); };
-    refreshIcons();
+    if (metadata) state.scenarioMetadata = metadata;
+    const actors = castActors(id, metadata), enabled = isTypedScenario(id);
+    let active = state.setupPerson && actors.some((actor) => actor.id === state.setupPerson) ? state.setupPerson : null;
+    let draft = state.settingsDrafts[id] || createCastDraft(state.appliedSettings || DEFAULT_SLIDERS, state.appliedNpcSettings || {});
+    state.settingsDrafts[id] = draft;
+    const renderWorkspace = () => {
+      const values = effectiveCastSettings(draft, active), selected = actors.find((actor) => actor.id === active);
+      const cast = actors.map((actor, index) => `<button class="cast-person${active === actor.id ? " is-active" : ""}" type="button" data-cast-person="${escapeHtml(actor.id)}" aria-pressed="${active === actor.id}"><span class="cast-face" style="--face:${(actor.contactMode === "phone" ? 3 : ({ maya: 0, jordan: 1, sam: 2 })[actor.sceneAnchor || actor.id] ?? index % 4) * 33.333}%"></span><span><strong>${escapeHtml(actor.name)}</strong><small>${escapeHtml(actor.role)}</small></span><span class="cast-check" aria-hidden="true">${active === actor.id ? icon("check") : ""}</span></button>`).join("");
+      const controls = CAST_TRAITS.map(([key, label, help, low, high]) => `<div class="cast-trait"><div><label for="cast-${key}">${escapeHtml(label)}</label><small>${escapeHtml(help)}</small></div><div class="cast-range"><input id="cast-${key}" type="range" min="0" max="100" value="${values[key]}" aria-describedby="cast-${key}-ends" ${enabled ? "" : "disabled"}><output id="cast-output-${key}" for="cast-${key}">${values[key]}</output></div><div class="cast-ends" id="cast-${key}-ends"><span>${escapeHtml(low)}</span><span>${escapeHtml(high)}</span></div></div>`).join("");
+      const presets = Object.keys(CAST_PRESETS).map((name) => `<button type="button" class="cast-preset${Object.entries(CAST_PRESETS[name]).every(([key, value]) => value === values[key]) ? " is-selected" : ""}" data-cast-preset="${name}" ${enabled ? "" : "disabled"}>${name}</button>`).join("");
+      briefing.innerHTML = `<div class="cast-setup-heading"><h2 id="cast-setup-title">${escapeHtml(metadata?.title || s.title)}</h2><div class="cast-scenarios" aria-label="Choose another conversation">${Object.entries(scenarios).map(([scenarioId, scenario]) => `<button type="button" data-cast-scenario="${scenarioId}" class="${scenarioId === id ? "is-current" : ""}">${escapeHtml(scenario.short)}</button>`).join("")}</div></div><div class="cast-workspace"><nav class="cast-list" aria-label="People in this scenario">${cast}</nav><section class="cast-editor" aria-live="polite"><p class="cast-mode">${selected ? `Editing ${escapeHtml(selected.name)}. Their sliders override the overall settings.` : "Overall settings apply to everyone without a personal adjustment."}</p>${enabled ? "" : '<p class="cast-fixed">Fixed dialogue — character settings do not change these replies.</p>'}<div class="cast-controls">${controls}</div><div class="cast-presets" aria-label="Personality presets">${presets}<button type="button" class="cast-overall" id="cast-use-overall"${selected ? "" : ' disabled aria-hidden="true" tabindex="-1" style="visibility:hidden"'}>Use overall settings</button></div><p class="cast-summary">This approach will be ${escapeHtml(castTone(values))}.</p></section></div><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back</button><button class="primary-button" id="setup-continue" type="button">Continue to briefing ${icon("arrow-right")}</button></div>`;
+      const restoreFocus = (selector) => { if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => { if (current()) briefing.querySelector(selector)?.focus(); }); };
+      briefing.querySelectorAll("[data-cast-person]").forEach((button) => button.onclick = () => { const focusId = button.dataset.castPerson; active = active === focusId ? null : focusId; state.setupPerson = active; renderWorkspace(); restoreFocus(`[data-cast-person="${focusId}"]`); });
+      briefing.querySelectorAll("[data-cast-scenario]").forEach((button) => button.onclick = () => { if (button.dataset.castScenario !== id) { state.setupPerson = null; showCastSetup(button.dataset.castScenario); } });
+      briefing.querySelectorAll("[data-cast-preset]").forEach((button) => button.onclick = () => { const preset = button.dataset.castPreset; draft = applyCastPreset(draft, active, preset); state.settingsDrafts[id] = draft; renderWorkspace(); restoreFocus(`[data-cast-preset="${preset}"]`); });
+      const overall = $("#cast-use-overall");
+      if (overall) overall.onclick = () => { draft = useOverallSettings(draft, active); state.settingsDrafts[id] = draft; renderWorkspace(); restoreFocus("#cast-use-overall"); };
+      CAST_TRAITS.forEach(([key]) => $("#cast-" + key)?.addEventListener("input", (event) => {
+        draft = updateCastDraft(draft, active, key, Number(event.target.value));
+        state.settingsDrafts[id] = draft;
+        $("#cast-output-" + key).value = event.target.value;
+        $(".cast-summary").textContent = `This approach will be ${castTone(effectiveCastSettings(draft, active))}.`;
+        briefing.querySelectorAll("[data-cast-preset]").forEach((button) => {
+          const preset = CAST_PRESETS[button.dataset.castPreset];
+          button.classList.toggle("is-selected", Object.entries(preset).every(([trait, value]) => value === effectiveCastSettings(draft, active)[trait]));
+        });
+      }));
+      $("#briefing-back").onclick = showSelection;
+      $("#setup-continue").onclick = () => showBriefingScreen(id, metadata, draft, previousSessionId);
+      refreshIcons();
+    };
+    renderWorkspace();
   };
-  if (id !== "deadline") { render(null); return; }
+  if (pinnedMetadata) { render(pinnedMetadata); return; }
+  if (id !== "deadline" && id !== "email") { render(null); return; }
   const load = () => {
     if (!current()) return;
     briefing.innerHTML = '<p role="status">Loading this practice…</p><button class="secondary-button" id="briefing-back" type="button">Back</button>';
     $("#briefing-back").onclick = showSelection;
-    return getScenario("deadline").then((data) => {
+    return getScenario(id === "email" ? "workplace_intimidation" : "deadline").then((data) => {
       if (!current()) return;
       state.scenarioMetadata = parseScenarioMetadata(data);
       render(state.scenarioMetadata);
@@ -361,6 +388,16 @@ function showBriefing(id) {
   };
   load();
 }
+function showBriefingScreen(id, metadata, draft, previousSessionId = null) {
+  if (state.entry !== "setup") return;
+  state.entry = "briefing";
+  $("#entry-screen").setAttribute("aria-labelledby", "briefing-title");
+  const s = scenarios[id], briefing = $("#scenario-briefing");
+  briefing.innerHTML = `<p class="entry-kicker">Prepare</p><h2 id="briefing-title">${escapeHtml(metadata?.title || s.title)}</h2><p>${escapeHtml(metadata?.briefing || s.description)}</p><dl><div><dt>Your role</dt><dd>Shubhankar, an employee</dd></div><div><dt>Your objective</dt><dd>${escapeHtml(metadata ? metadata.goals[0]?.label || s.goal : s.goal)}</dd></div></dl><div class="entry-actions"><button class="secondary-button" id="briefing-back" type="button">Back to cast setup</button><button class="primary-button" id="entry-start" type="button">Start your day ${icon("arrow-right")}</button></div>`;
+  $("#briefing-back").onclick = () => { state.entry = "selection"; showCastSetup(id, metadata, previousSessionId); };
+  $("#entry-start").onclick = () => { state.appliedSettings = { ...draft.base }; state.appliedNpcSettings = npcSliderPayload(draft, castActors(id, metadata).map((actor) => actor.id)); state.previousSessionId = previousSessionId; updateScenario(); startOffice().catch(() => {}); };
+  refreshIcons();
+}
 
 function showSelection() {
   officeGeneration++;
@@ -371,6 +408,8 @@ function showSelection() {
   document.body.classList.remove("office-mounted", "office-entering");
   $("#entry-screen").classList.remove("entry-leaving");
   state.entry = "selection";
+  $(".entry-intro").hidden = false;
+  $("#entry-screen").setAttribute("aria-labelledby", "entry-title");
   state.metadataGeneration = (state.metadataGeneration || 0) + 1;
   state.scenarioMetadata = null;
   $(".game-card").inert = true;
@@ -383,7 +422,7 @@ function showSelection() {
   renderEntry();
 }
 function persistProgress() {
-  if (!saveProgress(() => window.localStorage, { complete: state.complete, attempts: state.attempts }, Object.keys(scenarios))) toast("Progress is available for this visit; browser storage is unavailable.");
+  if (!saveProgress(() => window.localStorage, { complete: state.complete, attempts: state.attempts }, progressScenarioIds)) toast("Progress is available for this visit; browser storage is unavailable.");
 }
 function toast(message) {
   $("#toast").textContent = message;
@@ -535,9 +574,9 @@ function openConversation() {
     if (!state.textMode || target === state.dialogue) return;
     closeConversation();
   }
-  // SC-01 ("deadline") uses free-text turns via the turn API. SC-02/SC-03
-  // keep the scripted button baseline untouched (P2c contract).
-  if (state.scenario === "deadline") {
+  // Authored typed scenarios use the turn API; the call keeps its scripted
+  // button baseline.
+  if (state.scenario === "deadline" || state.scenario === "email") {
     openTextConversation(target);
     return;
   }
@@ -622,7 +661,7 @@ function currentPeople() {
   }]));
 }
 function personFor(id) { return currentPeople()[id]; }
-function remoteContact() { return state.scenario === "deadline" ? state.scenarioMetadata?.npcs.find((actor) => actor.contactMode === "phone") : null; }
+function remoteContact() { return state.scenarioMetadata?.npcs.find((actor) => actor.contactMode === "phone"); }
 function physicalActorId(anchor) {
   if (!anchor || anchor === "@phone") return null;
   return state.scenarioMetadata ? state.scenarioMetadata.npcs.find((actor) => actor.sceneAnchor === anchor)?.id : Object.hasOwn(people, anchor) ? anchor : null;
@@ -653,11 +692,11 @@ function syncPeople() {
 }
 function loadScenarioMetadata() {
   const generation = state.metadataGeneration = (state.metadataGeneration || 0) + 1;
-  if (state.entry !== "office" || state.scenario !== "deadline" || state.sessionId || state.previousSessionId) { syncPeople(); return; }
+  if (state.entry !== "office" || (state.scenario !== "deadline" && state.scenario !== "email") || state.sessionId || state.previousSessionId) { syncPeople(); return; }
   const scenario = state.scenario;
   state.metadataStatus = "loading";
   syncPeople();
-  return getScenario("deadline").then((data) => {
+  return getScenario(state.scenario === "email" ? "workplace_intimidation" : "deadline").then((data) => {
     if (generation !== state.metadataGeneration || scenario !== state.scenario || state.sessionId || state.entry !== "office") return;
     state.scenarioMetadata = parseScenarioMetadata(data);
     state.metadataStatus = "ready";
@@ -701,7 +740,7 @@ function openTextConversation(npcId = physicalActorId(state.near)) {
     renderTextDialogue();
     return;
   }
-  openSettings(state.appliedSettings || DEFAULT_SLIDERS, state.dialogue);
+  startTextSession();
 }
 
 function startTextSession() {
@@ -710,7 +749,7 @@ function startTextSession() {
   state.startingSession = true;
   state.text.loadError = null;
   renderTextDialogue();
-  createSession("deadline", state.appliedSettings || DEFAULT_SLIDERS, state.previousSessionId).then(
+  createSession(state.scenario === "email" ? "workplace_intimidation" : "deadline", state.appliedSettings || DEFAULT_SLIDERS, state.previousSessionId, state.appliedNpcSettings).then(
     (data) => {
       if (!current()) return;
       const metadata = data.scenario ? parseScenarioMetadata(data.scenario) : null;
@@ -725,6 +764,7 @@ function startTextSession() {
       state.sharedGoals = (data.public_state && data.public_state.goals) || [];
       state.sharedHint = (data.public_state && data.public_state.next_hint) || "";
       state.appliedSettings = data.settings || state.appliedSettings;
+      state.appliedNpcSettings = data.npc_settings || state.appliedNpcSettings;
       updatePublicGuidance();
       if (state.textMode && state.text === thread) renderTextDialogue();
     }).catch((err) => {
@@ -983,7 +1023,7 @@ async function completeTextSession() {
 
 function openDebrief(sessionId, historical = false) {
   const run = captureRun(state);
-  const attemptScenario = state.attempts.find((attempt) => attempt.session_id === sessionId)?.scenario || state.scenario;
+  const attemptScenario = selectorScenarioId(state.attempts.find((attempt) => attempt.session_id === sessionId)?.scenario || state.scenario);
   showModal("Practice debrief", '<div id="debrief-content" aria-live="polite"></div>');
   const box = $("#debrief-content");
   $(".modal").classList.add("debrief-modal");
@@ -1025,16 +1065,17 @@ function openDebrief(sessionId, historical = false) {
       });
     }
     if (latest) {
-      const attempt = summaryFromDebrief(sessionId, "deadline", latest);
+      const attempt = summaryFromDebrief(sessionId, apiScenarioId(attemptScenario), latest);
       state.attempts = upsertAttempt({ attempts: state.attempts }, attempt).attempts;
       persistProgress();
       const actions = document.createElement("div");
       actions.className = "debrief-actions";
       actions.innerHTML = `<button class="primary-button" id="try-again">Try again</button><button class="secondary-button" id="try-settings">Try again with new settings</button>`;
       (box.querySelector("[data-debrief-actions]") || box).append(actions);
-      const attemptSettings = latest.settings?.maya || state.appliedSettings || DEFAULT_SLIDERS;
-      $("#try-again").onclick = () => restartTextRun(false, attemptScenario, attemptSettings, sessionId, latestPacket.scenario);
-      $("#try-settings").onclick = () => restartTextRun(true, attemptScenario, attemptSettings, sessionId, latestPacket.scenario);
+      const attemptSettings = state.sessionId === sessionId ? state.appliedSettings || DEFAULT_SLIDERS : DEFAULT_SLIDERS;
+      const attemptNpcSettings = latest.settings && typeof latest.settings === "object" ? latest.settings : state.appliedNpcSettings || {};
+      $("#try-again").onclick = () => restartTextRun(false, attemptScenario, attemptSettings, sessionId, latestPacket.scenario, attemptNpcSettings);
+      $("#try-settings").onclick = () => restartTextRun(true, attemptScenario, attemptSettings, sessionId, latestPacket.scenario, attemptNpcSettings);
     }
     const check = $("#feedback-refresh");
     if (check) check.onclick = () => { disableFeedbackControl(check); poll(); };
@@ -1104,17 +1145,20 @@ function resetTextRun(scenarioId = state.scenario, metadata = null) {
   state.round = 0;
   state.score = 0;
   state.appliedSettings = null;
+  state.appliedNpcSettings = null;
+  state.settingsDrafts = {};
+  state.setupPerson = null;
   office?.reset();
   updateScenario();
   if (metadata) syncPeople(); else loadScenarioMetadata();
 }
-function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null) {
+function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null, npcSliders = state.appliedNpcSettings) {
   const threads = threadsFor();
   const thread = resumeNpc ? threads[resumeNpc] : null;
   const current = captureRun(state);
   state.startingSession = true;
   if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) renderTextDialogue();
-  createSession("deadline", sliders, previousSessionId).then((data) => {
+  createSession(state.scenario === "email" ? "workplace_intimidation" : "deadline", sliders, previousSessionId, npcSliders).then((data) => {
     if (!current() || state.threads !== threads || state.sessionId) return;
     const metadata = data.scenario ? parseScenarioMetadata(data.scenario) : null;
     if (typeof data.session_id !== "string" || !data.session_id) throw new Error("Could not read this practice session.");
@@ -1127,6 +1171,7 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, r
     state.sharedGoals = data.public_state?.goals || [];
     state.sharedHint = data.public_state?.next_hint || "";
     state.appliedSettings = data.settings || sliders;
+    state.appliedNpcSettings = data.npc_settings || npcSliders;
     state.startingSession = false;
     updatePublicGuidance();
     if (thread && state.textMode && state.text === thread && state.dialogue === resumeNpc) renderTextDialogue();
@@ -1141,59 +1186,8 @@ function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, r
     toast("Could not start a fresh conversation. Find Snehal and retry.");
   });
 }
-function openSettings(initial = DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null) {
-  const resumeAnchor = personFor(resumeNpc)?.sceneAnchor || (Object.hasOwn(people, resumeNpc) ? resumeNpc : null);
-  const draft = { ...initial };
-  const showPresets = presetsEnabled(import.meta.env.VITE_PRESETS);
-  const preview = () => settingsPreview(draft);
-  showModal("Set the conversation", '<div id="setup-content" aria-live="polite">Loading this practice…</div>');
-  const box = $("#setup-content");
-  const run = captureRun(state);
-  const current = () => run() && $("#setup-content") === box;
-  const render = (scenario) => {
-    if (!current()) return;
-    try {
-      if (!state.sessionId) {
-        state.scenarioMetadata = parseScenarioMetadata(scenario);
-        state.metadataGeneration = (state.metadataGeneration || 0) + 1;
-        state.metadataStatus = "ready";
-        if (resumeNpc && !Object.hasOwn(currentPeople(), resumeNpc)) resumeNpc = physicalActorId(resumeAnchor);
-        syncPeople();
-      }
-    } catch {
-      box.innerHTML = '<p role="alert">Practice details are unavailable. Close this panel and retry.</p>';
-      return;
-    }
-    const controls = Object.keys(DEFAULT_SLIDERS).map((key) => `<label class="setup-slider">${escapeHtml(key)} <output id="slider-${key}">${draft[key]}</output><input type="range" min="0" max="100" step="1" value="${draft[key]}" data-slider="${key}"></label>`).join("");
-    const presetOptions = Object.keys(PRESETS).map((name) => `<option value="${name}"${presetName(draft) === name ? " selected" : ""}>${name}</option>`).join("");
-    const selector = showPresets ? `<label class="setup-preset">Starting style<select id="setup-preset"><option value="Custom"${presetName(draft) === "Custom" ? " selected" : ""}>Custom</option>${presetOptions}</select></label>` : "";
-    box.innerHTML = `<p><strong>${escapeHtml(scenario.title)}</strong></p><p>${escapeHtml(scenario.briefing)}</p><ul>${scenario.goals.map((goal) => `<li>${escapeHtml(goal.label)}</li>`).join("")}</ul>${selector}<div class="setup-controls">${controls}</div><p id="setup-preview">${escapeHtml(preview())}</p><button class="primary-button" id="setup-start">Start practice</button>`;
-    const refreshDraft = () => { Object.keys(draft).forEach((key) => { const input = document.querySelector(`[data-slider="${key}"]`); if (input) input.value = draft[key]; const output = $("#slider-" + key); if (output) output.value = draft[key]; }); $("#setup-preview").textContent = preview(); };
-    document.querySelectorAll("[data-slider]").forEach((input) => input.oninput = () => { draft[input.dataset.slider] = Number(input.value); const selector = $("#setup-preset"); if (selector) selector.value = presetName(draft); refreshDraft(); });
-    const preset = $("#setup-preset");
-    if (preset) preset.onchange = () => { const values = presetSettings(preset.value); if (values) Object.assign(draft, values); refreshDraft(); };
-    $("#setup-start").onclick = () => {
-      closeModal();
-      state.appliedSettings = { ...draft };
-      if (resumeNpc && (remoteContact()?.id === resumeNpc || physicalActorId(state.near) === resumeNpc)) {
-        state.dialogue = resumeNpc;
-        state.textMode = true;
-        state.text = threadsFor()[resumeNpc];
-        $("#talk-prompt").classList.add("hidden");
-      }
-      startRetrySession(draft, resumeNpc, previousSessionId);
-      toast(resumeNpc ? "Settings fixed. Preparing your conversation…" : "Settings fixed for this attempt. Find Snehal to begin.");
-    };
-  };
-  const details = previousSessionId ? Promise.resolve(state.scenarioMetadata) : getScenario("deadline");
-  details.then(render, () => {
-    if (!current()) return;
-    box.innerHTML = '<div class="turn-error" role="alert"><p>Could not load this practice.</p><button class="secondary-button" id="setup-retry">Retry</button></div>';
-    const retry = $("#setup-retry");
-    if (retry) retry.onclick = () => openSettings(draft, resumeNpc, previousSessionId);
-  });
-}
-function restartTextRun(withSettings, scenarioId = state.scenario, settings = state.appliedSettings || DEFAULT_SLIDERS, previousSessionId = null, publicMetadata = null) {
+function restartTextRun(withSettings, scenarioId = state.scenario, settings = state.appliedSettings || DEFAULT_SLIDERS, previousSessionId = null, publicMetadata = null, npcSettings = state.appliedNpcSettings || {}) {
+  scenarioId = selectorScenarioId(scenarioId);
   const previous = settings;
   closeModal();
   let metadata = null;
@@ -1203,17 +1197,20 @@ function restartTextRun(withSettings, scenarioId = state.scenario, settings = st
   }
   resetTextRun(scenarioId, metadata);
   state.previousSessionId = previousSessionId;
-  if (scenarioId !== "deadline") {
+  if (!isTypedScenario(scenarioId)) {
     toast("Fresh scenario ready. Find Snehal to begin again.");
     return;
   }
   if (!withSettings) {
     state.appliedSettings = { ...previous };
-    startRetrySession(previous, null, previousSessionId);
+    state.appliedNpcSettings = { ...npcSettings };
+    startRetrySession(previous, null, previousSessionId, npcSettings);
     toast("Preparing a fresh conversation. Find Snehal to begin again.");
     return;
   }
-  openSettings(previous, null, previousSessionId);
+  state.settingsDrafts[scenarioId] = createCastDraft(previous, npcSettings);
+  showSelection();
+  showCastSetup(scenarioId, metadata, previousSessionId);
 }
 function attemptLabel(attempt) {
   return `${new Date(attempt.date).toLocaleDateString()} · ${displayAttemptScore(attempt)}`;
@@ -1222,9 +1219,9 @@ function showProgress() {
   let selected = [];
   const metricLabels = { goals: "Goals", hidden_facts: "Hidden facts", integrity: "Integrity", relationship: "Relationship", rubric: "Communication (AI-assessed)" };
   const render = () => {
-    const attempts = state.attempts.filter((attempt) => attempt.scenario === "deadline");
+    const attempts = state.attempts.filter((attempt) => attempt.scenario === apiScenarioId(state.scenario));
     const comparison = compareAttempts(...selected.map((id) => attempts.find((attempt) => attempt.session_id === id)));
-    const rows = attempts.length ? attempts.map((attempt) => `<div class="attempt-row"><span><strong>${escapeHtml(scenarios[attempt.scenario].title)}</strong><small>${escapeHtml(attemptLabel(attempt))} · v${escapeHtml(attempt.scoring_version)}</small></span><button class="secondary-button" data-select-attempt="${escapeHtml(attempt.session_id)}">${selected.includes(attempt.session_id) ? "Selected" : "Compare"}</button><button class="secondary-button" data-open-attempt="${escapeHtml(attempt.session_id)}">Open feedback</button></div>`).join("") : "<p>No scored attempts yet. Finish a deadline conversation to see its feedback here.</p>";
+    const rows = attempts.length ? attempts.map((attempt) => `<div class="attempt-row"><span><strong>${escapeHtml(scenarios[selectorScenarioId(attempt.scenario)]?.title || attempt.scenario)}</strong><small>${escapeHtml(attemptLabel(attempt))} · v${escapeHtml(attempt.scoring_version)}</small></span><button class="secondary-button" data-select-attempt="${escapeHtml(attempt.session_id)}">${selected.includes(attempt.session_id) ? "Selected" : "Compare"}</button><button class="secondary-button" data-open-attempt="${escapeHtml(attempt.session_id)}">Open feedback</button></div>`).join("") : `<p>No scored attempts yet. Finish this ${escapeHtml(scenarios[state.scenario].short.toLowerCase())} conversation to see its feedback here.</p>`;
     const compare = comparison ? `<section class="attempt-compare"><h3>Compare attempts${comparison.crossVersion ? " · versions differ" : ""}</h3><p>${escapeHtml(displayAttemptScore(comparison.first))} &nbsp; | &nbsp; ${escapeHtml(displayAttemptScore(comparison.second))}</p><table><thead><tr><th>Metric</th><th>First</th><th>Second</th></tr></thead><tbody>${comparison.metrics.map((metric) => `<tr><th>${escapeHtml(metricLabels[metric.id] || metric.id.replaceAll("_", " "))}</th><td>${escapeHtml(displayAttemptMetric(comparison.first, metric.id))}</td><td>${escapeHtml(displayAttemptMetric(comparison.second, metric.id))}</td></tr>`).join("")}</tbody></table></section>` : "<p class=\"debrief-muted\">Select two attempts from the same scenario to compare their server-reported totals and metrics.</p>";
     showModal("My progress", `<p>${Object.keys(state.complete).length} of 3 workplace scenarios practiced. Every conversation counts.</p><div class="progress-list attempt-list">${rows}</div>${compare}`);
     document.querySelectorAll("[data-select-attempt]").forEach((button) => button.onclick = () => {
@@ -1297,12 +1294,17 @@ $("#end-practice-dialog").addEventListener("close", () => {
 });
 $("#office-context").onclick = () => {
   const s = scenarios[state.scenario];
-  const metadata = state.scenario === "deadline" ? state.scenarioMetadata : null;
+  const metadata = isTypedScenario(state.scenario) ? state.scenarioMetadata : null;
   showModal("Your practice", `<h3>${escapeHtml(metadata?.title || s.title)}</h3><p>${escapeHtml(metadata?.briefing || s.description)}</p><p>${escapeHtml(metadata?.goals[0]?.label || s.goal)}</p><button class="secondary-button" id="context-progress">My progress</button><button class="secondary-button" id="context-settings">Conversation settings</button><button class="secondary-button" id="context-restart">Restart scenario</button><div id="context-people"></div>`);
   $("#context-progress").onclick = showProgress;
   $("#context-settings").onclick = () => {
     const settings = state.appliedSettings || DEFAULT_SLIDERS;
-    showModal("Conversation settings", `<p>${escapeHtml(settingsPreview(settings))}</p><dl>${Object.entries(settings).map(([name, value]) => `<dt>${escapeHtml(name)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl><p>Choose your settings when you start your first conversation. Settings stay fixed for that attempt.</p>`);
+    const effective = state.appliedNpcSettings || {};
+    const rows = Object.entries(currentPeople()).map(([id, actor]) => {
+      const values = effective[id] || settings;
+      return `<div><dt>${escapeHtml(actor.name)}</dt><dd>${Object.entries(values).map(([name, value]) => `${escapeHtml(name)} ${escapeHtml(value)}`).join(" · ")}</dd></div>`;
+    }).join("");
+    showModal("Conversation settings", `<p>${escapeHtml(settingsPreview(settings))}</p><dl>${rows}</dl><p>These values were fixed before this practice began.</p>`);
   };
   $("#context-restart").onclick = () => { closeModal(); resetTextRun(); };
   const peopleBox = $("#context-people");

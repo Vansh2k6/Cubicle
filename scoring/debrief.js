@@ -37,7 +37,7 @@ export async function assembleDebrief({ record, scenario = record.scenario, prov
   const coachAvailable = moments.every((m) => m.source === "llm");
   const total = deterministic.deterministic + judged;
   const positives = [];
-  if (deterministic.metrics.goals.evidence.some((entry) => entry.source_id === "goal:G1" && entry.points > 0)) positives.push("You took responsibility and shared an honest update.");
+  if (deterministic.metrics.goals.evidence.some((entry) => entry.source_id === "goal:G1" && entry.points > 0)) positives.push(scenario.id === "workplace_intimidation" ? "You discussed observable events with your teammate." : "You took responsibility and shared an honest update.");
   if (deterministic.metrics.hidden_facts.points > 0) positives.push("Your questions uncovered more context.");
   if (!positives.length) positives.push("You made time to practice a difficult conversation.");
   const priorities = deterministic.priorities.map((entry) => {

@@ -161,6 +161,7 @@ export async function runTurn(opts = {}) {
     clock: session.clock || { day: 0 },
     ...(language.normalizeEvents ? {planContext: {
       actorId: npcId,
+      ...(language.classificationContext ? language.classificationContext({npcId, turns: convo.turns.filter((row) => row.npcId === npcId)}) : {}),
       publicCanon: scenario.canon.public,
       ownFacts: (session.user_known || []).filter((id) => factById(scenario, id)?.owner === npcId).map((id) => ({id, content: factById(scenario, id).content.en})),
       activePlan: (() => {
@@ -182,6 +183,7 @@ export async function runTurn(opts = {}) {
   const applied = engine.applyTurn(session, npcId, cls.events, { text, runtime: opts.runtime });
   stages.engineMs = Date.now() - tEng0;
   const act = applied.act;
+  const responseBinding = language.boundResponse?.({npcId, act, goalIds: session.staged?.policyGoalIds || [], events: cls.events}) || null;
   trace.act = act;
   trace.turn = session.turn;
   let planDelivery = null;
@@ -249,6 +251,7 @@ export async function runTurn(opts = {}) {
   if (session.staged?.closingAllowed) prompt.system += "\n" + MOVE_PROMPTS.closing;
   if (planDelivery) prompt.system += "\nENGINE-SELECTED PLAN MOVE: " + JSON.stringify({actorId: npcId, turnId: session.turn, revision: planDelivery.revision,
     ownership: planDelivery.stage.ownership, proposal: planDelivery.stage.proposal, acknowledgement: planDelivery.stage.acknowledgements, recap: planDelivery.stage.recap, closing: act === "close_positive"}) + "\nENGINE-BOUND PLAN REPLY: " + JSON.stringify(planDelivery.expectedReply);
+  if (responseBinding) prompt.system += "\nHR-BOUND RESPONSE: " + JSON.stringify(responseBinding) + "\nReturn exactly this authorised process response.";
   const tGen0 = Date.now();
   let gen = await generateNpcReply({ prompt, provider: providers.npc, manifestId });
   stages.generateMs = Date.now() - tGen0;
@@ -259,6 +262,7 @@ export async function runTurn(opts = {}) {
   }
 
   const positiveOk = (replyText) => {
+    if (responseBinding && replyText.trim() !== responseBinding) return false;
     if (planDelivery) return language.checkPlanReply({text: replyText, act, actorId: npcId, turnId: session.turn, stage: planDelivery.stage}) === true;
     if (session.staged?.agreementAllowed && !expressesAcceptance(replyText)) return false;
     if (session.staged?.closingAllowed && !expressesClosing(replyText)) return false;

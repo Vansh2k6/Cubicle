@@ -324,8 +324,9 @@ function captureGoals(session, runtime, npcId, events) {
     if (goal.requires.some((id) => session.goals[id]?.status !== "done")) continue;
     const types = goal.done_when.filter((x) => x.startsWith("event:")).map((x) => x.slice(6));
     const dateRequired = goal.done_when.includes("date_mutually_agreed");
+    const responseRequired = (runtime.rules.deliveredGoals || []).includes(goal.id);
     if (!sources.length || sources.length !== types.length || types.some((type) => !sources.some((e) => e.type === type)) ||
-        sources.some((e) => triggerTypes.has(e.type) || e.allocation !== "none" || used.has(e.source_id)) || c.requiresDelivery !== dateRequired)
+        sources.some((e) => triggerTypes.has(e.type) || e.allocation !== "none" || used.has(e.source_id)) || c.requiresDelivery !== (dateRequired || responseRequired))
       throw new Error("invalid goal evidence");
     const commitment = session.commitments.find((x) => x.id === c.commitmentId);
     if (dateRequired && (!commitment || commitment.status !== "active" || commitment.unrealistic || commitment.accepted_with !== c.actorId ||
@@ -335,7 +336,7 @@ function captureGoals(session, runtime, npcId, events) {
         facts: session.facts, user_known: session.user_known, goals: session.goals })) throw new Error("unsatisfied goal conditions");
     const proof = { actor_id: c.actorId, source_ids: c.sourceIds.slice(), requires_delivery: c.requiresDelivery,
       ...(dateRequired ? { commitment_id: commitment.id } : {}) };
-    session.goals[goal.id] = { status: dateRequired ? "pending_delivery" : "done", turn_id: session.turn, proof };
+    session.goals[goal.id] = { status: dateRequired || responseRequired ? "pending_delivery" : "done", turn_id: session.turn, proof };
     for (const e of sources) { e.allocation = "goals"; used.add(e.source_id); }
   }
 }
@@ -727,10 +728,13 @@ function applyDraft(session, npc_id, events, opts) {
   // 7. Act selection (first match wins).
   let act = "react_freely";
   if (!ambiguousTurn) {
-    if (npc.mood <= walkoutThreshold(sl.patience)) {
+    if (!(runtime.rules.noWalkoutActors || []).includes(npc_id) && npc.mood <= walkoutThreshold(sl.patience)) {
       act = "walkout";
     } else if (b3fire) {
       act = "callback_commitment";
+    } else if ((runtime.rules.deliveredGoals || []).some((id) => session.goals[id]?.status === "pending_delivery" && session.goals[id].proof.actor_id === npc_id)) {
+      // A support goal must not depend on discovering optional context first.
+      act = "accept_plan";
     } else if (eligible.length > 0) {
       act = "reveal_fact:" + eligible[0];
     } else if (gateFailedProbe) {
@@ -752,7 +756,9 @@ function applyDraft(session, npc_id, events, opts) {
       if (redirect) {
         act = "redirect_to_npc";
       } else {
-        if (datePressure) {
+        if ((runtime.rules.deliveredGoals || []).some((id) => session.goals[id]?.status === "pending_delivery" && session.goals[id].proof.actor_id === npc_id)) {
+          act = "accept_plan";
+        } else if (datePressure) {
           act = "press_for_date";
           const beat = session.beats[datePressure.beatId];
           beat.status = "fired";
@@ -765,6 +771,8 @@ function applyDraft(session, npc_id, events, opts) {
           if (planEvidence && finalRecap(session, planEvidence, npc_id)) {
             act = "close_positive";
           } else if (planEvidence && (planEvidence.proposal || planEvidence.acknowledgements.length || planEvidence.recap || planEvidence.ownership.length)) {
+            act = "accept_plan";
+          } else if ((runtime.rules.deliveredGoals || []).some((id) => session.goals[id]?.status === "pending_delivery" && session.goals[id].proof.actor_id === npc_id)) {
             act = "accept_plan";
           } else if (!planEvidence && allDone) {
             act = "close_positive";
@@ -784,7 +792,8 @@ function applyDraft(session, npc_id, events, opts) {
   // 8. Apply act effects. A reveal stages ONLY when its act wins; suppressed
   // reveals leave facts sealed/probed with no staged trace.
   const agreementAllowed = session.commitments.some((c) => c.id === newCommitmentId && c.status === "active" && c.pending_acceptance === true) && ["react_freely", "greet"].includes(act);
-  const closingAllowed = act === "close_positive" && Object.values(session.goals).some((g) => g.status === "pending_delivery");
+  const policyGoalIds = act === "accept_plan" ? (runtime.rules.deliveredGoals || []).filter((id) => session.goals[id]?.status === "pending_delivery" && session.goals[id].proof.actor_id === npc_id) : [];
+  const closingAllowed = policyGoalIds.length > 0 || act === "close_positive" && Object.values(session.goals).some((g) => g.status === "pending_delivery");
   if (!closingAllowed) {
     for (const c of session.commitments) { if (c.pending_recap_turn === t) delete c.pending_recap_turn; }
     discardPendingGoals(session);
@@ -802,6 +811,7 @@ function applyDraft(session, npc_id, events, opts) {
   }
   if (planEvidence && ["accept_plan", "close_positive"].includes(act)) session.staged = {
     factId: null, npcId: npc_id, turnId: t, planEvidence, closingAllowed: act === "close_positive"};
+  if (policyGoalIds.length) session.staged = {factId: null, npcId: npc_id, turnId: t, policyGoalIds};
   if (act === "callback_commitment" && b3fire) {
     b3fire.callbackFired = true;
     if (session.beats[callback.beatId]) {
@@ -856,6 +866,25 @@ function deliverDraft(session, turn_id, opts) {
   const delivered = !!(opts && opts.delivered);
   const st = session.staged;
   if (!st || st.turnId !== turn_id) return session;
+  if (st.policyGoalIds) {
+    for (const id of st.policyGoalIds) {
+      if (!(runtime.rules.deliveredGoals || []).includes(id)) throw new Error("unbound delivery goal");
+      const goal = session.goals[id];
+      if (goal?.status === "pending_delivery" && goal.proof.actor_id === st.npcId && delivered) {
+        goal.status = "done";
+        goal.proof.delivery_turn = turn_id;
+      }
+    }
+    discardPendingGoals(session);
+    session.staged = null;
+    const required = session.model.goals.filter((g) => g.required && g.visible);
+    if (required.length && required.every((g) => session.goals[g.id]?.status === "done")) {
+      session.ended = true; session.endReason = "goals_complete";
+    }
+    const snapshot = deepClone(session); delete snapshot.snapshots;
+    if (session.snapshots.length) session.snapshots[session.snapshots.length - 1] = snapshot;
+    return session;
+  }
   if (st.planEvidence) {
     deliverPlanEvidence(session, st, opts);
     session.staged = null;

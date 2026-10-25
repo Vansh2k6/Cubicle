@@ -15,7 +15,7 @@ import * as engine from "../../engine/engine.js";
 import { SessionStore } from "../../engine/store.js";
 import { createConversation, runTurn, publicResponse, projectGoals, nextHintFor } from "../../llm/pipeline.js";
 import { createManifest } from "../../llm/manifest.js";
-import { difficultyFor, validateSliders } from "../../shared/settings.js";
+import { difficultyFor, validateNpcSliders, validateSliders } from "../../shared/settings.js";
 import { createOfflineProviders, classifyProviderFor } from "./offlineProviders.js";
 import { defaultRegistry, publicScenario, isRegisteredPackage } from "./scenarioRegistry.js";
 import { loadConfig, providerName } from "../../llm/config.js";
@@ -41,7 +41,7 @@ const selectedProvider = providerName();
 const liveProvider = selectedProvider === "groq" ? createGroqProvider() : null;
 const manifest = createManifest(liveProvider ? loadConfig() : {
   classifier: { model: "offline-stub:rules-v1", promptVersion: "v4", schemaVersion: 1 },
-  npc: { model: "offline-stub:store-v1", promptVersion: "v5", schemaVersion: 1 },
+  npc: { model: "offline-stub:store-v1", promptVersion: "v6", schemaVersion: 1 },
   judge: { model: "offline-unavailable:judge", promptVersion: "v2", schemaVersion: 2 },
   coach: { model: "authored-fallback:coach", promptVersion: "v3", schemaVersion: 2 },
 });
@@ -115,7 +115,7 @@ function restoreInPlace(obj, snapshotJson) {
   Object.assign(obj, data);
 }
 
-export function createServer({ debug = false, staticHandler = null, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = null, registry = defaultRegistry, voiceConfig = loadVoiceConfig(), voiceProviders = null, voiceUploadTimeoutMs = 8000 } = {}) {
+export function createServer({ debug = false, staticHandler = null, feedbackProviders = { judge: liveProvider, coach: liveProvider }, debriefAssembler = assembleDebrief, npcProvider = null, hrProvider = null, registry = defaultRegistry, voiceConfig = loadVoiceConfig(), voiceProviders = null, voiceUploadTimeoutMs = 8000 } = {}) {
   const store = new SessionStore(engine);
   const convos = new Map();
   const contexts = new Map();
@@ -135,7 +135,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     if (!context || !isRegisteredPackage(context.pkg) || session.identity !== context.pkg.identity || !Object.hasOwn(session.npcs, turn.npcId) ||
         !convos.get(session.id)?.turns.includes(turn) || turn.speaker !== "npc") return null;
     const actor = publicScenario(context.pkg).npcs.find((candidate) => candidate.id === turn.npcId);
-    return actor?.contactMode === "phone" ? actor.voiceId : voiceConfig.voiceMap?.[actor?.sceneAnchor];
+    return actor?.contactMode === "phone" || actor?.sceneAnchor === "hr" ? actor.voiceId : voiceConfig.voiceMap?.[actor?.sceneAnchor];
   } });
   const coachSpeech = createSpeechService({ ...speechOptions, ended: true });
   function beginDebrief(session, retry = false) {
@@ -148,10 +148,10 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
     const previous = job.result || null;
     job.status = "pending"; job.result = previous;
     debriefs.set(session.id, job);
-    job.promise = Promise.resolve().then(() => debriefAssembler({ record: structuredClone(job.record), providers: feedbackProviders, manifest, previous, runtime: context.runtime }))
+    job.promise = Promise.resolve().then(() => debriefAssembler({ record: structuredClone(job.record), providers: context.feedbackProviders, manifest: context.manifest, previous, runtime: context.runtime }))
       .then((result) => { job.result = result; job.status = result.status; })
       .catch(async () => {
-        try { job.result = await assembleDebrief({ record: structuredClone(job.record), providers: {}, manifest, previous, runtime: context.runtime }); job.status = "partial"; }
+        try { job.result = await assembleDebrief({ record: structuredClone(job.record), providers: {}, manifest: context.manifest, previous, runtime: context.runtime }); job.status = "partial"; }
         catch { job.status = "error"; }
       });
     return job;
@@ -297,11 +297,15 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
         if (body && Object.prototype.hasOwnProperty.call(body, "customisation")) { send(res, 400, { error: "customisation is not supported", retryable: false }); return; }
         const sliders = validateSliders(body && body.sliders);
         if (!sliders.ok) { send(res, 400, { error: "sliders must be integer values from 0 to 100", retryable: false }); return; }
+        const npcSliders = validateNpcSliders(body && body.npc_sliders, pkg.spec.npcs.map((npc) => npc.id));
+        if (!npcSliders.ok) { send(res, 400, { error: "npc_sliders must be partial integer values from 0 to 100 for registered NPCs", retryable: false }); return; }
         const offline = createOfflineProviders(pkg);
         if (!offline?.store || typeof offline.npcProvider !== "function" || typeof offline.classifyProviderFor !== "function") { send(res, 400, { error: "unsupported scenario_id" }); return; }
         const runtime = Object.freeze({ scenarioId: pkg.spec.id, schemaVersion: pkg.identity.schemaVersion, policyId: pkg.policy.id, policyVersion: pkg.policy.version, engine: pkg.policy.engine, rules: pkg.policy.rules, language: pkg.policy.language, identity: pkg.identity, spec: pkg.spec });
-        const context = Object.freeze({ pkg, runtime, store: offline.store, npcProvider: npcProvider || liveProvider || offline.npcProvider, classifyProviderFor: offline.classifyProviderFor });
-        const session = store.create(pkg.spec, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value, runtime });
+        const paidHr = pkg.spec.id === "workplace_intimidation" && typeof hrProvider === "function";
+        const sessionManifest = pkg.spec.id === "workplace_intimidation" ? createManifest(Object.fromEntries(Object.entries(manifest.roles).map(([role, entry]) => [role, {...entry, model: paidHr ? "claude-haiku-5-5" : ({classifier: "offline-stub:hr-rules-v1", npc: "offline-stub:hr-store-v1", judge: "offline-unavailable:judge", coach: "authored-fallback:coach"})[role], promptVersion: "hr-v1"}]))) : manifest;
+        const context = Object.freeze({ pkg, runtime, manifest: sessionManifest, feedbackProviders: paidHr ? {judge: hrProvider, coach: hrProvider} : pkg.spec.id === "workplace_intimidation" ? {} : feedbackProviders, classifierProvider: paidHr ? hrProvider : null, store: offline.store, npcProvider: paidHr ? hrProvider : npcProvider || (pkg.spec.id === "workplace_intimidation" ? null : liveProvider) || offline.npcProvider, classifyProviderFor: offline.classifyProviderFor });
+        const session = store.create(pkg.spec, { seed: (Date.now() % 100000) + Math.floor(Math.random() * 1000), locale: "en", sliders: sliders.value, customisation: npcSliders.value, runtime });
         session.identity = pkg.identity;
         contexts.set(session.id, context);
         convos.set(session.id, createConversation());
@@ -309,9 +313,9 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           session_id: session.id,
           briefing: pkg.spec.briefing.en,
           scenario: publicScenario(pkg),
-          settings: sliders.value, difficulty: difficultyFor(sliders.value),
+          settings: sliders.value, npc_settings: structuredClone(session.customisation), difficulty: difficultyFor(sliders.value),
           public_state: initialPublic(session, pkg.spec, publicScenario(pkg)),
-          manifest: debug ? manifest.id : undefined,
+          manifest: debug ? context.manifest.id : undefined,
         });
         return;
       }
@@ -340,7 +344,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           return;
         }
         const body = await readBody(req);
-        if (body && (Object.prototype.hasOwnProperty.call(body, "sliders") || Object.prototype.hasOwnProperty.call(body, "customisation"))) { send(res, 400, { error: "settings are fixed for this session", retryable: false }); return; }
+        if (body && (Object.prototype.hasOwnProperty.call(body, "sliders") || Object.prototype.hasOwnProperty.call(body, "npc_sliders") || Object.prototype.hasOwnProperty.call(body, "customisation"))) { send(res, 400, { error: "settings are fixed for this session", retryable: false }); return; }
         const npcId = body && body.npc_id;
         const text = body && body.text;
         const key = body && body.idempotencyKey;
@@ -382,8 +386,8 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
               npcId,
               text,
               engine, runtime: context.runtime,
-              providers: { classify: liveProvider || context.classifyProviderFor(text), npc: context.npcProvider },
-              manifestId: manifest.id,
+              providers: { classify: context.classifierProvider || (context.pkg.spec.id === "workplace_intimidation" ? null : liveProvider) || context.classifyProviderFor(text), npc: context.npcProvider },
+              manifestId: context.manifest.id,
               store: context.store,
             }),
             liveProvider ? 180000 : TURN_TIMEOUT_MS, // includes capped live Retry-After and guard regeneration
@@ -396,7 +400,7 @@ export function createServer({ debug = false, staticHandler = null, feedbackProv
           if (!out.ended && npcTurn?.speaker === "npc") {
             try { pub.speech = speech.prefetch(session, npcTurn); } catch { /* text turn remains authoritative */ }
           }
-          if (debug) pub._debug = { ...debugOf(out), tts_provider: pub.speech.mode === "server" ? "local" : pub.speech.mode, tts_latency_ms: null };
+          if (debug) pub._debug = { ...debugOf(out), provider: context.classifierProvider ? "anthropic" : selectedProvider, manifest: context.manifest.id, tts_provider: pub.speech.mode === "server" ? "local" : pub.speech.mode, tts_latency_ms: null };
           return pub;
         })();
         if (ck) inflight.set(ck, attempt);

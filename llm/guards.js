@@ -133,7 +133,7 @@ export function checkReply(reply, opts = {}) {
 
   const knownCommitments = commitments.map(({original_words, what, target_day}) => ({original_words, what, target_day}));
   const knownActive = activeCommitment ? {target_day: activeCommitment.target_day, original_words: activeCommitment.original_words, what: activeCommitment.what} : null;
-  for (const c of checkLanguageCanon(language, {text: reply, act, permittedCanon: {public: scenario.canon?.public || {}, userSaid, facts: ownIds.map((id) => ({id, content: factContent(scenario, id)})), commitments: knownCommitments}, authorisedFact: authFact ? {id: authFact, content: factContent(scenario, authFact)} : null, activeCommitment: knownActive, clock: {day: clockDay}, bounds, planDelivery})) {
+  for (const c of checkLanguageCanon(language, {text: reply, act, npcId, permittedCanon: {public: scenario.canon?.public || {}, userSaid, facts: ownIds.map((id) => ({id, content: factContent(scenario, id)})), commitments: knownCommitments}, authorisedFact: authFact ? {id: authFact, content: factContent(scenario, authFact)} : null, activeCommitment: knownActive, clock: {day: clockDay}, bounds, planDelivery})) {
     failures.push(c);
   }
 

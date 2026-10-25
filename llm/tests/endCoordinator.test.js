@@ -33,7 +33,7 @@ test("a stale turn/create response cannot mutate a new run", async () => {
   const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
   assert.ok(source.includes("const data = await sendTurn(sessionId, npcId, text, key)"));
   assert.ok(source.includes("if (!current()) return;"));
-  assert.ok(source.includes("function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null)"));
+  assert.ok(source.includes("function startRetrySession(sliders = state.appliedSettings || DEFAULT_SLIDERS, resumeNpc = null, previousSessionId = state.previousSessionId || null, npcSliders = state.appliedNpcSettings)"));
   assert.ok(source.includes("const current = captureRun(state);"));
   assert.ok(source.includes("if (!current() || state.threads !== threads || state.sessionId) return;"));
 });
@@ -72,24 +72,28 @@ test("a failed same-settings retry retains the originating draft for recovery", 
   const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
   const fn = (name) => {
     const start = source.indexOf(`function ${name}(`);
-    let depth = 0, end = source.indexOf("{", start);
+    let depth = 0, end = source.indexOf("{", source.indexOf(") {", start));
     for (let i = end; i < source.length; i++) { if (source[i] === "{") depth++; else if (source[i] === "}" && --depth === 0) return source.slice(start, i + 1); }
     throw new Error(`missing ${name}`);
   };
-  let reject, opened;
-  const state = { near: "maya", dialogue: null, paused: false, startingSession: false, sessionId: "old", scenario: "deadline", threads: {}, sharedGoals: [], sharedHint: "", round: 0, score: 0, appliedSettings: null };
-  const run = Function("state", "DEFAULT_SLIDERS", "captureRun", "createSession", "closeConversation", "office", "updateScenario", "closeModal", "toast", "openSettings", "chime", "$", "renderTextDialogue", `
-    const currentPeople = () => ({maya: {}}), physicalActorId = (id) => id, loadScenarioMetadata = () => {}, syncPeople = () => {};
-    ${fn("freshThread")} ${fn("threadsFor")} ${fn("resetTextRun")} ${fn("startRetrySession")} ${fn("restartTextRun")} ${fn("openTextConversation")}
-    return { restartTextRun, openTextConversation };
+  let reject, calls = 0, recovered;
+  const state = { dialogue: null, textMode: false, text: null, paused: false, startingSession: false, sessionId: "old", scenario: "deadline", threads: {}, sharedGoals: [], sharedHint: "", round: 0, score: 0, appliedSettings: null, appliedNpcSettings: null, settingsDrafts: {} };
+  const run = Function("state", "DEFAULT_SLIDERS", "captureRun", "createSession", "closeConversation", "office", "updateScenario", "closeModal", "toast", "$", "renderTextDialogue", "updatePublicGuidance", `
+    const selectorScenarioId = (id) => id === "workplace_intimidation" ? "email" : id;
+    const isTypedScenario = (id) => ["deadline", "email"].includes(id);
+    const apiScenarioId = (id) => id === "email" ? "workplace_intimidation" : id;
+    const currentPeople = () => ({maya: {}}), syncPeople = () => {}, loadScenarioMetadata = () => {}, parseScenarioMetadata = (data) => data;
+    ${fn("freshThread")} ${fn("threadsFor")} ${fn("resetTextRun")} ${fn("startRetrySession")} ${fn("restartTextRun")} ${fn("startTextSession")}
+    return { restartTextRun, startTextSession, threadsFor };
   `)(state, { assertiveness: 50, patience: 50, warmth: 50, forthcomingness: 50 }, () => () => true,
-    () => new Promise((_, r) => { reject = r; }), () => {}, { reset() {} }, () => {}, () => {}, () => {}, (draft) => { opened = draft; }, () => {}, (selector) => selector === "#talk-prompt" ? { classList: { add() {} } } : { value: "deadline" }, () => {});
+    (...args) => { calls++; if (calls === 1) return new Promise((_, r) => { reject = r; }); recovered = args; return Promise.resolve({session_id: "recovered", public_state: {goals: [], next_hint: ""}, settings}); }, () => {}, { reset() {} }, () => {}, () => {}, () => {}, (selector) => ({ value: "deadline" }), () => {}, () => {});
   run.restartTextRun(false, "deadline", settings);
   reject(new Error("offline"));
   await Promise.resolve(); await Promise.resolve();
-  state.near = "maya";
-  run.openTextConversation();
-  assert.deepEqual(opened, settings);
+  assert.deepEqual(state.appliedSettings, settings);
+  state.dialogue = "maya"; state.textMode = true; state.text = run.threadsFor().maya;
+  run.startTextSession();
+  assert.deepEqual(recovered.slice(0, 2), ["deadline", settings]);
 });
 
 test("progress comparison escaping keeps server-reported zero metric values", () => {
@@ -107,7 +111,7 @@ test("text session retry keeps loading state only for its current thread", async
   const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
   const fn = (name) => {
     const start = source.indexOf(`function ${name}(`);
-    let depth = 0, end = source.indexOf("{", start);
+    let depth = 0, end = source.indexOf("{", source.indexOf(") {", start));
     for (let i = end; i < source.length; i++) { if (source[i] === "{") depth++; else if (source[i] === "}" && --depth === 0) return source.slice(start, i + 1); }
     throw new Error(`missing ${name}`);
   };
@@ -149,7 +153,7 @@ test("text session retry keeps loading state only for its current thread", async
   assert.equal(stale.state.sessionId, "new");
 });
 
-test("setup-load retry preserves the approached colleague through loading and create failure", async () => {
+test("setup-load retry preserves the approached colleague before direct-session recovery", async () => {
   const source = readFileSync(new URL("../../src/main.js", import.meta.url), "utf8");
   const fn = (name) => {
     const start = source.indexOf(`function ${name}(`);
@@ -157,46 +161,32 @@ test("setup-load retry preserves the approached colleague through loading and cr
     for (let i = end; i < source.length; i++) { if (source[i] === "{") depth++; else if (source[i] === "}" && --depth === 0) return source.slice(start, i + 1); }
     throw new Error(`missing ${name}`);
   };
-  const state = { near: "maya", dialogue: "maya", textMode: true, text: {}, paused: false, sessionId: null, scenario: "deadline", threads: null, startingSession: false, appliedSettings: null, sharedGoals: [], sharedHint: "" };
-  const box = {}, start = {}, retry = {}, preview = {}, talk = { classList: { add() {} } };
-  let getCalls = 0, rejectCreate, renders = 0;
+  const state = { near: "maya", entry: "selection", paused: false, sessionId: null, scenario: "email", threads: null, startingSession: false, appliedSettings: null, sharedGoals: [], sharedHint: "", settingsDrafts: {}, setupPerson: null };
+  const briefing = {}, retry = {}, intro = {}, entry = {setAttribute() {}}, scenario = {}, cards = {};
+  let getCalls = 0;
   const getScenario = () => {
     getCalls++;
-    return getCalls === 1 ? Promise.reject(new Error("offline")) : Promise.resolve({ title: "Deadline", briefing: "Brief", goals: [] });
+    return Promise.reject(new Error("offline"));
   };
-  const $ = (selector) => ({ "#setup-content": box, "#setup-start": start, "#setup-retry": retry, "#setup-preview": preview, "#talk-prompt": talk }[selector] || null);
-  const { openSettings } = Function("state", "DEFAULT_SLIDERS", "presetsEnabled", "settingsPreview", "showModal", "captureRun", "$", "PRESETS", "presetName", "presetSettings", "document", "getScenario", "closeModal", "createSession", "renderTextDialogue", "updatePublicGuidance", "toast", `
-    const people = {maya: {sceneAnchor: "maya"}}, personFor = (id) => people[id], currentPeople = () => people, physicalActorId = (id) => id, remoteContact = () => null, syncPeople = () => {}, parseScenarioMetadata = (data) => data;
-    ${fn("escapeHtml")}
-    ${fn("freshThread")}
-    ${fn("threadsFor")}
-    ${fn("startRetrySession")}
-    ${fn("openSettings").replace("import.meta.env.VITE_PRESETS", "undefined")}
-    return { openSettings };
-  `)(
-    state, { assertiveness: 50, patience: 50, warmth: 50, forthcomingness: 50 }, () => false, () => "Preview", () => { state.dialogue = null; state.textMode = false; state.text = null; state.paused = true; }, captureRun, $, {}, () => "Custom", () => null, { querySelectorAll: () => [] }, getScenario, () => { state.paused = false; }, () => new Promise((_resolve, reject) => { rejectCreate = reject; }), () => { renders++; }, () => {}, () => {},
-  );
-  openSettings({}, "maya");
+  const $ = (selector) => ({ ".entry-intro": intro, "#entry-screen": entry, "#scenario": scenario, "#scenario-cards": cards, "#scenario-briefing": briefing, "#briefing-back": {}, "#briefing-retry": retry }[selector] || null);
+  const { showCastSetup } = Function("state", "$", "scenarios", "getScenario", `
+    const showSelection = () => {};
+    ${fn("showCastSetup")}
+    return { showCastSetup };
+  `)(state, $, {deadline: {title: "Deadline", description: "Brief", goal: "Goal"}}, getScenario);
+  showCastSetup("deadline");
   await Promise.resolve(); await Promise.resolve();
   assert.equal(typeof retry.onclick, "function");
   retry.onclick();
   await Promise.resolve(); await Promise.resolve();
-  // The retry's real handler retains resumeNpc and reaches the extracted create flow.
-  start.onclick();
-  assert.equal(state.dialogue, "maya");
-  assert.equal(state.textMode, true);
-  assert.equal(state.startingSession, true);
-  assert.equal(renders, 1);
-  rejectCreate(new Error("offline"));
-  await Promise.resolve(); await Promise.resolve();
-  assert.equal(state.startingSession, false);
-  assert.equal(state.text.loadError, "Could not reach the conversation server.");
-  assert.equal(renders, 2);
+  assert.equal(getCalls, 2);
+  assert.equal(state.near, "maya");
+  assert.equal(state.sessionId, null);
 });
 
-test("production config and server manifest use NPC v5 public boundary", async () => {
+test("production config and server manifest use NPC v6 public boundary", async () => {
   const { loadConfig } = await import("../config.js");
-  assert.equal(loadConfig({}).npc.promptVersion, "v5");
+  assert.equal(loadConfig({}).npc.promptVersion, "v6");
   const source = readFileSync(new URL("../../services/api/server.js", import.meta.url), "utf8");
-  assert.ok(source.includes('npc: { model: "offline-stub:store-v1", promptVersion: "v5"'));
+  assert.ok(source.includes('npc: { model: "offline-stub:store-v1", promptVersion: "v6"'));
 });
