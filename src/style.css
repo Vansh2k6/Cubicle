@@ -2158,6 +2158,13 @@ main { width: 100%; margin: 0; }
 .main-content { padding: 0; }
 .entry-screen { position: relative; z-index: 60; display: flex; flex-direction: column; justify-content: center; min-height: 100dvh; max-width: none; margin: 0; padding: 72px max(24px, calc((100vw - 960px) / 2)); background: var(--canvas, #f4f6f3); opacity: 1; transition: opacity 450ms cubic-bezier(.16,1,.3,1); }
 .modal-backdrop:has(#prototype-content) { z-index: 70; }
+#prototype-content .prototype-compose { margin: 16px 0; padding: 12px 0; border-block: 1px solid var(--line); }
+#prototype-content summary { cursor: pointer; font-weight: 600; }
+#prototype-content .prototype-compose[open] .field-label { display: block; margin-top: 14px; }
+#prototype-content textarea { display: block; width: 100%; box-sizing: border-box; margin: 8px 0 12px; }
+#prototype-content .prototype-check > p { line-height: 1.6; }
+#prototype-content .prototype-goals { margin: 16px 0; }
+#prototype-content .prototype-check > label { display: block; margin: 16px 0 12px; }
 .entry-brand { position: absolute; top: 26px; left: 32px; }
 .entry-intro h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.15; text-wrap: balance; }
 .entry-intro { margin-bottom: 32px; }

@@ -42,7 +42,7 @@ export function renderPrototypeEntry(host) {
     const composedOption = composedIds.has(selected) && preview?.id === selected
       ? `<option value="${escapeHtml(selected)}" selected>${escapeHtml(preview.title)}</option>` : "";
     const options = choices.map(([id, label]) => `<option value="${id}" ${id === selected ? "selected" : ""}>${label}</option>`).join("");
-    host.innerHTML = `<p>Choose one of five prepared situations, or describe one of the two supported client changes. Check the briefing and goals before you start.</p><label class="field-label" for="prototype-choice">Situation</label><select id="prototype-choice">${composedOption}${options}</select><section class="prototype-compose"><label class="field-label" for="prototype-request">Or describe a client request</label><textarea id="prototype-request" maxlength="400" placeholder="For example: the client asks to move delivery sooner"></textarea><button type="button" class="secondary-button" id="prototype-compose">Build preview</button></section><div data-prototype-error role="status"></div><div id="prototype-preview"></div>`;
+    host.innerHTML = `<label class="field-label" for="prototype-choice">Scenario</label><select id="prototype-choice">${composedOption}${options}</select><details class="prototype-compose"><summary>Create a custom scenario</summary><label class="field-label" for="prototype-request">Describe an omitted feature or an earlier client deadline</label><textarea id="prototype-request" maxlength="400" placeholder="The client wants delivery sooner"></textarea><button type="button" class="secondary-button" id="prototype-compose">Generate scenario</button></details><div data-prototype-error role="status"></div><div id="prototype-preview"></div>`;
     host.querySelector("#prototype-choice").onchange = (event) => { selected = event.target.value; preview = null; renderPreview(); };
     host.querySelector("#prototype-compose").onclick = async () => {
       const text = host.querySelector("#prototype-request").value;
@@ -63,7 +63,7 @@ export function renderPrototypeEntry(host) {
       preview = loaded;
     }
     const checkedId = previewId;
-    box.innerHTML = `<article class="prototype-check"><h3>${escapeHtml(preview.title)}</h3><p>${escapeHtml(preview.briefing)}</p><h4>What you can practice</h4><ul>${preview.goals.map((goal) => `<li>${escapeHtml(goal.label)}</li>`).join("")}</ul><label><input id="prototype-checked" type="checkbox"> I checked this scenario and want to start it.</label><button id="prototype-start" class="primary-button" disabled>Start practice</button></article>`;
+    box.innerHTML = `<article class="prototype-check"><h3>${escapeHtml(preview.title)}</h3><p>${escapeHtml(preview.briefing)}</p><details class="prototype-goals"><summary>Practice goals</summary><ul>${preview.goals.map((goal) => `<li>${escapeHtml(goal.label)}</li>`).join("")}</ul></details><label><input id="prototype-checked" type="checkbox"> I've checked the scenario and goals.</label><button id="prototype-start" class="primary-button" disabled>Start practice</button></article>`;
     box.querySelector("#prototype-checked").onchange = (event) => { box.querySelector("#prototype-start").disabled = !event.target.checked; };
     box.querySelector("#prototype-start").onclick = async () => {
       const button = box.querySelector("#prototype-start"); button.disabled = true; button.textContent = "Starting…";
