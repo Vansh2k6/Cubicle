@@ -113,7 +113,7 @@ test("public metadata preserves current cast, exactly three anchors and approved
 });
 
 test("private language resources have real scanner needles and are absent from frontend import graph", () => {
-  const resources = ["llm/sc01Language.js", "llm/languageContext.js", "llm/deadlineV2Language.js", "llm/pipeline.js", "llm/prompts/classifier/v4.md", "llm/prompts/npc/v4-boundary.md", "llm/prompts/npc/v5-boundary.md", "llm/prompts/coach/v3.md"];
+  const resources = ["llm/sc01Language.js", "llm/languageContext.js", "llm/deadlineV2Language.js", "llm/pipeline.js", "llm/prompts/classifier/v4.md", "llm/prompts/npc/v4-boundary.md", "llm/prompts/npc/v5-boundary.md", "llm/prompts/npc/v6-boundary.md", "llm/prompts/coach/v3.md"];
   const all = resources.map((path) => readFileSync(resolve(root, path), "utf8")).join("\n").toLowerCase();
   for (const [needle, reason] of privateLanguageNeedles) {
     assert.ok(all.includes(needle), needle);
@@ -201,16 +201,20 @@ test("modern debrief uses captured bands and first-actor settings for an unregis
   assert.equal(bandFor(60, [{minimum: 0, label: "Captured"}]), "Captured");
 });
 
-test("reset and scenario transitions clear metadata before a new run can reuse public guidance", () => {
+test("reset clears stale metadata or pins the supplied public package before a new run", () => {
   const source = readFileSync(resolve(root, "src/main.js"), "utf8");
   const start = source.indexOf("function resetTextRun(");
   const end = source.indexOf("function startRetrySession", start);
   const reset = source.slice(start, end);
   const state = {scenario: "deadline", scenarioMetadata: {id: "old-package"}};
-  const run = Function("state", "closeConversation", "$", "office", "updateScenario", "loadScenarioMetadata", `${reset}; return resetTextRun;`)(state, () => {}, () => ({}), null, () => {}, () => {});
+  const run = Function("state", "closeConversation", "$", "office", "updateScenario", "loadScenarioMetadata", "syncPeople", `${reset}; return resetTextRun;`)(state, () => {}, () => ({}), null, () => {}, () => {}, () => {});
   run("email");
   assert.equal(state.scenarioMetadata, null);
   assert.equal(state.scenario, "email");
-  assert.match(source, /state\.scenarioMetadata = null;\s+state\.scenario = id;/);
+  const pinned = {id: "ended-package"};
+  run("deadline", pinned);
+  assert.equal(state.scenarioMetadata, pinned);
+  assert.equal(state.scenario, "deadline");
+  assert.match(source, /state\.scenarioMetadata = metadata;\s+state\.metadataStatus = metadata \? "ready" : null;[\s\S]*?state\.scenario = scenarioId;/);
   assert.match(source, /state\.scenarioMetadata = null;\s+state\.scenario = keys\[/);
 });

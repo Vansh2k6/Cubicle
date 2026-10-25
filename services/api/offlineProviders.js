@@ -99,7 +99,7 @@ export function createOfflineProviders(pkg, { locale = "en" } = {}) {
       let context; try {context = JSON.parse(messages?.[0]?.content || "{}").plan_context;} catch { /* unsupported context yields no plan event */ }
       return {text: JSON.stringify({events: pkg.policy.offline.classifyEvents(text, context)})};
     },
-    npcProvider: async ({ system } = {}) => pkg.policy.offline?.reply?.({system}) || offlineNpc({ system }, store, pkg.spec.id, locale),
+    npcProvider: async ({ system, messages } = {}) => pkg.policy.offline?.reply?.({system, messages}) || offlineNpc({ system }, store, pkg.spec.id, locale),
   };
 }
 

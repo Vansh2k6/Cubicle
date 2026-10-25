@@ -4,6 +4,7 @@ export const FIXED_CAST = Object.freeze({
   jordan: Object.freeze({sceneAnchor: "jordan", voiceId: "en_US-ryan-medium"}),
   sam: Object.freeze({sceneAnchor: "sam", voiceId: "en_US-amy-medium"}),
 });
+export const HR_BINDING = Object.freeze({sceneAnchor: "hr", voiceId: "en_US-ryan-medium"});
 export const PHONE_BINDING = Object.freeze({contactMode: "phone", voiceId: "en_GB-alan-medium"});
 export function publicCast(npcs, bindings = FIXED_CAST) {
   if (!Array.isArray(npcs) || npcs.length < 1 || npcs.length > 4) throw new Error("unsupported scene cast");
@@ -18,7 +19,8 @@ export function publicCast(npcs, bindings = FIXED_CAST) {
       remote = true;
       return {id, name, role, contactMode: binding.contactMode, voiceId: binding.voiceId};
     }
-    if (!binding || !Object.hasOwn(FIXED_CAST, binding.sceneAnchor) || FIXED_CAST[binding.sceneAnchor].voiceId !== binding.voiceId || anchors.has(binding.sceneAnchor)) throw new Error("unsupported scene binding");
+    const allowed = binding?.sceneAnchor === "hr" ? HR_BINDING : Object.hasOwn(FIXED_CAST, binding?.sceneAnchor) ? FIXED_CAST[binding.sceneAnchor] : null;
+    if (!binding || !allowed || allowed.voiceId !== binding.voiceId || anchors.has(binding.sceneAnchor)) throw new Error("unsupported scene binding");
     anchors.add(binding.sceneAnchor);
     return {id, name, role, sceneAnchor: binding.sceneAnchor, voiceId: binding.voiceId};
   });

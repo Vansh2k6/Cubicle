@@ -1,0 +1,104 @@
+{
+  "id": "workplace_intimidation",
+  "version": 1,
+  "locales": ["en"],
+  "title": "Report repeated workplace mistreatment",
+  "briefing": {
+    "en": "You want to report repeated dismissed concerns, exclusion from planning, and criticism at work. Describe observable events, explore support, and agree what HR will do next."
+  },
+  "player": {"id": "alex", "name": "Shubhankar Parsewar", "role": "employee"},
+  "clock": {"day": 0, "advance_on_turn": false},
+  "canon": {
+    "public": {
+      "reported_concerns": ["dismissed concerns", "exclusion from planning", "criticism"],
+      "followup_day": 1,
+      "followup_label": "next working day",
+      "hr_process": "Vedant records the concern, discusses interim support privately, and checks back in a private meeting."
+    },
+    "private": {
+      "firsthand_observation": {"fact_id": "F1", "owner": "jordan"},
+      "practical_support": {"fact_id": "F2", "owner": "sam"}
+    }
+  },
+  "commitment_model": {
+    "agreement_npc": "hr",
+    "unassisted_min_day": 0,
+    "assisted_min_day": 0,
+    "assistance_requires": [],
+    "latest_day_from": "canon.public.followup_day"
+  },
+  "npcs": [
+    {
+      "id": "maya",
+      "name": "Snehal Mane",
+      "role": "manager",
+      "persona": "Supportive and accountable manager. She discusses only current work and support, and never reenacts or attributes the reported mistreatment.",
+      "public_context": "Snehal is the manager named in the report. She can be spoken with, but the player is never required to confront her.",
+      "default_sliders": {"assertiveness": 50, "patience": 50, "warmth": 50, "forthcomingness": 50},
+      "topics": ["asked_deadline_flexibility", "asked_why_urgent", "asked_requirement_details", "asked_background", "asked_impact", "asked_for_help", "asked_advice", "asked_expectation", "committed_deadline", "proposed_scope_cut", "proposed_phased_delivery", "proposed_plan", "confirmed_next_steps", "recapped_agreement", "gave_honest_status", "took_ownership", "blamed_others", "apologized", "acknowledged_concern", "pushed_back_constructively", "avoided_question", "relayed_fact", "greeted", "small_talk", "off_topic", "repeated_question", "asked_reveal_all"]
+    },
+    {
+      "id": "jordan",
+      "name": "Vansh Singh",
+      "role": "teammate",
+      "persona": "Careful teammate and firsthand observer. He distinguishes what he personally observed from assumptions about intent.",
+      "public_context": "Vansh is a teammate who can discuss observable events and what he saw himself.",
+      "default_sliders": {"assertiveness": 50, "patience": 50, "warmth": 50, "forthcomingness": 50},
+      "topics": ["asked_deadline_flexibility", "asked_why_urgent", "asked_requirement_details", "asked_background", "asked_impact", "asked_for_help", "asked_advice", "asked_expectation", "committed_deadline", "proposed_scope_cut", "proposed_phased_delivery", "proposed_plan", "confirmed_next_steps", "recapped_agreement", "gave_honest_status", "took_ownership", "blamed_others", "apologized", "acknowledged_concern", "pushed_back_constructively", "avoided_question", "relayed_fact", "greeted", "small_talk", "off_topic", "repeated_question", "asked_reveal_all"]
+    },
+    {
+      "id": "sam",
+      "name": "Prathamesh Surwase",
+      "role": "People & Culture",
+      "persona": "Practical People & Culture colleague who explains optional support without requiring proof or a confrontation.",
+      "public_context": "Prathamesh can discuss support options and help the player decide what feels workable.",
+      "default_sliders": {"assertiveness": 50, "patience": 50, "warmth": 50, "forthcomingness": 50},
+      "topics": ["asked_deadline_flexibility", "asked_why_urgent", "asked_requirement_details", "asked_background", "asked_impact", "asked_for_help", "asked_advice", "asked_expectation", "committed_deadline", "proposed_scope_cut", "proposed_phased_delivery", "proposed_plan", "confirmed_next_steps", "recapped_agreement", "gave_honest_status", "took_ownership", "blamed_others", "apologized", "acknowledged_concern", "pushed_back_constructively", "avoided_question", "relayed_fact", "greeted", "small_talk", "off_topic", "repeated_question", "asked_reveal_all"]
+    },
+    {
+      "id": "hr",
+      "name": "Vedant Shitole",
+      "role": "HR",
+      "persona": "Calm HR partner who records concerns, asks what happened and what support would help, and explains process without promises he cannot make.",
+      "public_context": "Vedant can record the concern, discuss interim support privately, and arrange a private follow-up meeting on the next working day.",
+      "default_sliders": {"assertiveness": 50, "patience": 50, "warmth": 50, "forthcomingness": 50},
+      "topics": ["asked_deadline_flexibility", "asked_why_urgent", "asked_requirement_details", "asked_background", "asked_impact", "asked_for_help", "asked_advice", "asked_expectation", "committed_deadline", "proposed_scope_cut", "proposed_phased_delivery", "proposed_plan", "confirmed_next_steps", "recapped_agreement", "gave_honest_status", "took_ownership", "blamed_others", "apologized", "acknowledged_concern", "pushed_back_constructively", "avoided_question", "relayed_fact", "greeted", "small_talk", "off_topic", "repeated_question", "asked_reveal_all"]
+    }
+  ],
+  "goals": [
+    {"id": "G1", "visible": true, "required": true, "weight": 10, "label": "Discuss observable events with Vansh", "done_when": ["npc:jordan", "event:gave_honest_status"], "requires": []},
+    {"id": "G2", "visible": true, "required": true, "weight": 10, "label": "Explore support with Prathamesh", "done_when": ["npc:sam", "event:asked_for_help"], "requires": []},
+    {"id": "G3", "visible": true, "required": true, "weight": 10, "label": "Agree an HR response plan with Vedant", "done_when": ["npc:hr", "event:gave_honest_status", "event:asked_for_help", "event:confirmed_next_steps"], "requires": []}
+  ],
+  "facts": [
+    {
+      "id": "F1",
+      "owner": "jordan",
+      "weight": 10,
+      "content": {"en": "I personally saw you being left out of the planning discussion and then being asked why you did not have its context. I cannot say what Snehal intended."},
+      "triggers": ["asked_background"],
+      "leak_keywords": {"en": ["personally saw", "planning discussion", "did not have its context"]},
+      "unlock_question": {"en": "What did you personally observe in the planning discussion?"}
+    },
+    {
+      "id": "F2",
+      "owner": "sam",
+      "weight": 10,
+      "content": {"en": "I can accompany you to an HR meeting if you want, and help you write a dated account in your own words. You can speak to HR directly without confronting your manager."},
+      "triggers": ["asked_advice"],
+      "leak_keywords": {"en": ["accompany", "dated account", "in your own words"]},
+      "unlock_question": {"en": "What practical support is available if I want to speak with HR?"}
+    }
+  ],
+  "beats": [
+    {"id": "SUPPORT", "npc": "hr", "when": "turn>=4 and no_commitment", "act": "press_for_date"}
+  ],
+  "end": {"max_turns": 20},
+  "scoring": {
+    "version": 2,
+    "weights": {"goals": 30, "hidden_facts": 20, "integrity": 15, "relationship": 10, "rubric": 25},
+    "penalties": {"unrealistic_commitment": 8, "contradicted_commitment": 4, "inaccurate_relay": 3},
+    "bands": [{"minimum": 85, "label": "Excellent"}, {"minimum": 70, "label": "Strong"}, {"minimum": 50, "label": "Developing"}, {"minimum": 0, "label": "Needs work"}],
+    "relationship_population": "all_scenario_npcs"
+  }
+}

@@ -99,7 +99,7 @@ export async function classifyTurn(deps, input) {
   if (!language) throw new Error("classifier language context required");
   const date = language.normalizeCommitment({text: input.text, clock: input.clock, publicDateLabels: {}, planContext: input.planContext});
   if (!date || !(date.day === null || Number.isInteger(date.day) && date.day >= 0) || !(date.clarification === null || typeof date.clarification === "string")) throw new Error("invalid commitment interpretation");
-  const system = (deps && deps.system) || getClassifierPrompt();
+  const system = (deps && deps.system) || language.classifierPrompt || getClassifierPrompt();
   const timeoutMs = (deps && deps.timeoutMs) || 1500;
   const payload = {
     message: input.text,

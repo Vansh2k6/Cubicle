@@ -7,6 +7,7 @@ import { echoCorpus, keywordHitsForFact, semanticHitForFact } from "../llm/guard
 import { scoreSession } from "./score.js";
 import { validateQuote, personalLabel, normalizeQuote } from "./quotes.js";
 const prompt = readFileSync(new URL("../llm/prompts/coach/v3.md", import.meta.url), "utf8");
+const hrPrompt = readFileSync(new URL("../llm/prompts/coach/hr-v1.md", import.meta.url), "utf8");
 const text = { type: "string", minLength: 1 };
 export const COACH_SCHEMA = { type: "object", additionalProperties: false,
   required: ["turn_id", "quote", "what_went_well", "what_happened", "why_it_matters", "better_reply"],
@@ -57,7 +58,7 @@ export async function coachSession({ record, scenario = record.scenario, provide
     [data.what_went_well, data.what_happened, data.why_it_matters, data.better_reply].every((value) => safeHistoricalText(value, scenario, known, history)) &&
     (() => { const sentences = (data.better_reply.match(/[^.!?]+[.!?]+|\S[^.!?]*$/g) || []).filter((s) => /[\p{L}\p{N}]/u.test(s)); return sentences.length >= 1 && sentences.length <= 3; })();
   const result = await complete({ role: "coach", provider: typeof provider === "function" ? provider : async () => { throw { code: "PROVIDER_UNAVAILABLE" }; }, manifestId: manifest.id, schema: COACH_SCHEMA, temperature: 0.7, validateData: valid,
-    system: prompt, messages: [{ role: "user", content: JSON.stringify({ flag: { type: flag.type, turn_id: original.id }, original_user_turn: { id: original.id, text: original.text }, transcript,
+    system: scenario.id === "workplace_intimidation" ? hrPrompt : prompt, messages: [{ role: "user", content: JSON.stringify({ flag: { type: flag.type, turn_id: original.id }, original_user_turn: { id: original.id, text: original.text }, transcript,
       user_known: scenario.facts.filter((f) => known.includes(f.id)).map((f) => ({ id: f.id, content: f.content.en })) }) }],
   });
   const data = result.data;

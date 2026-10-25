@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { captureRun } from '../../src/endCoordinator.js';
+import { CAST_PRESETS, CAST_TRAITS, applyCastPreset, castTone, createCastDraft, effectiveCastSettings, npcSliderPayload, updateCastDraft, useOverallSettings } from '../../src/castSetup.js';
+import { DEFAULT_SLIDERS } from '../../shared/settings.js';
 const source = readFileSync(new URL('../../src/main.js', import.meta.url), 'utf8');
 const part = (a, b) => source.slice(source.indexOf(a), source.indexOf(b, source.indexOf(a)));
 const tick = () => new Promise(setImmediate);
@@ -20,11 +22,13 @@ function fixture({ reduced = false, fail = false } = {}) {
     };
   };
   const get = id => { if (!nodes.has(id)) nodes.set(id, makeNode()); return nodes.get(id); };
-  const state = { entry: 'selection', scenario: 'deadline', sessionId: null, threads: null, dialogue: null, near: null };
+  const state = { entry: 'selection', scenario: 'deadline', sessionId: null, threads: null, dialogue: null, near: null, settingsDrafts: {}, appliedSettings: null, appliedNpcSettings: null, setupPerson: null };
   const instance = { dispose() { counts.disposes++; }, reset() { counts.resets++; } };
   const context = { state, office: null, officeStart: null, officeGeneration: 0, officeCancel: null, entryFade: null,
     getScenario: async () => publicScenario(defaultRegistry.getScenario("deadline")), parseScenarioMetadata,
     $: get, escapeHtml: String, icon: () => '', refreshIcons() {}, updateScenario() {},
+    CAST_PRESETS, CAST_TRAITS, applyCastPreset, castTone, createCastDraft, effectiveCastSettings, npcSliderPayload, updateCastDraft, useOverallSettings, DEFAULT_SLIDERS,
+    people: { maya: {name: 'Snehal Mane', role: 'Your manager'}, jordan: {name: 'Vansh Singh', role: 'Your teammate'}, sam: {name: 'Prathamesh Surwase', role: 'People & culture'} },
     cancelVoice() { counts.voices++; }, stopSpeech() { counts.speech++; },
     closeModal() { get('#modal-root').children = []; },
     resetTextRun() { counts.resets++; state.sessionId = null; state.threads = null; state.dialogue = null; },
@@ -44,45 +48,70 @@ function fixture({ reduced = false, fail = false } = {}) {
     load() { loadResolve({ createOffice(container, supplied) { counts.creates++; hooks = supplied; if (fail && counts.creates === 1) throw Error('WebGL failed'); return instance; } }); },
   };
 }
-for (const id of ['deadline', 'email', 'call']) test(`production selection briefs ${id} and Back returns to all three choices`, async () => {
+for (const id of ['deadline', 'email', 'call']) test(`production selection opens cast setup for ${id} and Back returns to all three choices`, async () => {
   const f = fixture(); f.context.renderEntry();
   assert.equal((f.get('#scenario-cards').innerHTML.match(/data-entry-scenario=/g) || []).length, 3);
-  f.context.showBriefing(id); await tick(); assert.equal(f.state.entry, 'briefing'); assert.equal(f.state.scenario, id);
-  assert.match(f.get('#scenario-briefing').innerHTML, /Shubhankar, an employee/);
+  f.context.showCastSetup(id); await tick(); assert.equal(f.state.entry, 'setup'); assert.equal(f.state.scenario, id);
+  assert.match(f.get('#scenario-briefing').innerHTML, /cast-workspace/);
   assert.equal(f.counts.loads, 0); f.get('#briefing-back').onclick(); assert.equal(f.state.entry, 'selection');
 });
 test('Start defers one import and one scene, waits for successful onReady, then fades for 450 ms', async () => {
-  const f = fixture(); f.context.showBriefing('deadline'); await tick(); const pending = f.context.startOffice();
+  const f = fixture(); f.context.showCastSetup('deadline'); await tick(); f.state.entry = 'briefing'; const pending = f.context.startOffice();
   assert.equal(f.state.entry, 'loading'); assert.equal(f.context.document.body.classList.contains('office-mounted'), true);
   assert.equal(f.context.startOffice(), pending); assert.equal(f.counts.creates, 0);
   f.load(); await tick(); assert.equal(f.counts.creates, 1); assert.equal(f.state.entry, 'loading');
   f.hooks().onReady(); await pending; assert.equal(f.state.entry, 'office');
   assert.equal(f.timers[0].ms, 450); assert.equal(f.get('#entry-screen').hidden, false);
   f.timers[0].fn(); assert.equal(f.get('#entry-screen').hidden, true);
-  f.context.showSelection(); f.context.showBriefing('email'); await f.context.startOffice();
+  f.context.showSelection(); f.context.showCastSetup('email'); f.state.entry = 'briefing'; await f.context.startOffice();
   assert.equal(f.counts.loads, 1); assert.equal(f.counts.creates, 1);
 });
+test('cast setup latches its draft before briefing and starts no session before the first conversation', async () => {
+  const f = fixture();
+  f.context.showCastSetup('email'); await tick();
+  f.get('#setup-continue').onclick();
+  assert.equal(f.state.entry, 'briefing');
+  f.get('#entry-start').onclick();
+  assert.equal(f.state.entry, 'loading');
+  assert.equal(f.state.sessionId, null);
+  assert.equal(f.state.appliedSettings.assertiveness, 50);
+  assert.equal(f.state.appliedSettings.patience, 50);
+  assert.equal(f.state.appliedSettings.warmth, 50);
+  assert.equal(f.state.appliedSettings.forthcomingness, 50);
+});
+test('deadline setup carries distinct NPC settings and a historical pin into the first session boundary', async () => {
+  const f = fixture();
+  f.context.showCastSetup('deadline'); await tick();
+  const metadata = f.state.scenarioMetadata;
+  f.state.settingsDrafts.deadline = createCastDraft(DEFAULT_SLIDERS, {maya: {assertiveness: 30, patience: 80, warmth: 80, forthcomingness: 80}, jordan: {assertiveness: 80, patience: 50, warmth: 40, forthcomingness: 50}});
+  f.context.showCastSetup('deadline', metadata, 'ended-package');
+  f.get('#setup-continue').onclick(); f.get('#entry-start').onclick();
+  assert.equal(f.state.previousSessionId, 'ended-package');
+  assert.equal(f.state.sessionId, null);
+  assert.equal(f.state.appliedNpcSettings.maya.patience, 80);
+  assert.equal(f.state.appliedNpcSettings.jordan.patience, 50);
+});
 test('reduced motion enters immediately after the same successful-render gate', async () => {
-  const f = fixture({ reduced: true }); f.context.showBriefing('call'); const pending = f.context.startOffice();
+  const f = fixture({ reduced: true }); f.context.showCastSetup('call'); f.state.entry = 'briefing'; const pending = f.context.startOffice();
   f.load(); await tick(); assert.equal(f.state.entry, 'loading'); f.hooks().onReady(); await pending;
   assert.equal(f.get('#entry-screen').hidden, true); assert.equal(f.timers.length, 0);
 });
 test('constructor failure becomes recoverable error; Retry creates a fresh scene', async () => {
-  const f = fixture({ fail: true }); f.context.showBriefing('email'); const pending = f.context.startOffice(); f.load();
+  const f = fixture({ fail: true }); f.context.showCastSetup('email'); f.state.entry = 'briefing'; const pending = f.context.startOffice(); f.load();
   await assert.rejects(pending); assert.equal(f.state.entry, 'error'); assert.equal(f.context.office, null);
   const retry = f.get('#entry-retry').onclick(); assert.equal(f.state.entry, 'loading'); assert.equal(f.counts.loads, 2);
   f.load(); await tick(); f.hooks().onReady(); await retry; assert.equal(f.state.entry, 'office'); assert.equal(f.counts.creates, 2);
 });
 test('render failure disposes the unsuccessful instance and exposes Back', async () => {
-  const f = fixture(); f.context.showBriefing('email'); const pending = f.context.startOffice(); f.load(); await tick();
+  const f = fixture(); f.context.showCastSetup('email'); f.state.entry = 'briefing'; const pending = f.context.startOffice(); f.load(); await tick();
   f.hooks().onError(Error('render failed')); await assert.rejects(pending);
   assert.equal(f.context.office, null); assert.ok(f.counts.disposes > 0); assert.equal(f.state.entry, 'error');
   f.get('#entry-back').onclick(); assert.equal(f.state.entry, 'selection');
 });
 test('leaving loading invalidates the deferred import and disposes a pending scene', async () => {
-  const f = fixture(); f.context.showBriefing('email'); const pending = f.context.startOffice(); f.context.showSelection(); f.load();
+  const f = fixture(); f.context.showCastSetup('email'); f.state.entry = 'briefing'; const pending = f.context.startOffice(); f.context.showSelection(); f.load();
   await pending; assert.equal(f.counts.creates, 0); assert.equal(f.state.entry, 'selection');
-  f.context.showBriefing('call'); const second = f.context.startOffice(); f.load(); await tick(); f.context.showSelection();
+  f.context.showCastSetup('call'); f.state.entry = 'briefing'; const second = f.context.startOffice(); f.load(); await tick(); f.context.showSelection();
   await assert.rejects(second); assert.ok(f.counts.disposes > 0); assert.equal(f.context.office, null);
 });
 test('native Menu resets stale returnValue; cancel and Escape preserve run, voice, chat and focus', () => {

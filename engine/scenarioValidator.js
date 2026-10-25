@@ -194,8 +194,9 @@ export function validateScenario(spec, { privateProof = false } = {}) {
   }
 
   const deadlineV2 = spec.id === "missed_deadline" && spec.version === 2 && !privateProof;
-  const shape = privateProof ? structuredClone(schema) : deadlineV2 ? schemaV2 : schema;
-  if (privateProof) {
+  const hr = spec.id === "workplace_intimidation" && spec.version === 1 && !privateProof;
+  const shape = privateProof || hr ? structuredClone(schema) : deadlineV2 ? schemaV2 : schema;
+  if (privateProof || hr) {
     delete shape.properties.id.const;
     delete shape.properties.version.const;
     shape.properties.version.type = "integer";

@@ -406,10 +406,17 @@ export function createOffice(container, hooks) {
       name: "Prathamesh",
       role: "People & culture",
     },
+    hr: {
+      ...character(3.9, 3.6, "#547d73", "#2f2926", "#c99370", "#4d5c5f"),
+      name: "Vedant Shitole",
+      role: "HR",
+    },
   };
   npcs.maya.root.rotation.y = 0.6;
   npcs.jordan.root.rotation.y = -0.5;
   npcs.sam.root.rotation.y = 0.5;
+  npcs.hr.root.rotation.y = -0.8;
+  npcs.hr.root.visible = false;
   function ring(radius, color) {
     const mesh = new THREE.Mesh(
       new THREE.RingGeometry(radius - 0.045, radius, 48),
@@ -439,6 +446,7 @@ export function createOffice(container, hooks) {
     ownedLabels.push(el);
     p.label = el;
   }
+  npcs.hr.label.hidden = true;
   let width = 1,
     height = 1;
   function resize() {
@@ -534,7 +542,7 @@ export function createOffice(container, hooks) {
     )
       return false;
     return !Object.values(npcs).some(
-      (p) => Math.hypot(x - p.root.position.x, z - p.root.position.z) < 0.7,
+      (p) => p.root.visible && Math.hypot(x - p.root.position.x, z - p.root.position.z) < 0.7,
     );
   }
   function step(dt) {
@@ -599,6 +607,7 @@ export function createOffice(container, hooks) {
       let next = null,
         min = 2.05;
       for (let [id, n] of Object.entries(npcs)) {
+        if (!n.root.visible) continue;
         let d = Math.hypot(p.x - n.root.position.x, p.z - n.root.position.z);
         if (d < min) {
           next = id;
@@ -653,6 +662,8 @@ export function createOffice(container, hooks) {
       }
     }
     for (let p of Object.values(entries)) {
+      p.label.hidden = p.root.visible === false;
+      if (p.label.hidden) continue;
       projection.copy(p.root.position);
       projection.y += 2.6;
       projection.project(camera);
@@ -673,6 +684,11 @@ export function createOffice(container, hooks) {
     setPublicCast(cast) {
       for (const [anchor, p] of Object.entries(npcs)) {
         const actor = Array.isArray(cast) ? cast.find((entry) => entry.sceneAnchor === anchor) : null;
+        if (anchor === "hr") {
+          p.root.visible = !!actor;
+          p.label.hidden = !actor;
+          if (!actor) continue;
+        }
         const name = actor && typeof actor.name === "string" ? actor.name : baselineLabels[anchor].name;
         const role = actor && typeof actor.role === "string" ? actor.role : baselineLabels[anchor].role;
         const strong = p.label.querySelector("strong"), small = p.label.querySelector("small");

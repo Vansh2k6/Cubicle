@@ -1,5 +1,5 @@
 import {readFileSync} from "node:fs";
-const BOUNDARY = readFileSync(new URL("./prompts/npc/v5-boundary.md", import.meta.url), "utf8");
+const BOUNDARY = readFileSync(new URL("./prompts/npc/v6-boundary.md", import.meta.url), "utf8");
 import {resolveLanguage, publicLanguageInput} from "./languageContext.js";
 // llm/promptBuilder.js — Pure NPC prompt composer (R-01/R-04).
 // Includes: persona, tone text, public canon, THIS npc's revealed facts, and ONLY
@@ -52,7 +52,7 @@ export function buildNpcPrompt(opts = {}) {
     const fact = factById(scenario, factId);
     if (!fact || fact.owner !== npcId) throw badInput(`pendingReveal ${factId} not owned by ${npcId}`);
     if (pendingReveal.content !== fact.content.en) throw badInput(`pendingReveal content mismatch for ${factId}`);
-    pendingBlock = `- You may now share this (your own disclosed fact), in your own words: ${fact.content.en}`;
+    pendingBlock = `- Quote this authorised disclosure exactly; do not add terms: ${fact.content.en}`;
   }
 
   // Revealed facts: only this npc's own, resolved from the scenario.
@@ -75,7 +75,7 @@ export function buildNpcPrompt(opts = {}) {
       const fact = factById(scenario, m[1]);
       if (!fact || fact.owner !== npcId) throw badInput(`reveal act ${act} not authorised for ${npcId}`);
       if (!pendingBlock) throw badInput(`reveal act ${act} has no authorised pendingReveal`);
-      instruction = "Share the disclosed fact below naturally, in your own words.";
+      instruction = "Quote the authorised disclosure exactly. Do not add terms.";
     } else {
       instruction = "React naturally to the last message.";
     }
@@ -87,7 +87,7 @@ export function buildNpcPrompt(opts = {}) {
   const canon = language.publicCanonLines(publicLanguageInput(scenario, npcId));
   if (!Array.isArray(canon) || canon.some((line) => typeof line !== "string")) throw badInput("invalid public canon projection");
   const system = [
-    BOUNDARY,
+    language.npcBoundary || BOUNDARY,
     `You are ${npc.name} (${npc.id}), ${npc.role}. ${npc.persona}`,
     `Public context: ${npc.public_context}`,
     toneText ? `Tone: ${toneText}` : "Tone: neutral and professional.",

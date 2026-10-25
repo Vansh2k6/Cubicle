@@ -1,5 +1,11 @@
 # DESIGN.md — P2c free-text conversation panel
 
+## Cast setup (accepted contract)
+
+Scenario selection retains the existing category, title, and summary cards, then opens a compact cast setup before the public briefing. The deadline setup uses only public scenario metadata: a left cast list with 48px cropped atlas faces and a clear green selected state, alongside four native sliders. No actor selected means shared settings; selecting an actor creates a four-value override, and **Use overall settings** clears that actor's override. Balanced, Supportive, Direct, and Impatient are available for either scope. The draft persists while switching actors or scenarios. The server receives shared `sliders` plus only explicit `npc_sliders` overrides; its returned `npc_settings` is recorded for the attempt and retries.
+
+The Reporting Workplace Intimidation card retains the email selector key but starts the typed `workplace_intimidation` package. Its public cast drives the same setup, briefing, goals, voice, end, retry, and history paths as deadline. The open office adds Vedant Shitole (HR) only when that metadata includes the `hr` anchor; he can be approached first and does not create a new room. The call keeps its scripted dialogue. A typed session is created only when the first conversation starts. New-settings retry returns to cast setup using the ended attempt's public metadata and package pin; it never refetches current metadata. Settings remain read-only after office entry. The setup uses the existing `#f4f6f3`, `#1f2d29`, and `#28634e` workspace tokens, native range focus behavior, and the public `cast-avatars.png` atlas. It does not change scoring or call any provider.
+
 ## CN-02 phone contact extension (Operate)
 
 Preserve the current green-and-graphite immersive office and shared conversation shell. A small graphite desk phone sits on the existing shared island only when approved public scenario metadata declares one phone contact. Nearby E/context and the People list open that actor's ordinary thread; the People action reads “Call {name}”. No avatar, room, separate calling flow, automatic microphone permission, or new visual system.

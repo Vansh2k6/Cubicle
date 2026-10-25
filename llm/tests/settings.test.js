@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SLIDERS, difficultyFor, validateSliders } from "../../shared/settings.js";
+import { DEFAULT_SLIDERS, difficultyFor, validateNpcSliders, validateSliders } from "../../shared/settings.js";
 import { toneText } from "../tone.js";
 import { settingsPreview } from "../../src/settingsPreview.js";
 import { PRESETS, presetDifficulty, presetName, presetSettings, presetsEnabled } from "../../shared/presets.js";
@@ -13,6 +13,14 @@ test("shared slider validation defaults missing values and rejects invalid input
   assert.deepEqual(validateSliders().value, DEFAULT_SLIDERS);
   assert.deepEqual(validateSliders({ assertiveness: 0, patience: 100 }).value, { assertiveness: 0, patience: 100, warmth: 50, forthcomingness: 50 });
   for (const value of [null, [], { warmth: -1 }, { warmth: 100.5 }, { warmth: "50" }, { extra: 1 }]) assert.equal(validateSliders(value).ok, false);
+});
+test("per-NPC slider validation returns detached partial maps and rejects prototype-shaped input", () => {
+  const valid = validateNpcSliders({ maya: { warmth: 0 }, jordan: {} }, ["maya", "jordan"]);
+  assert.deepEqual(valid, { ok: true, value: { maya: { warmth: 0 }, jordan: {} } });
+  valid.value.maya.warmth = 100;
+  assert.equal(validateNpcSliders({ maya: { warmth: 0 } }, ["maya"]).value.maya.warmth, 0);
+  const inherited = Object.create({ maya: { warmth: 0 } });
+  for (const value of [null, [], inherited, { maya: null }, { maya: [] }, { maya: { extra: 1 } }, { other: { warmth: 0 } }, { maya: { warmth: 10.5 } }, { "__proto__": { warmth: 0 } }]) assert.equal(validateNpcSliders(value, ["maya"]).ok, false);
 });
 test("public preview responds to every shared slider without score arithmetic", () => {
   const middle = { assertiveness: 50, patience: 50, warmth: 50, forthcomingness: 50 };

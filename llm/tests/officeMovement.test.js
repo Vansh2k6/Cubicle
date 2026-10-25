@@ -46,7 +46,7 @@ test("fixed movement, rings, minimap, and paused proximity retain baseline coord
   const before = { ...moving.player.root.position };
   runInNewContext(`${stepSource}\nstep(1 / 60);`, moving);
   assert.ok(Math.abs(Math.hypot(moving.player.root.position.x - before.x, moving.player.root.position.z - before.z) - firstDistance) < 1e-9);
-  const paused = motionContext({ paused: true }); paused.npcs.maya = { root: { position: vector(1.5, 0, 2) } };
+  const paused = motionContext({ paused: true }); paused.npcs.maya = { root: { position: vector(1.5, 0, 2), visible: true } };
   runInNewContext(`${stepSource}\nstep(1 / 60);`, paused);
   assert.deepEqual(paused.nearCalls, ["maya"]);
   assert.equal(paused.player.root.position.x, 1);

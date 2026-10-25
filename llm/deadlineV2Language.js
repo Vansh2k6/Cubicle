@@ -13,6 +13,7 @@ export const PLAN_REPLIES = Object.freeze({
   closing: "We have a plan.",
 });
 const WIRE = new Set(["proposed_plan", "proposed_scope_cut", "proposed_phased_delivery", "committed_deadline", "confirmed_next_steps", "recapped_agreement", "relayed_fact"]);
+const INQUIRIES = new Set(["asked_background", "asked_why_urgent", "asked_for_help", "asked_impact", "asked_expectation"]);
 const neutralTexts = new Set(replies.entries.filter((e) => !e.act.startsWith("reveal_fact:")).flatMap((e) => e.variants.map((v) => normalize(v.text))));
 const canonSpans = ({publicCanon = {}} = {}) => [
   "The onboarding portal handover is overdue since yesterday.",
@@ -82,6 +83,11 @@ export const deadlineV2Language = Object.freeze({
       const type = events.find((e) => ["proposed_plan", "proposed_scope_cut", "proposed_phased_delivery"].includes(e.type))?.type || "proposed_plan";
       return {events: [{type: "committed_deadline", params: {day: 3}}, {type, params: {plan: structuredClone(parsed.proposal)}}], dropped, clarify: []};
     }
+    // A role/topic-backed query is a source nomination, not a provider claim:
+    // retain exactly one supported inquiry even if the classifier says empty
+    // or mislabels it, without synthesizing a plan, approval, or relay.
+    const inquiry = parsed.events.find((event) => INQUIRIES.has(event.type));
+    if (inquiry) return {events: [structuredClone(inquiry)], dropped, clarify: []};
     for (const event of events) {
       if (!WIRE.has(event.type)) {
         if (!parsed.events.some((e) => WIRE.has(e.type))) out.push(event);

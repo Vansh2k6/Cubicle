@@ -36,8 +36,8 @@ async function req(path, { method = "GET", body = null, timeoutMs = 12000 } = {}
   }
 }
 
-export const createSession = (scenario_id, sliders, previous_session_id = null) =>
-  req("/sessions", { method: "POST", body: { scenario_id, ...(sliders ? { sliders } : {}), ...(previous_session_id ? {previous_session_id} : {}) } });
+export const createSession = (scenario_id, sliders, previous_session_id = null, npc_sliders = null) =>
+  req("/sessions", { method: "POST", body: { scenario_id, ...(sliders ? { sliders } : {}), ...(previous_session_id ? {previous_session_id} : {}), ...(npc_sliders && Object.keys(npc_sliders).length ? {npc_sliders} : {}) } });
 export const getScenario = (scenario_id) => req(`/scenarios/${encodeURIComponent(scenario_id)}`);
 
 export const endSession = (sessionId) =>
